@@ -1,0 +1,45 @@
+"use client";
+
+import Link from "next/link";
+import { useCart } from "./CartProvider";
+import { useLanguage } from "./LanguageProvider";
+import { useSiteSettings } from "./SiteSettingsProvider";
+import { settingEnabled } from "@/lib/settings";
+
+export function SiteHeader() {
+  const { count } = useCart();
+  const { language, setLanguage } = useLanguage();
+  const { settings } = useSiteSettings();
+  const t = (fr: string, en: string) => settings[language === "fr" ? fr : en] || settings[fr] || "";
+
+  return (
+    <>
+      {settingEnabled(settings.announcement_visible) && (
+        <div className="announcement">{t("announcement_fr", "announcement_en")}</div>
+      )}
+      <header className="site-header site-header-v219">
+        <Link className="brand" href="/#top">
+          <img src={settings.brand_logo_url || "/brand-mark.svg"} alt="" width="42" height="42" />
+          <span>
+            <strong>{settings.brand_name || "ICHIGO ICHIE"}</strong>
+            <small>{t("brand_subtitle_fr", "brand_subtitle_en")}</small>
+          </span>
+        </Link>
+        <nav className="desktop-nav desktop-nav-v219">
+          <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
+          <Link href="/#boutique">{t("nav_shop_fr", "nav_shop_en")}</Link>
+          <Link href="/#maison">{t("nav_house_fr", "nav_house_en")}</Link>
+        </nav>
+        <div className="header-actions">
+          <div className="language-switch" aria-label="Language">
+            <button className={language === "fr" ? "active" : ""} onClick={() => setLanguage("fr")}>FR</button>
+            <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
+          </div>
+          <Link className="cart-link" href="/panier">
+            {t("nav_cart_fr", "nav_cart_en")}<span>{count}</span>
+          </Link>
+        </div>
+      </header>
+    </>
+  );
+}

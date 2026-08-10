@@ -1,0 +1,23 @@
+"use client";
+
+import Link from "next/link";
+import { useCart } from "@/components/CartProvider";
+import { useLanguage } from "@/components/LanguageProvider";
+
+export default function CartPage() {
+  const { items, subtotal, setQuantity, removeItem } = useCart();
+  const { language } = useLanguage();
+  const money = (value: number) => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }).format(value);
+
+  return <section className="cart-page"><div className="page-heading"><p className="eyebrow">ICHIGO ICHIE</p><h1>{language === "fr" ? "Votre panier" : "Your cart"}</h1></div>
+    {!items.length ? <div className="empty-state"><h2>{language === "fr" ? "Votre panier est vide" : "Your cart is empty"}</h2><Link className="button primary" href="/menu">{language === "fr" ? "Voir le menu" : "View menu"}</Link></div> : <div className="cart-layout">
+      <div className="cart-items">{items.map((item) => <article className="cart-item" key={item.key}>
+        <img src={item.imageUrl || "/product-placeholder.svg"} alt="" />
+        <div><h3>{item.name}</h3>{item.choices.map((choice) => <p key={`${choice.groupId}-${choice.valueId}`}>{choice.groupName}: {choice.valueName}</p>)}<button className="text-button" onClick={() => removeItem(item.key)}>{language === "fr" ? "Supprimer" : "Remove"}</button></div>
+        <div className="qty"><button onClick={() => setQuantity(item.key, item.quantity - 1)}>−</button><span>{item.quantity}</span><button onClick={() => setQuantity(item.key, item.quantity + 1)}>+</button></div>
+        <strong>{money(item.unitPrice * item.quantity)}</strong>
+      </article>)}</div>
+      <aside className="cart-summary"><h2>{language === "fr" ? "Récapitulatif" : "Summary"}</h2><div><span>{language === "fr" ? "Sous-total" : "Subtotal"}</span><strong>{money(subtotal)}</strong></div><p>{items.some((item) => item.pickupOnly) ? (language === "fr" ? "Retrait boutique obligatoire pour cette commande." : "Boutique pickup is required for this order.") : (language === "fr" ? "Livraison ou retrait à sélectionner à l’étape suivante." : "Choose shipping or pickup at the next step.")}</p><Link className="button primary full" href="/checkout">{language === "fr" ? "Commander" : "Checkout"}</Link></aside>
+    </div>}
+  </section>;
+}

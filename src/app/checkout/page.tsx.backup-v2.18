@@ -1,0 +1,241 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCart } from "@/components/CartProvider";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { CartItem } from "@/lib/types";
+
+type OrderResult = {
+  orderNumber: string;
+  publicToken?: string;
+  total?: number;
+  subtotal?: number;
+  pickupTime?: string | null;
+  orderType?: "pickup" | "shipping";
+  shippingMethodName?: string | null;
+  shippingFee?: number;
+  packageWeightG?: number;
+  demo?: boolean;
+};
+
+type ShippingMethod = {
+  id: string;
+  nameFr: string;
+  nameEn: string;
+  descriptionFr: string;
+  descriptionEn: string;
+  fee: number;
+  freeThreshold: number | null;
+  free: boolean;
+  maxWeightG: number;
+};
+
+type ShippingQuoteResult = {
+  subtotal: number;
+  itemWeightG: number;
+  packagingWeightG: number;
+  packageWeightG: number;
+  methods: ShippingMethod[];
+};
+
+function localDateTimeMin() {
+  const date = new Date(Date.now() + 10 * 60 * 1000);
+  date.setMinutes(Math.ceil(date.getMinutes() / 5) * 5, 0, 0);
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function cartPayload(items: CartItem[]) {
+  return items.map((item) => ({
+    productId: item.productId,
+    variantId: item.variantId,
+    quantity: item.quantity,
+    choices: item.choices.map((choice) => ({ groupId: choice.groupId, valueId: choice.valueId })),
+  }));
+}
+
+export default function CheckoutPage() {
+  const { items, subtotal, clear } = useCart();
+  const { language } = useLanguage();
+  const mustPickup = items.some((item) => item.pickupOnly);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<OrderResult | null>(null);
+  const [error, setError] = useState("");
+  const [orderType, setOrderType] = useState<"pickup" | "shipping">(mustPickup ? "pickup" : "shipping");
+  const [pickupMode, setPickupMode] = useState<"asap" | "scheduled">("asap");
+  const [clientReference, setClientReference] = useState("");
+  const [quote, setQuote] = useState<ShippingQuoteResult | null>(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [shippingMethodId, setShippingMethodId] = useState("");
+  const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
+
+  useEffect(() => { setClientReference(window.crypto.randomUUID()); }, []);
+  useEffect(() => { if (mustPickup) setOrderType("pickup"); }, [mustPickup]);
+
+  useEffect(() => {
+    if (orderType !== "shipping" || mustPickup || !items.length) {
+      setQuote(null);
+      setQuoteError("");
+      setShippingMethodId("");
+      return;
+    }
+    let active = true;
+    async function loadQuote() {
+      setQuoteLoading(true);
+      setQuoteError("");
+      try {
+        const response = await fetch("/api/shipping/quote", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ country: "FR", items: cartPayload(items) }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Impossible de calculer la livraison.");
+        if (!active) return;
+        setQuote(data);
+        setShippingMethodId((current) => data.methods.some((method: ShippingMethod) => method.id === current) ? current : (data.methods[0]?.id ?? ""));
+      } catch (e) {
+        if (active) { setQuote(null); setShippingMethodId(""); setQuoteError(e instanceof Error ? e.message : "Impossible de calculer la livraison."); }
+      } finally {
+        if (active) setQuoteLoading(false);
+      }
+    }
+    loadQuote();
+    return () => { active = false; };
+  }, [orderType, mustPickup, items]);
+
+  const selectedShipping = quote?.methods.find((method) => method.id === shippingMethodId) ?? null;
+  const shippingFee = orderType === "shipping" ? Number(selectedShipping?.fee ?? 0) : 0;
+  const checkoutTotal = Math.round((subtotal + shippingFee) * 100) / 100;
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!clientReference) return;
+    if (orderType === "shipping" && (!quote || !shippingMethodId)) {
+      setError(language === "fr" ? "Le tarif de livraison n’est pas encore disponible." : "Shipping quote is not ready yet.");
+      return;
+    }
+    setLoading(true); setError("");
+    const form = new FormData(event.currentTarget);
+    const pickupValue = String(form.get("pickupTime") || "");
+    const payload = {
+      clientReference,
+      customer: {
+        firstName: String(form.get("firstName") || ""),
+        lastName: String(form.get("lastName") || ""),
+        email: String(form.get("email") || ""),
+        phone: String(form.get("phone") || ""),
+      },
+      pickupMode,
+      pickupTime: orderType === "pickup" && pickupMode === "scheduled" && pickupValue ? new Date(pickupValue).toISOString() : null,
+      shipping: orderType === "shipping" ? {
+        methodId: shippingMethodId,
+        address1: String(form.get("address1") || ""),
+        address2: String(form.get("address2") || ""),
+        postalCode: String(form.get("postalCode") || ""),
+        city: String(form.get("city") || ""),
+        country: "FR",
+      } : null,
+      notes: String(form.get("notes") || ""),
+      orderType,
+      items: cartPayload(items),
+    };
+    try {
+      const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Order failed");
+      setResult(data); clear();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Order failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (result) return <section className="checkout-page"><div className="order-success">
+    <span>✓</span>
+    <p className="eyebrow">ICHIGO ICHIE</p>
+    <h1>{language === "fr" ? "Commande enregistrée" : "Order received"}</h1>
+    <p>{language === "fr" ? "Numéro de commande" : "Order number"}: <strong>{result.orderNumber}</strong></p>
+    {result.orderType === "shipping"
+      ? <p className="success-pickup"><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><br />{result.shippingMethodName}{result.packageWeightG ? ` · ${result.packageWeightG} g` : ""}</p>
+      : <p className="success-pickup">{result.pickupTime ? `${language === "fr" ? "Retrait" : "Pickup"}: ${new Date(result.pickupTime).toLocaleString(language === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}` : (language === "fr" ? "Retrait : dès que possible" : "Pickup: as soon as possible")}</p>}
+    {typeof result.total === "number" && <p className="success-total">Total <strong>{money.format(result.total)}</strong></p>}
+    {result.demo && <p>Mode aperçu: la commande n’est pas encore envoyée à Supabase.</p>}
+    <div className="success-actions">
+      {result.publicToken && <Link className="button primary" href={`/commande/${result.publicToken}`}>{language === "fr" ? "Suivre ma commande" : "Track my order"}</Link>}
+      <Link className="button ghost" href={result.orderType === "shipping" ? "/boutique" : "/menu"}>{language === "fr" ? "Continuer" : "Continue"}</Link>
+    </div>
+  </div></section>;
+
+  if (!items.length) return <section className="checkout-page"><div className="empty-state"><h1>{language === "fr" ? "Votre panier est vide" : "Your cart is empty"}</h1><Link className="button primary" href="/menu">Menu</Link></div></section>;
+
+  return <section className="checkout-page">
+    <div className="page-heading"><p className="eyebrow">ICHIGO ICHIE</p><h1>{language === "fr" ? "Finaliser la commande" : "Complete order"}</h1><p>{language === "fr" ? "Livraison en France métropolitaine ou retrait gratuit à Nice." : "Delivery in metropolitan France or free pickup in Nice."}</p></div>
+    <div className="checkout-layout">
+      <form className="checkout-form" onSubmit={submit}>
+        {!mustPickup && <div className="pickup-choice-block delivery-mode-block">
+          <h2>{language === "fr" ? "Comment souhaitez-vous recevoir votre commande ?" : "How would you like to receive your order?"}</h2>
+          <div className="pickup-choice-grid">
+            <label className={`pickup-choice ${orderType === "shipping" ? "active" : ""}`}><input type="radio" name="orderType" value="shipping" checked={orderType === "shipping"} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · tarif calculé selon le poids." : "Metropolitan France · price calculated by parcel weight."}</small></span></label>
+            <label className={`pickup-choice ${orderType === "pickup" ? "active" : ""}`}><input type="radio" name="orderType" value="pickup" checked={orderType === "pickup"} onChange={() => setOrderType("pickup")} /><span><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><small>14 rue Centrale, Nice · {language === "fr" ? "gratuit" : "free"}</small></span></label>
+          </div>
+        </div>}
+
+        <h2>{language === "fr" ? "Vos coordonnées" : "Your details"}</h2>
+        <div className="form-grid">
+          <label>{language === "fr" ? "Prénom *" : "First name *"}<input name="firstName" autoComplete="given-name" required /></label>
+          <label>{language === "fr" ? `Nom${orderType === "shipping" ? " *" : ""}` : `Last name${orderType === "shipping" ? " *" : ""}`}<input name="lastName" autoComplete="family-name" required={orderType === "shipping"} /></label>
+          <label>Email {orderType === "pickup" && <small>{language === "fr" ? "facultatif" : "optional"}</small>}<input name="email" type="email" autoComplete="email" required={orderType === "shipping"} /></label>
+          <label>{language === "fr" ? "Téléphone *" : "Phone *"}<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required /></label>
+        </div>
+
+        {orderType === "shipping" ? <>
+          <div className="shipping-address-block">
+            <h2>{language === "fr" ? "Adresse de livraison" : "Shipping address"}</h2>
+            <label>{language === "fr" ? "Adresse *" : "Address *"}<input name="address1" autoComplete="address-line1" required /></label>
+            <label>{language === "fr" ? "Complément d’adresse" : "Address line 2"}<input name="address2" autoComplete="address-line2" placeholder={language === "fr" ? "Bâtiment, étage, code…" : "Building, floor, access code…"} /></label>
+            <div className="form-grid">
+              <label>{language === "fr" ? "Code postal *" : "Postal code *"}<input name="postalCode" inputMode="numeric" pattern="[0-9]{5}" maxLength={5} autoComplete="postal-code" required /></label>
+              <label>{language === "fr" ? "Ville *" : "City *"}<input name="city" autoComplete="address-level2" required /></label>
+            </div>
+            <label>{language === "fr" ? "Pays" : "Country"}<input value="France" disabled /></label>
+          </div>
+
+          <div className="shipping-method-block">
+            <div className="section-inline"><h2>{language === "fr" ? "Livraison" : "Shipping"}</h2>{quote?.packageWeightG ? <span className="weight-pill">{language === "fr" ? "Poids colis" : "Parcel weight"}: {quote.packageWeightG} g</span> : null}</div>
+            {quoteLoading && <p className="shipping-note">{language === "fr" ? "Calcul du poids et du tarif…" : "Calculating parcel weight and rate…"}</p>}
+            {quoteError && <p className="form-error">{quoteError}</p>}
+            {quote?.methods.map((method) => <label key={method.id} className={`shipping-method ${shippingMethodId === method.id ? "active" : ""}`}>
+              <input type="radio" name="shippingMethod" value={method.id} checked={shippingMethodId === method.id} onChange={() => setShippingMethodId(method.id)} />
+              <span><strong>{language === "fr" ? method.nameFr : method.nameEn}</strong><small>{language === "fr" ? method.descriptionFr : method.descriptionEn}{method.freeThreshold ? ` · ${language === "fr" ? "offerte dès" : "free from"} ${money.format(method.freeThreshold)}` : ""}</small></span>
+              <b>{method.free ? (language === "fr" ? "Offert" : "Free") : money.format(method.fee)}</b>
+            </label>)}
+            {quote && <p className="shipping-weight-detail">{language === "fr" ? "Produits" : "Items"}: {quote.itemWeightG} g · {language === "fr" ? "emballage" : "packaging"}: {quote.packagingWeightG} g</p>}
+          </div>
+        </> : <div className="pickup-choice-block">
+          <h2>{language === "fr" ? "Quand souhaitez-vous retirer ?" : "When would you like to pick up?"}</h2>
+          <div className="pickup-choice-grid">
+            <label className={`pickup-choice ${pickupMode === "asap" ? "active" : ""}`}><input type="radio" name="pickupMode" value="asap" checked={pickupMode === "asap"} onChange={() => setPickupMode("asap")} /><span><strong>{language === "fr" ? "Dès que possible" : "As soon as possible"}</strong><small>{language === "fr" ? "La boutique prépare la commande dès réception." : "The boutique starts preparing as soon as it is received."}</small></span></label>
+            <label className={`pickup-choice ${pickupMode === "scheduled" ? "active" : ""}`}><input type="radio" name="pickupMode" value="scheduled" checked={pickupMode === "scheduled"} onChange={() => setPickupMode("scheduled")} /><span><strong>{language === "fr" ? "Planifier" : "Schedule"}</strong><small>{language === "fr" ? "Choisissez une date et une heure." : "Choose a date and time."}</small></span></label>
+          </div>
+          {pickupMode === "scheduled" && <label className="scheduled-time">{language === "fr" ? "Date et heure de retrait" : "Pickup date and time"}<input name="pickupTime" type="datetime-local" min={localDateTimeMin()} required /></label>}
+        </div>}
+
+        <label>{language === "fr" ? "Note pour la boutique" : "Note for the boutique"}<textarea name="notes" rows={4} maxLength={1000} placeholder={language === "fr" ? "Précision, demande particulière…" : "Request, special note…"}></textarea></label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="button primary full checkout-submit" disabled={loading || !clientReference || (orderType === "shipping" && (quoteLoading || !selectedShipping))}>{loading ? (language === "fr" ? "Envoi…" : "Sending…") : `${language === "fr" ? "Confirmer la commande" : "Confirm order"} · ${money.format(checkoutTotal)}`}</button>
+        <p className="checkout-disclaimer">{orderType === "shipping" ? (language === "fr" ? "Le poids et les frais de livraison sont recalculés sur le serveur avant l’enregistrement de la commande." : "Parcel weight and shipping fee are recalculated on the server before the order is saved.") : (language === "fr" ? "Paiement au retrait pour le moment. Le paiement en ligne sera ajouté à l’étape Stripe." : "Payment at pickup for now. Online payment will be added with Stripe.")}</p>
+      </form>
+
+      <aside className="checkout-summary"><h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>{items.map((item) => <div className="checkout-line detailed" key={item.key}><span><strong>{item.quantity} × {item.name}</strong>{item.choices.map((choice) => <small key={`${choice.groupId}-${choice.valueId}`}>{choice.groupName}: {choice.valueName}</small>)}</span><strong>{money.format(item.unitPrice * item.quantity)}</strong></div>)}
+        <div className="checkout-line"><span>{language === "fr" ? "Sous-total" : "Subtotal"}</span><strong>{money.format(subtotal)}</strong></div>
+        {orderType === "shipping" && <div className="checkout-line"><span>{language === "fr" ? "Livraison" : "Shipping"}{quote?.packageWeightG ? <small> · {quote.packageWeightG} g</small> : null}</span><strong>{quoteLoading ? "…" : selectedShipping?.free ? (language === "fr" ? "Offert" : "Free") : money.format(shippingFee)}</strong></div>}
+        <div className="checkout-total"><span>Total</span><strong>{money.format(checkoutTotal)}</strong></div>
+        <p>{orderType === "shipping" ? (language === "fr" ? "Livraison à l’adresse indiquée en France métropolitaine." : "Delivery to the entered address in metropolitan France.") : (language === "fr" ? "Retrait : 14 rue Centrale, Nice." : "Pickup: 14 rue Centrale, Nice.")}</p>
+      </aside>
+    </div>
+  </section>;
+}

@@ -1,0 +1,30 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import type { Category, Product } from "@/lib/types";
+import { useLanguage } from "./LanguageProvider";
+import { ProductCard } from "./ProductCard";
+
+export function CatalogGrid({ categories, products, titleFr, titleEn, introFr, introEn }: { categories: Category[]; products: Product[]; titleFr: string; titleEn: string; introFr: string; introEn: string }) {
+  const { language } = useLanguage();
+  const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => products.filter((product) => {
+    const categoryOk = category === "all" || product.category_id === category;
+    const haystack = `${product.name_fr} ${product.name_en} ${product.description_fr} ${product.description_en}`.toLowerCase();
+    return categoryOk && haystack.includes(search.toLowerCase().trim());
+  }), [products, category, search]);
+
+  return <section className="catalog-page">
+    <div className="page-heading"><p className="eyebrow">ICHIGO ICHIE</p><h1>{language === "fr" ? titleFr : titleEn}</h1><p>{language === "fr" ? introFr : introEn}</p></div>
+    <div className="catalog-toolbar">
+      <div className="category-tabs">
+        <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>{language === "fr" ? "Tout" : "All"}</button>
+        {categories.map((item) => <button key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{language === "fr" ? item.name_fr : item.name_en}</button>)}
+      </div>
+      <input className="catalog-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={language === "fr" ? "Rechercher…" : "Search…"} />
+    </div>
+    {filtered.length ? <div className="product-grid">{filtered.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="empty-state">{language === "fr" ? "Aucun article dans cette catégorie." : "No items in this category."}</div>}
+  </section>;
+}

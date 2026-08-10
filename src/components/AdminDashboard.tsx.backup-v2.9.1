@@ -1,0 +1,575 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { ProductGalleryAdmin } from "./ProductGalleryAdmin";
+import type { Category, ProductType, Variant } from "@/lib/types";
+
+type AdminProduct = {
+  id: string; slug: string; category_id: string; type: ProductType; name_fr: string; name_en: string;
+  description_fr: string; description_en: string; long_description_fr: string | null; long_description_en: string | null; origin: string | null; cultivar: string | null; badge: string | null;
+  base_price: number; stock: number; pickup_only: boolean; active: boolean; featured: boolean; sort_order: number;
+  image_url: string | null; ideal_for: string[]; shipping_weight_g: number;
+};
+type OrderRow = { id: string; order_number: string; created_at: string; status: string; payment_status: string; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
+type AdminOptionValue = { id: string; option_group_id: string; label_fr: string; label_en: string; price_delta: number; sort_order: number; active: boolean };
+type AdminOptionGroup = { id: string; name_fr: string; name_en: string; required: boolean; min_select: number; max_select: number; values: AdminOptionValue[] };
+type ProductOptionLink = { product_id: string; option_group_id: string; sort_order: number };
+type Tab = "products" | "categories" | "options" | "orders" | "settings";
+
+const blankProduct: AdminProduct = { id: "", slug: "", category_id: "", type: "drink", name_fr: "", name_en: "", description_fr: "", description_en: "", long_description_fr: "", long_description_en: "", origin: "", cultivar: "", badge: "", base_price: 0, stock: 99, pickup_only: true, active: true, featured: false, sort_order: 1, image_url: "", ideal_for: [], shipping_weight_g: 0 };
+
+function slugify(value: string) {
+  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function AdminDashboard() {
+  const router = useRouter();
+  const supabase = useMemo(() => createBrowserSupabase(), []);
+  const [ready, setReady] = useState(false);
+  const [tab, setTab] = useState<Tab>("products");
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [optionGroups, setOptionGroups] = useState<AdminOptionGroup[]>([]);
+  const [productOptionLinks, setProductOptionLinks] = useState<ProductOptionLink[]>([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [orderFilter, setOrderFilter] = useState("active");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [productDraft, setProductDraft] = useState<AdminProduct>(blankProduct);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [catalogZone, setCatalogZone] = useState<"menu" | "shop">("menu");
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [quickSavingId, setQuickSavingId] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      if (!supabase) { setReady(true); return; }
+      const { data: userResult } = await supabase.auth.getUser();
+      if (!userResult.user) return router.replace("/admin/login");
+      const { data: admin } = await supabase.from("admins").select("user_id").eq("user_id", userResult.user.id).maybeSingle();
+      if (!admin) { await supabase.auth.signOut(); return router.replace("/admin/login"); }
+      await Promise.all([loadProducts(), loadCategories(), loadOptions(), loadOrders(), loadSettings()]);
+      setReady(true);
+    }
+    init();
+  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (tab !== "orders" || !supabase) return;
+    const timer = window.setInterval(() => { loadOrders(); }, 10000);
+    return () => window.clearInterval(timer);
+  }, [tab, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadProducts() {
+    if (!supabase) return;
+    const [{ data: productRows }, { data: variantRows }] = await Promise.all([
+      supabase.from("products").select("*").order("sort_order"),
+      supabase.from("product_variants").select("*").order("sort_order"),
+    ]);
+    setProducts((productRows ?? []) as AdminProduct[]);
+    setVariants((variantRows ?? []) as Variant[]);
+  }
+  async function loadCategories() { if (!supabase) return; const { data } = await supabase.from("categories").select("*").order("kind").order("sort_order"); setCategories((data ?? []) as Category[]); }
+  async function loadOrders() { if (!supabase) return; const { data } = await supabase.from("orders").select("*, order_items(*)").order("created_at", { ascending: false }).limit(100); setOrders((data ?? []) as OrderRow[]); }
+  async function loadSettings() { if (!supabase) return; const { data } = await supabase.from("site_settings").select("key,value"); setSettings(Object.fromEntries((data ?? []).map((row) => [row.key, typeof row.value === "string" ? row.value : JSON.stringify(row.value)]))); }
+  async function loadOptions() {
+    if (!supabase) return;
+    const [{ data: groups }, { data: values }, { data: links }] = await Promise.all([
+      supabase.from("option_groups").select("*").order("name_fr"),
+      supabase.from("option_values").select("*").order("sort_order"),
+      supabase.from("product_option_groups").select("product_id,option_group_id,sort_order").order("sort_order"),
+    ]);
+    const valueRows = (values ?? []) as AdminOptionValue[];
+    setOptionGroups(((groups ?? []) as Omit<AdminOptionGroup, "values">[]).map((group) => ({ ...group, values: valueRows.filter((value) => value.option_group_id === group.id) })));
+    setProductOptionLinks((links ?? []) as ProductOptionLink[]);
+  }
+
+  function chooseProduct(product?: AdminProduct, zone: "menu" | "shop" = catalogZone) {
+    setMessage("");
+    setAdvancedOpen(true);
+    if (!product) {
+      const firstCategory = categories.find((category) => category.kind === zone && category.active) ?? categories.find((category) => category.kind === zone);
+      setSelectedId("new");
+      setProductDraft({ ...blankProduct, category_id: firstCategory?.id ?? "", type: zone === "menu" ? "drink" : "product", pickup_only: zone === "menu", stock: zone === "menu" ? 99 : 0, sort_order: products.filter((item) => categories.find((category) => category.id === item.category_id)?.kind === zone).length + 1 });
+      return;
+    }
+    const kind = categories.find((category) => category.id === product.category_id)?.kind;
+    if (kind === "menu" || kind === "shop") setCatalogZone(kind);
+    setSelectedId(product.id);
+    setProductDraft({ ...product, ideal_for: product.ideal_for ?? [] });
+  }
+
+  async function saveProduct(event: FormEvent) {
+    event.preventDefault(); if (!supabase) return; setSaving(true); setMessage("");
+    const payload = {
+      slug: productDraft.slug || slugify(productDraft.name_fr), category_id: productDraft.category_id, type: productDraft.type,
+      name_fr: productDraft.name_fr, name_en: productDraft.name_en || productDraft.name_fr, description_fr: productDraft.description_fr,
+      description_en: productDraft.description_en || productDraft.description_fr,
+      long_description_fr: productDraft.long_description_fr?.trim() || productDraft.description_fr || null,
+      long_description_en: productDraft.long_description_en?.trim() || productDraft.description_en || productDraft.description_fr || null,
+      origin: productDraft.origin || null, cultivar: productDraft.cultivar || null,
+      badge: productDraft.badge || null, base_price: Number(productDraft.base_price), stock: Number(productDraft.stock),
+      pickup_only: productDraft.pickup_only, active: productDraft.active, featured: productDraft.featured,
+      sort_order: Number(productDraft.sort_order), image_url: productDraft.image_url || null, ideal_for: productDraft.ideal_for.filter(Boolean), shipping_weight_g: Number(productDraft.shipping_weight_g || 0),
+    };
+
+    if (productDraft.id) {
+      const { error } = await supabase.from("products").update(payload).eq("id", productDraft.id);
+      setSaving(false);
+      if (error) return setMessage(error.message);
+      setMessage("Enregistré ✓");
+      await loadProducts();
+      setProductDraft((current) => ({ ...current, ...payload }));
+      return;
+    }
+
+    const { data, error } = await supabase.from("products").insert(payload).select("*").single();
+    setSaving(false);
+    if (error || !data) return setMessage(error?.message ?? "Création impossible.");
+    setMessage("Enregistré ✓");
+    await loadProducts();
+    chooseProduct(data as AdminProduct);
+  }
+
+
+  async function deleteProduct(id: string) {
+    if (!supabase || !window.confirm("Supprimer ce produit ?")) return;
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) return setMessage(error.message);
+    setSelectedId(""); setProductDraft(blankProduct); await Promise.all([loadProducts(), loadOptions()]);
+  }
+
+  async function quickPatchProduct(id: string, patch: Partial<AdminProduct>) {
+    if (!supabase) return;
+    setQuickSavingId(id);
+    setMessage("");
+    const cleanPatch: Record<string, unknown> = { ...patch };
+    if ("base_price" in patch) cleanPatch.base_price = Number(patch.base_price);
+    if ("stock" in patch) cleanPatch.stock = Number(patch.stock);
+    if ("shipping_weight_g" in patch) cleanPatch.shipping_weight_g = Number(patch.shipping_weight_g || 0);
+    if ("sort_order" in patch) cleanPatch.sort_order = Number(patch.sort_order);
+    const { error } = await supabase.from("products").update(cleanPatch).eq("id", id);
+    setQuickSavingId("");
+    if (error) { setMessage(error.message); await loadProducts(); return; }
+    setProducts((current) => current.map((product) => product.id === id ? { ...product, ...patch } : product));
+    if (productDraft.id === id) setProductDraft((current) => ({ ...current, ...patch }));
+  }
+
+  async function duplicateProduct(product: AdminProduct) {
+    if (!supabase) return;
+    setQuickSavingId(product.id);
+    const payload = {
+      slug: `${product.slug}-copie-${Date.now().toString().slice(-6)}`,
+      category_id: product.category_id, type: product.type, name_fr: `${product.name_fr} — copie`, name_en: `${product.name_en || product.name_fr} — copy`,
+      description_fr: product.description_fr, description_en: product.description_en, long_description_fr: product.long_description_fr, long_description_en: product.long_description_en, origin: product.origin, cultivar: product.cultivar, badge: product.badge,
+      base_price: Number(product.base_price), stock: Number(product.stock), pickup_only: product.pickup_only, active: false, featured: false,
+      sort_order: products.filter((item) => item.category_id === product.category_id).length + 1, image_url: product.image_url, ideal_for: product.ideal_for ?? [], shipping_weight_g: Number(product.shipping_weight_g || 0),
+    };
+    const { data: created, error } = await supabase.from("products").insert(payload).select("*").single();
+    if (error || !created) { setQuickSavingId(""); return setMessage(error?.message ?? "Duplication impossible."); }
+    const sourceVariants = variants.filter((variant) => variant.product_id === product.id);
+    if (sourceVariants.length) {
+      await supabase.from("product_variants").insert(sourceVariants.map((variant, variantIndex) => ({ product_id: created.id, name: variant.name, packaging: variant.packaging, weight: variant.weight, price: Number(variant.price), stock: Number(variant.stock), active: variant.active, sort_order: variantIndex + 1, image_url: variant.image_url ?? null, shipping_weight_g: Number(variant.shipping_weight_g || 0) })));
+    }
+    const sourceLinks = productOptionLinks.filter((link) => link.product_id === product.id);
+    if (sourceLinks.length) await supabase.from("product_option_groups").insert(sourceLinks.map((link) => ({ product_id: created.id, option_group_id: link.option_group_id, sort_order: link.sort_order })));
+    setQuickSavingId("");
+    setMessage("Produit dupliqué ✓ — il est masqué par défaut.");
+    await Promise.all([loadProducts(), loadOptions()]);
+  }
+
+  async function moveProduct(product: AdminProduct, direction: -1 | 1) {
+    if (!supabase) return;
+    const kind = categories.find((category) => category.id === product.category_id)?.kind;
+    const ordered = products.filter((item) => categories.find((category) => category.id === item.category_id)?.kind === kind).sort((a, b) => a.sort_order - b.sort_order || a.name_fr.localeCompare(b.name_fr));
+    const index = ordered.findIndex((item) => item.id === product.id);
+    const neighbor = ordered[index + direction];
+    if (!neighbor) return;
+    setQuickSavingId(product.id);
+    const currentOrder = product.sort_order;
+    const neighborOrder = neighbor.sort_order;
+    const fallbackBase = index * 10 + 10;
+    await Promise.all([
+      supabase.from("products").update({ sort_order: neighborOrder === currentOrder ? fallbackBase + direction : neighborOrder }).eq("id", product.id),
+      supabase.from("products").update({ sort_order: neighborOrder === currentOrder ? fallbackBase : currentOrder }).eq("id", neighbor.id),
+    ]);
+    setQuickSavingId("");
+    await loadProducts();
+  }
+
+  async function addVariant() {
+    if (!supabase || !productDraft.id) return setMessage("Enregistrez d’abord le produit.");
+    const productVariants = variants.filter((v) => v.product_id === productDraft.id);
+    const { error } = await supabase.from("product_variants").insert({
+      product_id: productDraft.id,
+      name: `Nouveau format ${productVariants.length + 1}`,
+      packaging: "can",
+      weight: "",
+      price: productDraft.base_price,
+      stock: 0,
+      active: false,
+      shipping_weight_g: Number(productDraft.shipping_weight_g || 0),
+      sort_order: productVariants.length + 1,
+    });
+    if (error) return setMessage(error.message);
+    setMessage("Nouveau format ajouté. Complétez-le puis activez-le ✓");
+    await loadProducts();
+  }
+
+  async function saveVariant(variant: Variant) {
+    if (!supabase) return;
+    const signature = `${variant.packaging ?? "other"}|${String(variant.weight ?? "").trim().toLowerCase()}|${String(variant.name ?? "").trim().toLowerCase()}`;
+    const duplicate = variants.some((item) => item.product_id === variant.product_id && item.id !== variant.id && `${item.packaging ?? "other"}|${String(item.weight ?? "").trim().toLowerCase()}|${String(item.name ?? "").trim().toLowerCase()}` === signature);
+    if (duplicate) return setMessage("Ce modèle existe déjà : changez le conditionnement, le poids ou le nom.");
+    if (!String(variant.name ?? "").trim() && !String(variant.weight ?? "").trim()) return setMessage("Ajoutez au moins un nom de modèle ou un poids.");
+    const { error } = await supabase.from("product_variants").update({
+      name: String(variant.name || variant.weight || "Format").trim(),
+      packaging: variant.packaging,
+      weight: variant.weight || null,
+      price: Number(variant.price),
+      stock: Number(variant.stock),
+      active: variant.active,
+      shipping_weight_g: Number(variant.shipping_weight_g || 0),
+    }).eq("id", variant.id);
+    setMessage(error ? error.message : "Format enregistré ✓");
+    if (!error) await loadProducts();
+  }
+
+
+  async function deleteVariant(id: string) { if (!supabase || !window.confirm("Supprimer ce format ?")) return; await supabase.from("product_variants").delete().eq("id", id); await loadProducts(); }
+  async function toggleProductOption(groupId: string, enabled: boolean) {
+    if (!supabase || !productDraft.id) return setMessage("Enregistrez d’abord le produit.");
+    if (enabled) {
+      const sortOrder = productOptionLinks.filter((link) => link.product_id === productDraft.id).length + 1;
+      const { error } = await supabase.from("product_option_groups").upsert({ product_id: productDraft.id, option_group_id: groupId, sort_order: sortOrder });
+      if (error) return setMessage(error.message);
+    } else {
+      const { error } = await supabase.from("product_option_groups").delete().eq("product_id", productDraft.id).eq("option_group_id", groupId);
+      if (error) return setMessage(error.message);
+    }
+    setMessage("Options mises à jour ✓"); await loadOptions();
+  }
+  async function updateOrder(id: string, status: string) { if (!supabase) return; await supabase.from("orders").update({ status }).eq("id", id); await loadOrders(); }
+  async function logout() { if (supabase) await supabase.auth.signOut(); router.replace("/admin/login"); }
+
+  if (!ready) return <section className="admin-shell"><div className="loading-card">Chargement de l’administration…</div></section>;
+  if (!supabase) return <section className="admin-shell"><div className="setup-warning"><h1>Supabase à connecter</h1><p>Le code est prêt. Ajoutez les clés dans <code>.env.local</code> et exécutez <code>supabase/schema.sql</code>.</p></div></section>;
+
+  const selectedVariants = variants.filter((variant) => variant.product_id === productDraft.id);
+  const selectedOptionIds = new Set(productOptionLinks.filter((link) => link.product_id === productDraft.id).map((link) => link.option_group_id));
+  const labels: Record<Tab, string> = { products: "Produits & menu", categories: "Catégories", options: "Options & suppléments", orders: "Commandes", settings: "Réglages" };
+  const orderStats = {
+    pending: orders.filter((order) => order.status === "pending").length,
+    preparing: orders.filter((order) => order.status === "preparing").length,
+    ready: orders.filter((order) => order.status === "ready").length,
+    active: orders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
+  };
+  const search = orderSearch.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    const matchesFilter = orderFilter === "all" ? true : orderFilter === "active" ? ["pending", "preparing", "ready"].includes(order.status) : order.status === orderFilter;
+    const haystack = `${order.order_number} ${order.customer_first_name} ${order.customer_last_name} ${order.customer_phone} ${order.customer_email}`.toLowerCase();
+    return matchesFilter && (!search || haystack.includes(search));
+  });
+
+  const categoryById = new Map<string, Category>(categories.map((category) => [category.id, category]));
+  const catalogCategories = categories.filter((category) => category.kind === catalogZone);
+  const normalizedCatalogSearch = catalogSearch.trim().toLowerCase();
+  const catalogProducts = products
+    .filter((product) => categoryById.get(product.category_id)?.kind === catalogZone)
+    .filter((product) => !normalizedCatalogSearch || `${product.name_fr} ${product.name_en} ${product.badge ?? ""} ${categoryById.get(product.category_id)?.name_fr ?? ""}`.toLowerCase().includes(normalizedCatalogSearch))
+    .sort((a, b) => a.sort_order - b.sort_order || a.name_fr.localeCompare(b.name_fr));
+  const catalogCounts = { menu: products.filter((product) => categoryById.get(product.category_id)?.kind === "menu").length, shop: products.filter((product) => categoryById.get(product.category_id)?.kind === "shop").length };
+
+  return <section className="admin-shell">
+    <header className="admin-top"><div><p className="eyebrow">ICHIGO ICHIE</p><h1>Administration</h1></div><div><a className="button ghost small" href="/" target="_blank">Voir le site ↗</a><button className="button ghost small" onClick={logout}>Déconnexion</button></div></header>
+    <nav className="admin-tabs">{(["products", "categories", "options", "orders", "settings"] as Tab[]).map((name) => <button key={name} className={tab === name ? "active" : ""} onClick={() => setTab(name)}>{labels[name]}{name === "orders" && orders.filter((o) => o.status === "pending").length ? <span>{orders.filter((o) => o.status === "pending").length}</span> : null}</button>)}</nav>
+
+    {tab === "products" && <div className="quick-catalog-admin">
+      <div className="quick-catalog-toolbar">
+        <div className="catalog-zone-switch" role="tablist" aria-label="Zone du catalogue">
+          <button type="button" className={catalogZone === "menu" ? "active" : ""} onClick={() => { setCatalogZone("menu"); setAdvancedOpen(false); }}><span>Menu</span><strong>{catalogCounts.menu}</strong></button>
+          <button type="button" className={catalogZone === "shop" ? "active" : ""} onClick={() => { setCatalogZone("shop"); setAdvancedOpen(false); }}><span>Boutique</span><strong>{catalogCounts.shop}</strong></button>
+        </div>
+        <div className="quick-catalog-actions"><input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder={`Rechercher dans ${catalogZone === "menu" ? "le menu" : "la boutique"}…`} /><button className="button primary small" type="button" onClick={() => chooseProduct(undefined, catalogZone)}>+ Ajouter</button></div>
+      </div>
+      <div className="quick-admin-hint"><strong>Modification rapide</strong><span>Prix, stock, poids, visibilité et ordre se modifient directement ici. Ouvrez “Détails” uniquement pour les descriptions, images, options ou variantes.</span>{quickSavingId && <em>Enregistrement…</em>}</div>
+      {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
+      <div className="quick-product-list">
+        {catalogProducts.length ? catalogProducts.map((product, index) => {
+          const productVariants = variants.filter((variant) => variant.product_id === product.id);
+          const totalVariantStock = productVariants.filter((variant) => variant.active).reduce((sum, variant) => sum + Math.max(0, Number(variant.stock)), 0);
+          return <article className={`quick-product-row zone-${catalogZone} ${!product.active ? "is-hidden" : ""}`} key={product.id}>
+            <div className="quick-product-image"><img src={product.image_url || "/product-placeholder.svg"} alt="" /><button type="button" className={product.featured ? "featured active" : "featured"} title="Mettre en avant" onClick={() => quickPatchProduct(product.id, { featured: !product.featured })}>★</button></div>
+            <div className="quick-product-main">
+              <div className="quick-name-line"><input aria-label="Nom du produit" value={product.name_fr} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, name_fr: e.target.value } : item))} onBlur={() => quickPatchProduct(product.id, { name_fr: product.name_fr, name_en: product.name_en || product.name_fr })} /><span className={`visibility-dot ${product.active ? "on" : "off"}`}></span></div>
+              <div className="quick-meta-line"><select aria-label="Catégorie" value={product.category_id} onChange={(e) => quickPatchProduct(product.id, { category_id: e.target.value })}>{catalogCategories.map((item) => <option key={item.id} value={item.id}>{item.name_fr}</option>)}</select>{productVariants.length ? <button type="button" className="mini-chip" onClick={() => chooseProduct(product)}>{productVariants.length} format{productVariants.length > 1 ? "s" : ""}</button> : <span className="mini-chip subtle">Sans variante</span>}{product.badge && <span className="mini-chip">{product.badge}</span>}</div>
+            </div>
+            <label className="quick-field"><span>Prix</span><div><input type="number" min="0" step="0.01" value={product.base_price} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, base_price: Number(e.target.value) } : item))} onBlur={() => quickPatchProduct(product.id, { base_price: product.base_price })} /><b>€</b></div></label>
+            {catalogZone === "shop" ? <>
+              {productVariants.length ? <div className="quick-stock-summary"><span>Stock</span><strong>{totalVariantStock}</strong><small>via modèles</small></div> : <label className="quick-field"><span>Stock</span><input type="number" min="0" value={product.stock} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, stock: Number(e.target.value) } : item))} onBlur={() => quickPatchProduct(product.id, { stock: product.stock })} /></label>}
+              <label className={`quick-field ${!product.pickup_only && !product.shipping_weight_g ? "needs-value" : ""}`}><span>Poids colis</span><div><input type="number" min="0" value={product.shipping_weight_g || 0} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, shipping_weight_g: Number(e.target.value) } : item))} onBlur={() => quickPatchProduct(product.id, { shipping_weight_g: product.shipping_weight_g })} /><b>g</b></div></label>
+            </> : <div className="quick-menu-info"><span>{product.type === "dessert" ? "Dessert" : product.type === "combo" ? "Combo" : "Boisson"}</span><small>{product.pickup_only ? "Retrait" : "Livrable"}</small></div>}
+            <button type="button" className={`quick-visibility ${product.active ? "active" : ""}`} onClick={() => quickPatchProduct(product.id, { active: !product.active })}>{product.active ? "Visible" : "Masqué"}</button>
+            <div className="quick-row-actions"><button type="button" title={normalizedCatalogSearch ? "Effacez la recherche pour réordonner" : "Monter"} disabled={index === 0 || Boolean(normalizedCatalogSearch)} onClick={() => moveProduct(product, -1)}>↑</button><button type="button" title={normalizedCatalogSearch ? "Effacez la recherche pour réordonner" : "Descendre"} disabled={index === catalogProducts.length - 1 || Boolean(normalizedCatalogSearch)} onClick={() => moveProduct(product, 1)}>↓</button><button type="button" title="Dupliquer" onClick={() => duplicateProduct(product)}>⧉</button><button type="button" className="details" onClick={() => chooseProduct(product)}>Détails</button></div>
+          </article>;
+        }) : <div className="empty-state">Aucun article dans cette zone.</div>}
+      </div>
+
+      {advancedOpen && selectedId && <div className="quick-detail-panel">
+        <div className="quick-detail-backdrop" onClick={() => setAdvancedOpen(false)}></div>
+        <div className="quick-detail-drawer" role="dialog" aria-modal="true" aria-label="Détails du produit">
+          <form onSubmit={saveProduct}>
+            <div className="editor-head sticky-editor-head"><div><p className="eyebrow">{productDraft.id ? "DÉTAILS" : "NOUVEAU"}</p><h2>{productDraft.name_fr || (catalogZone === "menu" ? "Nouvel article du menu" : "Nouveau produit boutique")}</h2></div><div><button type="button" className="button ghost small" onClick={() => setAdvancedOpen(false)}>Fermer</button>{productDraft.id && <button type="button" className="button danger small" onClick={() => deleteProduct(productDraft.id)}>Supprimer</button>}<button className="button primary small" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button></div></div>
+            {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
+            <div className="editor-section compact-section"><h3>Essentiel</h3><div className="form-grid three"><label>Nom FR<input value={productDraft.name_fr} onChange={(e) => setProductDraft({ ...productDraft, name_fr: e.target.value })} required /></label><label>Nom EN <small>(facultatif, FR utilisé si vide)</small><input value={productDraft.name_en} onChange={(e) => setProductDraft({ ...productDraft, name_en: e.target.value })} /></label><label>Type<select value={productDraft.type} onChange={(e) => setProductDraft({ ...productDraft, type: e.target.value as ProductType })}><option value="drink">Boisson</option><option value="dessert">Dessert</option><option value="product">Matcha / produit</option><option value="accessory">Accessoire</option><option value="combo">Combo</option></select></label><label>Catégorie<select value={productDraft.category_id} onChange={(e) => setProductDraft({ ...productDraft, category_id: e.target.value })} required><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.kind === "menu" ? "Menu · " : "Boutique · "}{category.name_fr}</option>)}</select></label><label>Prix de base (€)<input type="number" min="0" step="0.01" value={productDraft.base_price} onChange={(e) => setProductDraft({ ...productDraft, base_price: Number(e.target.value) })} /></label>{selectedVariants.length === 0 && <label>Stock<input type="number" min="0" value={productDraft.stock} onChange={(e) => setProductDraft({ ...productDraft, stock: Number(e.target.value) })} /><small>Utilisé uniquement si le produit n’a pas de modèle.</small></label>}{categoryById.get(productDraft.category_id)?.kind === "shop" && <label>Poids expédition (g)<input type="number" min="0" value={productDraft.shipping_weight_g ?? 0} onChange={(e) => setProductDraft({ ...productDraft, shipping_weight_g: Number(e.target.value) })} /><small>Article seul, hors carton commun.</small></label>}<label>Badge<input value={productDraft.badge ?? ""} onChange={(e) => setProductDraft({ ...productDraft, badge: e.target.value })} placeholder="Signature, Nouveau…" /></label></div><div className="quick-boolean-grid"><label className="check-label"><input type="checkbox" checked={productDraft.active} onChange={(e) => setProductDraft({ ...productDraft, active: e.target.checked })} /> Visible</label><label className="check-label"><input type="checkbox" checked={productDraft.featured} onChange={(e) => setProductDraft({ ...productDraft, featured: e.target.checked })} /> Mis en avant</label><label className="check-label"><input type="checkbox" checked={productDraft.pickup_only} onChange={(e) => setProductDraft({ ...productDraft, pickup_only: e.target.checked })} /> Retrait uniquement</label></div></div>
+            <details className="admin-details" open={!productDraft.id}><summary>Descriptions & informations</summary><div className="editor-section description-editor-v27">
+              <div className="description-help"><div><strong>Texte court = carte produit</strong><span>Gardez 1–3 phrases. Le texte long n’apparaît qu’après “Choisir”.</span></div><span className={productDraft.description_fr.length > 180 ? "description-count warning" : "description-count"}>{productDraft.description_fr.length}/180 conseillé</span></div>
+              <div className="form-grid">
+                <label>Description courte FR<textarea rows={3} maxLength={260} value={productDraft.description_fr} onChange={(e) => setProductDraft({ ...productDraft, description_fr: e.target.value })} placeholder="Ex. Un matcha Uji doux, umami et équilibré, idéal en usucha ou latte." /><small>Utilisée sur la carte Boutique / Menu.</small></label>
+                <label>Description courte EN <small>(facultatif)</small><textarea rows={3} maxLength={260} value={productDraft.description_en} onChange={(e) => setProductDraft({ ...productDraft, description_en: e.target.value })} placeholder="Short description shown on product cards." /><small>Si vide, le français est utilisé.</small></label>
+              </div>
+              <div className="form-grid long-description-grid">
+                <label>Description complète FR<textarea rows={7} value={productDraft.long_description_fr ?? ""} onChange={(e) => setProductDraft({ ...productDraft, long_description_fr: e.target.value })} placeholder="Histoire du produit, profil aromatique, conseils, détails de préparation…" /><small>Visible uniquement dans la fiche produit.</small></label>
+                <label>Description complète EN <small>(facultatif)</small><textarea rows={7} value={productDraft.long_description_en ?? ""} onChange={(e) => setProductDraft({ ...productDraft, long_description_en: e.target.value })} placeholder="Full product description." /><small>Si vide, le texte court EN/FR est utilisé.</small></label>
+              </div>
+              <div className="description-actions"><button type="button" className="button ghost small" onClick={() => setProductDraft((current) => ({ ...current, long_description_fr: current.long_description_fr?.trim() ? current.long_description_fr : current.description_fr }))}>Utiliser le texte court comme base FR</button><button type="button" className="button ghost small" onClick={() => setProductDraft((current) => ({ ...current, long_description_en: current.long_description_en?.trim() ? current.long_description_en : (current.description_en || current.description_fr) }))}>Utiliser le texte court comme base EN</button></div>
+              <div className="form-grid three"><label>Origine<input value={productDraft.origin ?? ""} onChange={(e) => setProductDraft({ ...productDraft, origin: e.target.value })} /></label><label>Cultivar / base<input value={productDraft.cultivar ?? ""} onChange={(e) => setProductDraft({ ...productDraft, cultivar: e.target.value })} /></label><label>Idéal pour<input value={productDraft.ideal_for.join(", ")} onChange={(e) => setProductDraft({ ...productDraft, ideal_for: e.target.value.split(",").map((v) => v.trim()) })} placeholder="Usucha, latte…" /></label></div>
+            </div></details>
+            <details className="admin-details" open={categoryById.get(productDraft.category_id)?.kind === "shop"}><summary>Photos du produit</summary><div className="editor-section"><ProductGalleryAdmin productId={productDraft.id} productName={productDraft.name_fr || "Produit"} fallbackImageUrl={productDraft.image_url} onMainImageChange={(url) => setProductDraft((current) => ({ ...current, image_url: url }))} /></div></details>
+            <details className="admin-details" open={categoryById.get(productDraft.category_id)?.kind === "menu"}><summary>Options client {productDraft.id ? `(${selectedOptionIds.size})` : ""}</summary><div className="editor-section">{!productDraft.id ? <p className="muted">Enregistrez d’abord l’article, puis ajoutez ses options.</p> : <div className="option-link-grid">{optionGroups.map((group) => <label className="option-link-card" key={group.id}><input type="checkbox" checked={selectedOptionIds.has(group.id)} onChange={(e) => toggleProductOption(group.id, e.target.checked)} /><span><strong>{group.name_fr}</strong><small>{group.values.filter((v) => v.active).map((v) => `${v.label_fr}${v.price_delta ? ` (+${Number(v.price_delta).toFixed(2)}€)` : ""}`).join(" · ")}</small></span></label>)}</div>}</div></details>
+            <details className="admin-details" open={selectedVariants.length > 0}><summary>Formats / variantes {selectedVariants.length ? `(${selectedVariants.length})` : ""}</summary><div className="editor-section"><div className="section-inline"><div><p className="muted">Créez autant de modèles que nécessaire : Boîte 30 g, Sachet 30 g, Boîte 100 g… Chaque modèle a son prix, son stock et son poids d’expédition. Les 3 photos sont communes au produit.</p><small className="muted">Un nouveau format est créé masqué : complétez-le puis cochez « Actif ».</small></div><button type="button" onClick={addVariant}>+ Ajouter un modèle</button></div>{!productDraft.id ? <p className="muted">Enregistrez d’abord le produit.</p> : selectedVariants.length ? <div className="variant-admin-list">{selectedVariants.map((variant) => <VariantEditor key={variant.id} variant={variant} onChange={(next) => setVariants((current) => current.map((v) => v.id === next.id ? next : v))} onSave={saveVariant} onDelete={deleteVariant} />)}</div> : <p className="muted">Aucun modèle. Le prix de base sera utilisé.</p>}</div></details>
+            <details className="admin-details"><summary>Affichage avancé</summary><div className="editor-section"><div className="form-grid three"><label>Ordre<input type="number" value={productDraft.sort_order} onChange={(e) => setProductDraft({ ...productDraft, sort_order: Number(e.target.value) })} /></label><label>Slug<input value={productDraft.slug} onChange={(e) => setProductDraft({ ...productDraft, slug: e.target.value })} placeholder="automatique si vide" /></label></div></div></details>
+            <div className="drawer-save-bar"><span>{message || "Les changements rapides de la liste sont sauvegardés automatiquement."}</span><button className="button primary" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer et continuer"}</button></div>
+          </form>
+        </div>
+      </div>}
+    </div>}
+
+    {tab === "categories" && <CategoryAdmin categories={categories} supabase={supabase} reload={loadCategories} />}
+    {tab === "options" && <OptionsAdmin groups={optionGroups} supabase={supabase} reload={loadOptions} />}
+    {tab === "orders" && <div className="orders-admin">
+      <div className="section-inline orders-heading"><div><h2>Commandes</h2><p className="muted">Actualisation automatique toutes les 10 secondes.</p></div><button onClick={loadOrders}>Actualiser maintenant</button></div>
+      <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
+      <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["completed","Terminées"],["cancelled","Annulées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone…" /></div>
+      {filteredOrders.length ? filteredOrders.map((order) => <article className={`order-card status-${order.status}`} key={order.id}>
+        <div className="order-card-top"><div><span className={`order-status-dot ${order.status}`}></span><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span></div><div><span className={`payment-pill ${order.payment_status}`}>{order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : "À payer"}</span><strong>{Number(order.total).toFixed(2)} €</strong></div></div>
+        <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Dès que possible"}</span></div>{order.order_type === "shipping" && <div className="order-shipping-box"><strong>{order.shipping_method_name || "Livraison"}</strong><span>{[order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(), order.shipping_country === "FR" ? "France" : order.shipping_country].filter(Boolean).join(" · ")}</span><small>Frais : {Number(order.shipping_fee || 0).toFixed(2)} € · Poids colis : {Number(order.package_weight_g || 0)} g</small></div>}<div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
+        <aside className="order-actions"><label>Statut<select value={order.status} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">{order.order_type === "shipping" ? "Préparation colis" : "En préparation"}</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option><option value="refunded">Remboursée</option></select></label>{order.status === "pending" && <button className="button primary" onClick={() => updateOrder(order.id, "preparing")}>{order.order_type === "shipping" ? "Préparer le colis" : "Commencer la préparation"}</button>}{order.status === "preparing" && <button className="button primary" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Marquer comme prête"}</button>}{order.status === "ready" && <button className="button primary" onClick={() => updateOrder(order.id, "completed")}>{order.order_type === "shipping" ? "Marquer expédiée" : "Commande remise"}</button>}{order.public_token && <a className="button ghost small" href={`/commande/${order.public_token}`} target="_blank">Vue client ↗</a>}</aside></div>
+      </article>) : <div className="empty-state">Aucune commande dans cette vue.</div>}
+    </div>}
+    {tab === "settings" && <SettingsAdmin settings={settings} setSettings={setSettings} supabase={supabase} reload={loadSettings} />}
+  </section>;
+}
+
+function VariantEditor({ variant, onChange, onSave, onDelete }: { variant: Variant; onChange: (variant: Variant) => void; onSave: (variant: Variant) => void; onDelete: (id: string) => void }) {
+  const packageName = variant.packaging === "can" ? "Boîte" : variant.packaging === "bag" ? "Sachet" : "Autre";
+  return <article className={`variant-editor-card ${variant.active ? "" : "is-inactive"}`}>
+    <div className="variant-editor-preview shared-gallery-variant">
+      <div className="variant-package-symbol">{variant.packaging === "can" ? "▣" : variant.packaging === "bag" ? "▱" : "◇"}</div>
+      <div><strong>{packageName} · {variant.weight || variant.name || "Nouveau format"}</strong><small>{variant.active ? "Visible pour le client" : "Masqué pour le client"} · Photos communes au produit</small></div>
+    </div>
+    <div className="variant-editor-grid">
+      <label>Conditionnement<select value={variant.packaging ?? "other"} onChange={(e) => onChange({ ...variant, packaging: e.target.value as Variant["packaging"] })}><option value="can">Boîte</option><option value="bag">Sachet</option><option value="other">Autre</option></select></label>
+      <label>Nom du modèle<input value={variant.name} onChange={(e) => onChange({ ...variant, name: e.target.value })} placeholder="Ex. Premium, Recharge…" /><small>Facultatif si le poids suffit.</small></label>
+      <label>Poids / format<input value={variant.weight ?? ""} onChange={(e) => onChange({ ...variant, weight: e.target.value })} placeholder="30 g, 50 g, 100 g…" /></label>
+      <label>Prix (€)<input type="number" min="0" step="0.01" value={variant.price} onChange={(e) => onChange({ ...variant, price: Number(e.target.value) })} /></label>
+      <label>Stock<input type="number" min="0" value={variant.stock} onChange={(e) => onChange({ ...variant, stock: Number(e.target.value) })} /></label>
+      <label>Poids expédition (g)<input type="number" min="0" value={variant.shipping_weight_g ?? 0} onChange={(e) => onChange({ ...variant, shipping_weight_g: Number(e.target.value) })} /><small>Poids réel emballé de ce modèle.</small></label>
+    </div>
+    <div className="variant-editor-actions">
+      <label className="check-label"><input type="checkbox" checked={variant.active} onChange={(e) => onChange({ ...variant, active: e.target.checked })} /> Actif / visible</label>
+      <span className="variant-stock-note">{variant.stock <= 0 ? "Stock épuisé : choix désactivé côté client" : `${variant.stock} en stock`}</span>
+      <button type="button" onClick={() => onSave(variant)}>Enregistrer ce modèle</button>
+      <button type="button" className="text-danger" onClick={() => onDelete(variant.id)}>Supprimer</button>
+    </div>
+  </article>;
+}
+
+function CategoryAdmin({ categories, supabase, reload }: { categories: Category[]; supabase: NonNullable<ReturnType<typeof createBrowserSupabase>>; reload: () => Promise<void> }) {
+  const [zone, setZone] = useState<"menu" | "shop">("menu");
+  const [rows, setRows] = useState<Category[]>(categories);
+  const [draft, setDraft] = useState({ name_fr: "", name_en: "", slug: "", kind: "menu" as "menu" | "shop", sort_order: 1 });
+  const [note, setNote] = useState("");
+  useEffect(() => setRows(categories), [categories]);
+  async function add(event: FormEvent) { event.preventDefault(); const { error } = await supabase.from("categories").insert({ ...draft, kind: zone, name_en: draft.name_en || draft.name_fr, slug: draft.slug || slugify(draft.name_fr), active: true, sort_order: categories.filter((category) => category.kind === zone).length + 1 }); if (error) return setNote(error.message); setDraft({ name_fr: "", name_en: "", slug: "", kind: zone, sort_order: 1 }); setNote("Catégorie ajoutée ✓"); await reload(); }
+  async function save(category: Category) { const { error } = await supabase.from("categories").update({ name_fr: category.name_fr, name_en: category.name_en || category.name_fr, sort_order: Number(category.sort_order), active: category.active }).eq("id", category.id); setNote(error ? error.message : "Catégorie enregistrée ✓"); if (!error) await reload(); }
+  async function toggle(category: Category) { await supabase.from("categories").update({ active: !category.active }).eq("id", category.id); await reload(); }
+  const visibleRows = rows.filter((category) => category.kind === zone).sort((a, b) => a.sort_order - b.sort_order);
+  return <div className="category-admin quick-category-admin"><div className="category-main"><div className="section-inline"><div><h2>Catégories</h2><p className="muted">Renommez, réordonnez ou masquez les catégories sans ouvrir une autre fiche.</p></div><div className="catalog-zone-switch compact"><button type="button" className={zone === "menu" ? "active" : ""} onClick={() => setZone("menu")}>Menu</button><button type="button" className={zone === "shop" ? "active" : ""} onClick={() => setZone("shop")}>Boutique</button></div></div>{note && <p className={note.includes("✓") ? "save-message success" : "save-message"}>{note}</p>}<div className="quick-category-list">{visibleRows.map((category) => <div className={`quick-category-row ${category.active ? "" : "is-hidden"}`} key={category.id}><input value={category.name_fr} onChange={(e) => setRows((current) => current.map((item) => item.id === category.id ? { ...item, name_fr: e.target.value } : item))} /><input value={category.name_en} onChange={(e) => setRows((current) => current.map((item) => item.id === category.id ? { ...item, name_en: e.target.value } : item))} placeholder="EN (optionnel)" /><label>Ordre<input type="number" min="0" value={category.sort_order} onChange={(e) => setRows((current) => current.map((item) => item.id === category.id ? { ...item, sort_order: Number(e.target.value) } : item))} /></label><button type="button" className={`quick-visibility ${category.active ? "active" : ""}`} onClick={() => toggle(category)}>{category.active ? "Visible" : "Masquée"}</button><button type="button" onClick={() => save(category)}>Sauver</button></div>)}</div></div><form onSubmit={add} className="admin-side-form"><h3>Nouvelle catégorie {zone === "menu" ? "Menu" : "Boutique"}</h3><label>Nom FR<input value={draft.name_fr} onChange={(e) => setDraft({ ...draft, name_fr: e.target.value })} required /></label><label>Nom EN <small>(facultatif)</small><input value={draft.name_en} onChange={(e) => setDraft({ ...draft, name_en: e.target.value })} /></label><button className="button primary">+ Ajouter</button></form></div>;
+}
+
+function OptionsAdmin({ groups, supabase, reload }: { groups: AdminOptionGroup[]; supabase: NonNullable<ReturnType<typeof createBrowserSupabase>>; reload: () => Promise<void> }) {
+  const [draft, setDraft] = useState({ name_fr: "", name_en: "", required: false, min_select: 0, max_select: 1 });
+  const [note, setNote] = useState("");
+  async function addGroup(event: FormEvent) { event.preventDefault(); const min = draft.required ? Math.max(1, draft.min_select) : Math.max(0, draft.min_select); const { error } = await supabase.from("option_groups").insert({ ...draft, min_select: min, max_select: Math.max(1, min, draft.max_select) }); if (error) return setNote(error.message); setDraft({ name_fr: "", name_en: "", required: false, min_select: 0, max_select: 1 }); setNote("Groupe ajouté ✓"); await reload(); }
+  async function saveGroup(group: AdminOptionGroup) { const min = group.required ? Math.max(1, group.min_select) : Math.max(0, group.min_select); const { error } = await supabase.from("option_groups").update({ name_fr: group.name_fr, name_en: group.name_en, required: group.required, min_select: min, max_select: Math.max(1, min, group.max_select) }).eq("id", group.id); setNote(error ? error.message : "Groupe enregistré ✓"); if (!error) await reload(); }
+  async function deleteGroup(id: string) { if (!window.confirm("Supprimer ce groupe d’options et ses valeurs ?")) return; const { error } = await supabase.from("option_groups").delete().eq("id", id); setNote(error ? error.message : "Groupe supprimé ✓"); if (!error) await reload(); }
+  async function addValue(groupId: string) { const count = groups.find((group) => group.id === groupId)?.values.length ?? 0; const { error } = await supabase.from("option_values").insert({ option_group_id: groupId, label_fr: "Nouvelle option", label_en: "New option", price_delta: 0, sort_order: count + 1, active: true }); setNote(error ? error.message : "Option ajoutée ✓"); if (!error) await reload(); }
+  async function saveValue(value: AdminOptionValue) { const { error } = await supabase.from("option_values").update({ label_fr: value.label_fr, label_en: value.label_en, price_delta: Number(value.price_delta), sort_order: Number(value.sort_order), active: value.active }).eq("id", value.id); setNote(error ? error.message : "Option enregistrée ✓"); if (!error) await reload(); }
+  async function deleteValue(id: string) { if (!window.confirm("Supprimer cette option ?")) return; const { error } = await supabase.from("option_values").delete().eq("id", id); setNote(error ? error.message : "Option supprimée ✓"); if (!error) await reload(); }
+
+  return <div className="options-admin"><div className="options-list"><div className="section-inline"><div><h2>Options & suppléments</h2><p className="muted">Lait, sucre, température, toppings… puis associez-les aux produits.</p></div></div>{note && <p className={note.includes("✓") ? "save-message success" : "save-message"}>{note}</p>}{groups.map((group) => <OptionGroupEditor key={group.id} initial={group} onSave={saveGroup} onDelete={deleteGroup} onAddValue={addValue} onSaveValue={saveValue} onDeleteValue={deleteValue} />)}</div><form onSubmit={addGroup} className="admin-side-form"><h3>Nouveau groupe</h3><label>Nom FR<input required value={draft.name_fr} onChange={(e) => setDraft({ ...draft, name_fr: e.target.value })} placeholder="Lait" /></label><label>Nom EN<input required value={draft.name_en} onChange={(e) => setDraft({ ...draft, name_en: e.target.value })} placeholder="Milk" /></label><label className="check-label"><input type="checkbox" checked={draft.required} onChange={(e) => setDraft({ ...draft, required: e.target.checked, min_select: e.target.checked ? Math.max(1, draft.min_select) : 0 })} /> Choix obligatoire</label><div className="form-grid"><label>Minimum<input type="number" min="0" value={draft.min_select} onChange={(e) => setDraft({ ...draft, min_select: Number(e.target.value) })} /></label><label>Maximum<input type="number" min="1" value={draft.max_select} onChange={(e) => setDraft({ ...draft, max_select: Math.max(1, Number(e.target.value)) })} /></label></div><button className="button primary">Créer le groupe</button></form></div>;
+}
+
+function OptionGroupEditor({ initial, onSave, onDelete, onAddValue, onSaveValue, onDeleteValue }: { initial: AdminOptionGroup; onSave: (group: AdminOptionGroup) => Promise<void>; onDelete: (id: string) => Promise<void>; onAddValue: (groupId: string) => Promise<void>; onSaveValue: (value: AdminOptionValue) => Promise<void>; onDeleteValue: (id: string) => Promise<void> }) {
+  const [group, setGroup] = useState(initial);
+  useEffect(() => setGroup(initial), [initial]);
+  return <article className="option-admin-card"><div className="option-admin-head"><div className="form-grid"><label>Nom FR<input value={group.name_fr} onChange={(e) => setGroup({ ...group, name_fr: e.target.value })} /></label><label>Nom EN<input value={group.name_en} onChange={(e) => setGroup({ ...group, name_en: e.target.value })} /></label></div><div className="option-admin-actions"><button type="button" onClick={() => onSave(group)}>Enregistrer</button><button type="button" className="text-danger" onClick={() => onDelete(group.id)}>Supprimer</button></div></div><div className="option-rule-row"><label className="check-label"><input type="checkbox" checked={group.required} onChange={(e) => setGroup({ ...group, required: e.target.checked, min_select: e.target.checked ? Math.max(1, group.min_select) : 0 })} /> Obligatoire</label><label>Min<input type="number" min="0" value={group.min_select} onChange={(e) => setGroup({ ...group, min_select: Number(e.target.value) })} /></label><label>Max<input type="number" min="1" value={group.max_select} onChange={(e) => setGroup({ ...group, max_select: Math.max(1, Number(e.target.value)) })} /></label></div><div className="option-value-list">{group.values.map((value) => <OptionValueEditor key={value.id} initial={value} onSave={onSaveValue} onDelete={onDeleteValue} />)}</div><button type="button" className="option-add-value" onClick={() => onAddValue(group.id)}>+ Ajouter une valeur</button></article>;
+}
+
+function OptionValueEditor({ initial, onSave, onDelete }: { initial: AdminOptionValue; onSave: (value: AdminOptionValue) => Promise<void>; onDelete: (id: string) => Promise<void> }) {
+  const [value, setValue] = useState(initial);
+  useEffect(() => setValue(initial), [initial]);
+  return <div className="option-value-row"><input value={value.label_fr} onChange={(e) => setValue({ ...value, label_fr: e.target.value })} placeholder="Avoine" /><input value={value.label_en} onChange={(e) => setValue({ ...value, label_en: e.target.value })} placeholder="Oat" /><label className="price-inline">+ €<input type="number" step="0.01" min="0" value={value.price_delta} onChange={(e) => setValue({ ...value, price_delta: Number(e.target.value) })} /></label><input className="sort-input" type="number" min="0" value={value.sort_order} onChange={(e) => setValue({ ...value, sort_order: Number(e.target.value) })} /><label className="check-label"><input type="checkbox" checked={value.active} onChange={(e) => setValue({ ...value, active: e.target.checked })} />Actif</label><button type="button" onClick={() => onSave(value)}>Sauver</button><button type="button" className="text-danger" onClick={() => onDelete(value.id)}>×</button></div>;
+}
+
+function SettingsAdmin({ settings, setSettings, supabase, reload }: { settings: Record<string, string>; setSettings: (next: Record<string, string>) => void; supabase: NonNullable<ReturnType<typeof createBrowserSupabase>>; reload: () => Promise<void> }) {
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    const rows = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    await supabase.from("site_settings").upsert(rows);
+    await reload();
+    alert("Réglages enregistrés");
+  }
+  const fields = [
+    ["announcement_fr", "Bannière FR"],
+    ["announcement_en", "Bannière EN"],
+    ["shipping_packaging_weight_g", "Poids emballage d’expédition (g)"],
+    ["phone", "Téléphone"],
+    ["instagram", "Instagram"],
+    ["opening_hours", "Horaires"],
+  ];
+  return <div className="settings-stack">
+    <form className="settings-admin" onSubmit={save}><h2>Réglages généraux</h2><div className="form-grid">{fields.map(([key, label]) => <label key={key}>{label}<input value={settings[key] ?? ""} onChange={(e) => setSettings({ ...settings, [key]: e.target.value })} /></label>)}</div><button className="button primary">Enregistrer les réglages</button></form>
+    <ShippingRatesAdmin supabase={supabase} />
+  </div>;
+}
+
+type ShippingMethodRow = {
+  id: string;
+  name_fr: string;
+  name_en: string;
+  description_fr: string;
+  description_en: string;
+  active: boolean;
+  countries: string[];
+  free_threshold: number | null;
+  sort_order: number;
+};
+
+type ShippingRateRow = {
+  id: string;
+  method_id: string;
+  max_weight_g: number;
+  price: number;
+  sort_order: number;
+};
+
+function ShippingRatesAdmin({ supabase }: { supabase: NonNullable<ReturnType<typeof createBrowserSupabase>> }) {
+  const [methods, setMethods] = useState<ShippingMethodRow[]>([]);
+  const [rates, setRates] = useState<ShippingRateRow[]>([]);
+  const [note, setNote] = useState("");
+
+  async function load() {
+    const [{ data: methodRows, error: methodError }, { data: rateRows, error: rateError }] = await Promise.all([
+      supabase.from("shipping_methods").select("*").order("sort_order"),
+      supabase.from("shipping_rate_bands").select("*").order("method_id").order("max_weight_g"),
+    ]);
+    if (methodError || rateError) return setNote((methodError || rateError)?.message ?? "Chargement impossible.");
+    setMethods((methodRows ?? []) as ShippingMethodRow[]);
+    setRates((rateRows ?? []) as ShippingRateRow[]);
+  }
+
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function saveMethod(method: ShippingMethodRow) {
+    const { error } = await supabase.from("shipping_methods").update({
+      name_fr: method.name_fr,
+      name_en: method.name_en,
+      description_fr: method.description_fr,
+      description_en: method.description_en,
+      active: method.active,
+      countries: method.countries?.length ? method.countries : ["FR"],
+      free_threshold: method.free_threshold == null || Number.isNaN(Number(method.free_threshold)) ? null : Number(method.free_threshold),
+      sort_order: Number(method.sort_order),
+    }).eq("id", method.id);
+    setNote(error ? error.message : "Mode de livraison enregistré ✓");
+    if (!error) await load();
+  }
+
+  async function addMethod() {
+    const id = `shipping-${Date.now()}`;
+    const { error } = await supabase.from("shipping_methods").insert({
+      id,
+      name_fr: "Nouveau mode",
+      name_en: "New shipping method",
+      description_fr: "",
+      description_en: "",
+      active: false,
+      countries: ["FR"],
+      free_threshold: null,
+      sort_order: methods.length + 1,
+    });
+    setNote(error ? error.message : "Mode ajouté ✓");
+    if (!error) await load();
+  }
+
+  async function addRate(methodId: string) {
+    const methodRates = rates.filter((rate) => rate.method_id === methodId);
+    const lastWeight = Math.max(0, ...methodRates.map((rate) => Number(rate.max_weight_g)));
+    const { error } = await supabase.from("shipping_rate_bands").insert({
+      method_id: methodId,
+      max_weight_g: lastWeight ? lastWeight + 1000 : 500,
+      price: 0,
+      sort_order: methodRates.length + 1,
+    });
+    setNote(error ? error.message : "Tranche ajoutée ✓");
+    if (!error) await load();
+  }
+
+  async function saveRate(rate: ShippingRateRow) {
+    const { error } = await supabase.from("shipping_rate_bands").update({
+      max_weight_g: Number(rate.max_weight_g),
+      price: Number(rate.price),
+      sort_order: Number(rate.sort_order),
+    }).eq("id", rate.id);
+    setNote(error ? error.message : "Tarif enregistré ✓");
+    if (!error) await load();
+  }
+
+  async function deleteRate(id: string) {
+    if (!window.confirm("Supprimer cette tranche de poids ?")) return;
+    const { error } = await supabase.from("shipping_rate_bands").delete().eq("id", id);
+    setNote(error ? error.message : "Tarif supprimé ✓");
+    if (!error) await load();
+  }
+
+  return <section className="shipping-admin settings-admin">
+    <div className="section-inline"><div><h2>Livraison & tarifs</h2><p className="muted">Le serveur utilise le poids brut de chaque article + le poids d’emballage, puis choisit automatiquement la première tranche compatible.</p></div><button type="button" onClick={addMethod}>+ Mode</button></div>
+    {note && <p className={note.includes("✓") ? "save-message success" : "save-message"}>{note}</p>}
+    {methods.map((method, methodIndex) => <article className="shipping-admin-card" key={method.id}>
+      <div className="shipping-admin-method-grid">
+        <label>Nom FR<input value={method.name_fr} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, name_fr: e.target.value } : row))} /></label>
+        <label>Nom EN<input value={method.name_en} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, name_en: e.target.value } : row))} /></label>
+        <label>Livraison offerte dès (€)<input type="number" min="0" step="0.01" value={method.free_threshold ?? ""} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, free_threshold: e.target.value === "" ? null : Number(e.target.value) } : row))} /></label>
+        <label>Ordre<input type="number" min="0" value={method.sort_order} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, sort_order: Number(e.target.value) } : row))} /></label>
+        <label className="check-label"><input type="checkbox" checked={method.active} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, active: e.target.checked } : row))} /> Actif</label>
+      </div>
+      <div className="form-grid"><label>Description FR<input value={method.description_fr ?? ""} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, description_fr: e.target.value } : row))} /></label><label>Description EN<input value={method.description_en ?? ""} onChange={(e) => setMethods((current) => current.map((row, i) => i === methodIndex ? { ...row, description_en: e.target.value } : row))} /></label></div>
+      <div className="shipping-admin-actions"><button type="button" onClick={() => saveMethod(method)}>Enregistrer le mode</button><button type="button" onClick={() => addRate(method.id)}>+ Tranche de poids</button></div>
+      <div className="shipping-rate-head"><span>Jusqu’à (g)</span><span>Prix (€)</span><span>Ordre</span><span></span></div>
+      <div className="shipping-rate-list">{rates.filter((rate) => rate.method_id === method.id).map((rate) => <ShippingRateEditor key={rate.id} rate={rate} onChange={(next) => setRates((current) => current.map((row) => row.id === next.id ? next : row))} onSave={saveRate} onDelete={deleteRate} />)}</div>
+    </article>)}
+  </section>;
+}
+
+function ShippingRateEditor({ rate, onChange, onSave, onDelete }: { rate: ShippingRateRow; onChange: (next: ShippingRateRow) => void; onSave: (rate: ShippingRateRow) => Promise<void>; onDelete: (id: string) => Promise<void> }) {
+  return <div className="shipping-rate-row"><input type="number" min="1" value={rate.max_weight_g} onChange={(e) => onChange({ ...rate, max_weight_g: Number(e.target.value) })} /><input type="number" min="0" step="0.01" value={rate.price} onChange={(e) => onChange({ ...rate, price: Number(e.target.value) })} /><input type="number" min="0" value={rate.sort_order} onChange={(e) => onChange({ ...rate, sort_order: Number(e.target.value) })} /><div><button type="button" onClick={() => onSave(rate)}>Sauver</button><button type="button" className="text-danger" onClick={() => onDelete(rate.id)}>×</button></div></div>;
+}
+
