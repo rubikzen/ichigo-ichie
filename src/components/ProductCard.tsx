@@ -9,7 +9,12 @@ import { useCart } from "./CartProvider";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }).format(value);
 
-const packagingKey = (variant: Variant) => variant.packaging ?? "other";
+type PackagingKey = "can" | "bag" | "other";
+
+const packagingKey = (variant: Variant): PackagingKey => {
+  if (variant.packaging === "can" || variant.packaging === "bag") return variant.packaging;
+  return "other";
+};
 const packagingLabel = (packaging: Variant["packaging"], language: "fr" | "en") => {
   if (packaging === "can") return language === "fr" ? "Boîte" : "Tin";
   if (packaging === "bag") return language === "fr" ? "Sachet" : "Pouch";
@@ -44,7 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
-  const [selectedPackaging, setSelectedPackaging] = useState(firstAvailable ? packagingKey(firstAvailable) : "other");
+  const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
   const [imageIndex, setImageIndex] = useState(0);
   const [selected, setSelected] = useState<Record<string, string[]>>(() => Object.fromEntries(product.option_groups.map((group) => {
     const minimum = group.required ? Math.max(1, group.min_select) : Math.max(0, group.min_select);
@@ -95,8 +100,8 @@ export function ProductCard({ product }: { product: Product }) {
   const variant = selectableVariants.find((item) => item.id === variantId) ?? firstAvailable;
 
   const packageOptions = useMemo(() => {
-    const seen = new Set<string>();
-    return selectableVariants.reduce<Array<{ key: string; packaging: Variant["packaging"]; available: boolean }>>((rows, item) => {
+    const seen = new Set<PackagingKey>();
+    return selectableVariants.reduce<Array<{ key: PackagingKey; packaging: Variant["packaging"]; available: boolean }>>((rows, item) => {
       const key = packagingKey(item);
       if (seen.has(key)) return rows;
       seen.add(key);
@@ -149,7 +154,7 @@ export function ProductCard({ product }: { product: Product }) {
     });
   };
 
-  const selectPackaging = (key: string) => {
+  const selectPackaging = (key: PackagingKey) => {
     setSelectedPackaging(key);
     const next = selectableVariants.find((item) => packagingKey(item) === key && item.weight === variant?.weight && item.stock > 0)
       ?? selectableVariants.find((item) => packagingKey(item) === key && item.stock > 0)

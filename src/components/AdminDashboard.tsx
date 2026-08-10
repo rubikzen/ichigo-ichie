@@ -672,7 +672,7 @@ function SettingsAdmin({ settings, setSettings, supabase, reload, active, onDirt
   const [savedFlash, setSavedFlash] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
   const savedSettingsRef = useRef<Record<string, string>>({ ...settings });
-  const savedFlashTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const savedFlashTimerRef = useRef<number | null>(null);
   const [settingsPanel, setSettingsPanel] = useState("identity");
   const [settingsMenuSearch, setSettingsMenuSearch] = useState("");
 

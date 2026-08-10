@@ -94,10 +94,6 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
     <div className={`embedded-express-v242 ${expressVisible ? "is-visible" : ""}`} aria-hidden={!expressVisible}>
       <p>{language === "fr" ? "Paiement express" : "Express payment"}</p>
       <ExpressCheckoutElement
-        options={{
-          buttonHeight: 52,
-          layout: { maxColumns: 2, maxRows: 2, overflow: "auto" },
-        }}
         onReady={(event) => setExpressVisible(Boolean(event.availablePaymentMethods))}
         onConfirm={confirmExpressPayment}
       />

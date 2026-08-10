@@ -229,7 +229,7 @@ function CartItemEditor({ item, product, allItems, language, onClose, onSave }: 
   });
   const canSave = requirementsOk && !stockConflict && (maxStock === null || maxStock > 0);
 
-  const selectPackaging = (key: string) => {
+  const selectPackaging = (key: "can" | "bag" | "other") => {
     setPackaging(key);
     const next = selectableVariants.find((row) => packagingKey(row) === key && row.weight === variant?.weight && row.stock > 0)
       ?? selectableVariants.find((row) => packagingKey(row) === key && row.stock > 0)
