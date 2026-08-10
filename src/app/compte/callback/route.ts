@@ -1,10 +1,13 @@
+import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
-  const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type") as EmailOtpType | null;
+
   const errorDescription =
     requestUrl.searchParams.get("error_description") ||
     requestUrl.searchParams.get("error");
@@ -16,7 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(accountUrl);
   }
 
-  if (!code) {
+  if (!tokenHash || !type) {
     accountUrl.searchParams.set(
       "auth_error",
       "Lien de connexion invalide ou incomplet."
@@ -34,10 +37,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(accountUrl);
   }
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type,
+  });
 
   if (error) {
-    console.error("Supabase auth callback error:", error);
+    console.error("Supabase verifyOtp error:", error);
 
     accountUrl.searchParams.set(
       "auth_error",
