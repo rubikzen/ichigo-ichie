@@ -4216,3 +4216,59 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
       );
   }
 }
+/* Admin statistics compact v247 */
+
+.admin-stats-shell-v247 {
+  margin-top: 18px;
+  border: 1px solid var(--line, #dde3da);
+  border-radius: 22px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.admin-stats-toggle-v247 {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 22px;
+  border: 0;
+  background: #fff;
+  color: var(--ink, #26362d);
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-stats-toggle-v247 > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-stats-toggle-v247 strong {
+  font-size: 17px;
+}
+
+.admin-stats-toggle-v247 small {
+  color: #7a847d;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.admin-stats-toggle-icon-v247 {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--soft, #f5f2e8);
+  font-size: 22px;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .admin-stats-toggle-v247 {
+    padding: 16px;
+  }
+}

@@ -88,6 +88,7 @@ const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [quickSavingId, setQuickSavingId] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -603,7 +604,38 @@ const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
     {tab === "orders" && <div className="orders-admin orders-v214 orders-v227">
       <div className="section-inline orders-heading"><div><h2>Commandes</h2><p className="muted">Commandes de la Boutique en ligne : paiement, préparation, retrait ou expédition.</p></div><div className="orders-heading-actions"><button type="button" className={orderSoundEnabled ? "sound-toggle active" : "sound-toggle"} onClick={toggleOrderSound}>{orderSoundEnabled ? "🔔 Son activé" : "🔕 Activer le son"}</button><button onClick={loadOrders}>Actualiser</button></div></div>
       {orderActionMessage && <p className={orderActionMessage.includes("✓") ? "save-message success" : "save-message"}>{orderActionMessage}</p>}
-      <OrderStatistics supabase={supabase} refreshKey={orders.map((order) => `${order.id}:${order.status}:${order.payment_status}:${order.total}`).join("|")} />
+      <div className="admin-stats-shell-v247">
+  <button
+    type="button"
+    className="admin-stats-toggle-v247"
+    onClick={() => setStatsExpanded((current) => !current)}
+  >
+    <span>
+      <strong>Pilotage Boutique</strong>
+      <small>
+        {statsExpanded
+          ? "Masquer les statistiques"
+          : "Afficher les statistiques détaillées"}
+      </small>
+    </span>
+
+    <span className="admin-stats-toggle-icon-v247">
+      {statsExpanded ? "−" : "+"}
+    </span>
+  </button>
+
+  {statsExpanded && (
+    <OrderStatistics
+      supabase={supabase}
+      refreshKey={orders
+        .map(
+          (order) =>
+            `${order.id}:${order.status}:${order.payment_status}:${order.total}`
+        )
+        .join("|")}
+    />
+  )}
+</div>
       <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
       <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
       <div className="order-environment-switch">
