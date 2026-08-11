@@ -32,12 +32,15 @@ export async function GET(request: NextRequest) {
   }
 
   let authError: Error | null = null;
+  let isRecovery = false;
 
   /*
-   * Flow 1:
-   * Email template avec token_hash
+   * Flow token_hash :
+   * signup / magic link / recovery
    */
   if (tokenHash && type) {
+    isRecovery = type === "recovery";
+
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as EmailOtpType,
@@ -47,14 +50,21 @@ export async function GET(request: NextRequest) {
   }
 
   /*
-   * Flow 2:
-   * PKCE classique avec ?code=
+   * Flow PKCE classique
    */
   else if (code) {
     const { error } =
       await supabase.auth.exchangeCodeForSession(code);
 
     authError = error;
+
+    /*
+     * Pour un reset password utilisant ?code=,
+     * on conserve l'information via ?next=reset
+     */
+    isRecovery =
+      requestUrl.searchParams.get("next") === "reset" ||
+      requestUrl.searchParams.get("recovery") === "1";
   }
 
   /*
@@ -70,10 +80,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (authError) {
-    console.error(
-      "Supabase auth callback error:",
-      authError
-    );
+    console.error("Supabase auth callback error:", authError);
 
     accountUrl.searchParams.set(
       "auth_error",
@@ -84,7 +91,7 @@ export async function GET(request: NextRequest) {
   }
 
   /*
-   * Rattache les anciennes commandes à l'utilisateur
+   * Rattache les anciennes commandes
    */
   const { error: claimError } = await supabase.rpc(
     "claim_customer_orders"
@@ -95,6 +102,18 @@ export async function GET(request: NextRequest) {
       "claim_customer_orders error:",
       claimError
     );
+  }
+
+  /*
+   * Reset password :
+   * session créée, puis affichage du formulaire
+   * permettant de choisir le nouveau mot de passe.
+   */
+  if (isRecovery) {
+    const resetUrl = new URL("/compte", requestUrl.origin);
+    resetUrl.searchParams.set("reset_password", "1");
+
+    return NextResponse.redirect(resetUrl);
   }
 
   return NextResponse.redirect(accountUrl);

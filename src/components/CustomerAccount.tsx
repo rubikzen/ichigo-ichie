@@ -58,8 +58,14 @@ export function CustomerAccount() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
-  const [mailSent, setMailSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
+  const [authSuccess, setAuthSuccess] = useState("");
   const [authError, setAuthError] = useState("");
+  const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [tab, setTab] = useState<Tab>("orders");
   const [profile, setProfile] = useState<Profile>({ first_name: "", last_name: "", phone: "" });
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -122,33 +128,205 @@ export function CustomerAccount() {
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset_password") === "1") setResetPasswordMode(true);
+
+    const callbackError = params.get("auth_error");
+    if (callbackError) setAuthError(callbackError);
+
     let active = true;
+
     supabase.auth.getUser().then(async ({ data }) => {
       if (!active) return;
       setUser(data.user);
       if (data.user) await loadAccount(data.user);
       if (active) setLoading(false);
     });
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+
+      if (event === "PASSWORD_RECOVERY") {
+        setResetPasswordMode(true);
+        setAuthError("");
+        setAuthSuccess("");
+      }
+
       setUser(session?.user ?? null);
       if (session?.user) void loadAccount(session.user);
     });
-    return () => { active = false; authListener.subscription.unsubscribe(); };
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
   }, [supabase, loadAccount]);
 
-  async function sendMagicLink(event: FormEvent) {
+  async function loginWithPassword(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase || !email.trim() || !password) return;
+
+    setAuthError("");
+    setAuthSuccess("");
+    setSaving(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setAuthError(
+        language === "fr"
+          ? "E-mail ou mot de passe incorrect."
+          : "Incorrect email or password."
+      );
+    }
+  }
+
+  async function registerWithPassword(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase || !email.trim() || !password) return;
+
+    setAuthError("");
+    setAuthSuccess("");
+
+    if (password.length < 8) {
+      setAuthError(
+        language === "fr"
+          ? "Le mot de passe doit contenir au moins 8 caractères."
+          : "Password must contain at least 8 characters."
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setAuthError(
+        language === "fr"
+          ? "Les mots de passe ne correspondent pas."
+          : "Passwords do not match."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    const redirectTo = `${window.location.origin}/compte/callback`;
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+      },
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    if (data.session) {
+      setAuthSuccess(
+        language === "fr"
+          ? "Votre compte a été créé avec succès."
+          : "Your account has been created successfully."
+      );
+      return;
+    }
+
+    setAuthSuccess(
+      language === "fr"
+        ? "Compte créé. Consultez votre boîte mail pour confirmer votre adresse e-mail."
+        : "Account created. Check your inbox to confirm your email address."
+    );
+  }
+
+  async function resetPassword(event: FormEvent) {
     event.preventDefault();
     if (!supabase || !email.trim()) return;
-    setAuthError(""); setMailSent(false); setSaving(true);
-    const redirectTo = `${window.location.origin}/compte/callback`;
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
-    });
+
+    setAuthError("");
+    setAuthSuccess("");
+    setSaving(true);
+
+    const redirectTo = `${window.location.origin}/compte/callback?next=reset`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      { redirectTo }
+    );
+
     setSaving(false);
-    if (error) return setAuthError(error.message);
-    setMailSent(true);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    setAuthSuccess(
+      language === "fr"
+        ? "Un lien de réinitialisation a été envoyé à votre adresse e-mail."
+        : "A password reset link has been sent to your email address."
+    );
+  }
+
+  async function updateRecoveredPassword(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase || !user) return;
+
+    setAuthError("");
+    setAuthSuccess("");
+
+    if (newPassword.length < 8) {
+      setAuthError(
+        language === "fr"
+          ? "Le nouveau mot de passe doit contenir au moins 8 caractères."
+          : "The new password must contain at least 8 characters."
+      );
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthError(
+        language === "fr"
+          ? "Les mots de passe ne correspondent pas."
+          : "Passwords do not match."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setResetPasswordMode(false);
+    setNotice(
+      language === "fr"
+        ? "Votre mot de passe a été mis à jour ✓"
+        : "Your password has been updated ✓"
+    );
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("reset_password");
+    url.searchParams.delete("auth_error");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   }
 
   async function saveProfile(event: FormEvent) {
@@ -212,18 +390,252 @@ export function CustomerAccount() {
   if (!supabase) return <section className="customer-account-page-v243"><div className="customer-auth-card-v243"><h1>Mon compte</h1><p>Supabase n’est pas configuré.</p></div></section>;
   if (loading) return <section className="customer-account-page-v243"><div className="customer-account-loading-v243">{language === "fr" ? "Chargement de votre espace…" : "Loading your account…"}</div></section>;
 
+  if (resetPasswordMode && user) return <section className="customer-account-page-v243 customer-auth-page-v243">
+    <div className="customer-auth-card-v243">
+      <p className="eyebrow">ICHIGO ICHIE</p>
+      <h1>{language === "fr" ? "Nouveau mot de passe" : "New password"}</h1>
+      <p>
+        {language === "fr"
+          ? "Choisissez un nouveau mot de passe pour votre espace client."
+          : "Choose a new password for your customer account."}
+      </p>
+
+      <form onSubmit={updateRecoveredPassword} className="customer-auth-form-v243">
+        <label>
+          {language === "fr" ? "Nouveau mot de passe" : "New password"}
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+
+        <label>
+          {language === "fr" ? "Confirmer le mot de passe" : "Confirm password"}
+          <input
+            type="password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+
+        <small>
+          {language === "fr"
+            ? "8 caractères minimum."
+            : "Minimum 8 characters."}
+        </small>
+
+        <button className="button primary full" disabled={saving}>
+          {saving
+            ? "…"
+            : (language === "fr" ? "Enregistrer le nouveau mot de passe" : "Save new password")}
+        </button>
+      </form>
+
+      {authError && <p className="form-error">{authError}</p>}
+    </div>
+  </section>;
+
   if (!user) return <section className="customer-account-page-v243 customer-auth-page-v243">
     <div className="customer-auth-card-v243">
       <p className="eyebrow">ICHIGO ICHIE</p>
-      <h1>{language === "fr" ? "Mon espace client" : "My account"}</h1>
-      <p>{language === "fr" ? "Retrouvez vos commandes, vos adresses et le suivi de vos colis." : "Find your orders, addresses and parcel tracking in one place."}</p>
-      {mailSent ? <div className="customer-magic-sent-v243"><span>✓</span><div><strong>{language === "fr" ? "Consultez votre boîte mail" : "Check your inbox"}</strong><p>{language === "fr" ? `Nous avons envoyé un lien de connexion sécurisé à ${email}.` : `We sent a secure sign-in link to ${email}.`}</p></div></div> : <form onSubmit={sendMagicLink} className="customer-auth-form-v243">
-        <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="vous@exemple.fr" required /></label>
-        <button className="button primary full" disabled={saving}>{saving ? "…" : (language === "fr" ? "Recevoir mon lien sécurisé" : "Send me a secure link")}</button>
-        <small>{language === "fr" ? "Pas de mot de passe à retenir. Si vous n’avez pas encore de compte, il sera créé avec cette adresse e-mail vérifiée." : "No password to remember. If you do not have an account yet, one will be created with this verified email."}</small>
-      </form>}
+
+      <h1>
+        {authMode === "login"
+          ? (language === "fr" ? "Mon espace client" : "My account")
+          : authMode === "register"
+            ? (language === "fr" ? "Créer mon compte" : "Create my account")
+            : (language === "fr" ? "Mot de passe oublié" : "Forgot password")}
+      </h1>
+
+      <p>
+        {authMode === "login"
+          ? (language === "fr"
+              ? "Connectez-vous pour retrouver vos commandes, vos adresses et le suivi de vos colis."
+              : "Sign in to find your orders, addresses and parcel tracking.")
+          : authMode === "register"
+            ? (language === "fr"
+                ? "Créez votre espace client Ichigo Ichie."
+                : "Create your Ichigo Ichie customer account.")
+            : (language === "fr"
+                ? "Indiquez votre adresse e-mail pour réinitialiser votre mot de passe."
+                : "Enter your email address to reset your password.")}
+      </p>
+
+      {authMode === "login" && (
+        <form onSubmit={loginWithPassword} className="customer-auth-form-v243">
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="vous@exemple.fr"
+              required
+            />
+          </label>
+
+          <label>
+            {language === "fr" ? "Mot de passe" : "Password"}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          <button className="button primary full" disabled={saving}>
+            {saving ? "…" : (language === "fr" ? "Se connecter" : "Sign in")}
+          </button>
+
+          <button
+            type="button"
+            className="customer-auth-text-button-v246"
+            onClick={() => {
+              setAuthMode("forgot");
+              setAuthError("");
+              setAuthSuccess("");
+            }}
+          >
+            {language === "fr" ? "Mot de passe oublié ?" : "Forgot password?"}
+          </button>
+
+          <div className="customer-auth-divider-v246">
+            <span>{language === "fr" ? "Nouveau chez Ichigo Ichie ?" : "New to Ichigo Ichie?"}</span>
+          </div>
+
+          <button
+            type="button"
+            className="button ghost full"
+            onClick={() => {
+              setAuthMode("register");
+              setAuthError("");
+              setAuthSuccess("");
+              setPassword("");
+            }}
+          >
+            {language === "fr" ? "Créer un compte" : "Create an account"}
+          </button>
+        </form>
+      )}
+
+      {authMode === "register" && (
+        <form onSubmit={registerWithPassword} className="customer-auth-form-v243">
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="vous@exemple.fr"
+              required
+            />
+          </label>
+
+          <label>
+            {language === "fr" ? "Mot de passe" : "Password"}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
+
+          <label>
+            {language === "fr" ? "Confirmer le mot de passe" : "Confirm password"}
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
+
+          <small>
+            {language === "fr"
+              ? "8 caractères minimum."
+              : "Minimum 8 characters."}
+          </small>
+
+          <button className="button primary full" disabled={saving}>
+            {saving ? "…" : (language === "fr" ? "Créer mon compte" : "Create my account")}
+          </button>
+
+          <button
+            type="button"
+            className="customer-auth-text-button-v246"
+            onClick={() => {
+              setAuthMode("login");
+              setAuthError("");
+              setAuthSuccess("");
+              setPassword("");
+              setConfirmPassword("");
+            }}
+          >
+            ← {language === "fr" ? "Déjà un compte ? Se connecter" : "Already have an account? Sign in"}
+          </button>
+        </form>
+      )}
+
+      {authMode === "forgot" && (
+        <form onSubmit={resetPassword} className="customer-auth-form-v243">
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="vous@exemple.fr"
+              required
+            />
+          </label>
+
+          <button className="button primary full" disabled={saving}>
+            {saving ? "…" : (language === "fr" ? "Réinitialiser mon mot de passe" : "Reset password")}
+          </button>
+
+          <button
+            type="button"
+            className="customer-auth-text-button-v246"
+            onClick={() => {
+              setAuthMode("login");
+              setAuthError("");
+              setAuthSuccess("");
+            }}
+          >
+            ← {language === "fr" ? "Retour à la connexion" : "Back to sign in"}
+          </button>
+        </form>
+      )}
+
+      {authSuccess && (
+        <div className="customer-auth-success-v246">
+          <span>✓</span>
+          <p>{authSuccess}</p>
+        </div>
+      )}
+
       {authError && <p className="form-error">{authError}</p>}
-      <Link href="/#boutique" className="customer-back-link-v243">← {language === "fr" ? "Retour à la boutique" : "Back to shop"}</Link>
+
+      <Link href="/#boutique" className="customer-back-link-v243">
+        ← {language === "fr" ? "Retour à la boutique" : "Back to shop"}
+      </Link>
     </div>
   </section>;
 
