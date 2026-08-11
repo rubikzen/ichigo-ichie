@@ -4272,3 +4272,49 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     padding: 16px;
   }
 }
+/* Compact admin order cards v248 */
+
+.order-compact-summary-v248 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line, #dde3da);
+}
+
+.order-compact-summary-v248 > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-compact-summary-v248 strong {
+  color: var(--ink, #26362d);
+  font-size: 14px;
+}
+
+.order-compact-summary-v248 span {
+  color: #748078;
+  font-size: 12px;
+}
+
+.order-details-toggle-v248 {
+  flex: 0 0 auto;
+}
+
+.order-card .order-body {
+  border-top: 1px solid var(--line, #dde3da);
+}
+
+@media (max-width: 720px) {
+  .order-compact-summary-v248 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .order-details-toggle-v248 {
+    width: 100%;
+  }
+}

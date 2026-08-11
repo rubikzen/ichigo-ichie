@@ -674,9 +674,44 @@ const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
         const paymentBlocked = order.payment_method === "online" && order.payment_status !== "paid";
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
         const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
-        return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}>
+        return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
+  <div>
+    <strong>
+      {order.customer_first_name} {order.customer_last_name}
+    </strong>
+
+    <span>
+      {order.order_type === "shipping"
+        ? `${order.shipping_city || "Livraison"} · ${
+            order.order_items?.reduce(
+              (sum, item) => sum + Number(item.quantity || 0),
+              0
+            ) || 0
+          } article(s) · ${order.package_weight_g || 0} g`
+        : order.pickup_time
+          ? `Retrait · ${new Date(order.pickup_time).toLocaleString("fr-FR", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}`
+          : "Retrait boutique"}
+    </span>
+  </div>
+
+  <button
+    type="button"
+    className="button ghost small order-details-toggle-v248"
+    onClick={() =>
+      setExpandedOrderId((current) =>
+        current === order.id ? null : order.id
+      )
+    }
+  >
+    {expandedOrderId === order.id ? "Fermer ↑" : "Détails ↓"}
+  </button>
+</div>
           <div className="order-card-top"><div><span className={`order-status-dot ${order.status}`}></span><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><span className="channel-pill shop">Boutique</span>{order.environment && <span className={`order-env-pill-v246 ${order.environment}`}>{order.environment === "live" ? "LIVE" : order.environment === "test" ? "TEST" : "LEGACY"}</span>}</div><div><span className={`payment-pill ${order.payment_status}`}>{paymentLabel}</span><strong>{Number(order.total).toFixed(2)} €</strong></div></div>
-          <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
+          {expandedOrderId === order.id && (
+  <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
           {order.order_type === "shipping" && <><div className="order-shipping-box"><strong>{order.shipping_method_name || "Livraison"}</strong><span>{[order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(), order.shipping_country === "FR" ? "France" : order.shipping_country].filter(Boolean).join(" · ")}</span><small>Frais : {Number(order.shipping_fee || 0).toFixed(2)} € · Poids colis : {Number(order.package_weight_g || 0)} g</small></div><div className="tracking-admin-v227"><strong>Suivi d’expédition</strong><div className="tracking-admin-grid-v227"><label>Transporteur<input value={order.tracking_carrier || ""} placeholder="Colissimo" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_carrier: e.target.value } : item))} /></label><label>N° de suivi<input value={order.tracking_number || ""} placeholder="XXXXXXXXXXXXX" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_number: e.target.value } : item))} /></label><label className="tracking-url-field-v227">Lien de suivi<input value={order.tracking_url || ""} placeholder="https://…" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_url: e.target.value } : item))} /></label><button type="button" className="button ghost small" disabled={order.status === "refunded"} onClick={() => updateOrder(order.id, order.status)}>Enregistrer le suivi</button></div></div></>}
           <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
           <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
@@ -689,8 +724,10 @@ const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
             {order.payment_status === "refunded" && !order.invoices?.some((doc) => doc.document_type === "credit_note") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "credit_note")}>Créer l’avoir</button>}
             {order.public_token && order.invoices?.some((doc) => doc.document_type === "credit_note") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}&type=credit_note`}>Avoir PDF ↓</a>}
             {order.public_token && <a className="button ghost small" href={`/commande/${order.public_token}`} target="_blank">Vue client ↗</a>}
-          </aside></div>
-        </article>;
+          </aside>
+</div>
+)}
+</article>;
       })}</div> : <div className="empty-state">Aucune commande Boutique dans cette vue.</div>}
     </div>}
     {tab === "promos" && <PromotionsAdmin supabase={supabase} />}
