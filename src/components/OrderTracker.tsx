@@ -69,20 +69,13 @@ export function OrderTracker({ token }: { token: string }) {
   const paymentConfirmed = order?.payment_status === "paid" || order?.payment_status === "refunded";
 
   useEffect(() => {
-    if (paymentReturn !== "success" || !paymentConfirmed) return;
+  if (paymentReturn !== "success" || !paymentConfirmed) return;
 
-    if (!cartClearedAfterPayment.current) {
-      cartClearedAfterPayment.current = true;
-      clear();
-    }
-
-    // Keep the confirmation visible briefly, then return the customer to the shop.
-    const timer = window.setTimeout(() => {
-      window.location.replace("/#boutique");
-    }, 3500);
-
-    return () => window.clearTimeout(timer);
-  }, [paymentReturn, paymentConfirmed, clear]);
+  if (!cartClearedAfterPayment.current) {
+    cartClearedAfterPayment.current = true;
+    clear();
+  }
+}, [paymentReturn, paymentConfirmed, clear]);
 
   useEffect(() => {
     let active = true;
@@ -200,8 +193,16 @@ function paymentTitle(order: PublicOrder, language: "fr" | "en") {
 
 function paymentDescription(order: PublicOrder, language: "fr" | "en", paymentReturn: "success" | "cancelled" | "") {
   if (order.payment_status === "paid") return paymentReturn === "success"
-    ? (language === "fr" ? "Paiement confirmé. Retour à la boutique dans quelques secondes…" : "Payment confirmed. Returning to the shop in a few seconds…")
-    : (language === "fr" ? "Stripe a confirmé le règlement de cette commande." : "Stripe confirmed payment for this order.");
+  ? (
+      language === "fr"
+        ? "Paiement confirmé. Votre commande est bien enregistrée et nous vous informerons de son avancement."
+        : "Payment confirmed. Your order has been received and we will keep you updated on its progress."
+    )
+  : (
+      language === "fr"
+        ? "Paiement confirmé. Votre commande est en cours de traitement."
+        : "Payment confirmed. Your order is being processed."
+    );
   if (order.payment_status === "refunded") return language === "fr" ? "Le remboursement a été confirmé." : "The refund has been confirmed.";
   if (order.payment_status === "refund_pending") return language === "fr" ? "La demande de remboursement a été transmise à Stripe." : "The refund request was sent to Stripe.";
   if (order.payment_status === "refund_failed") return language === "fr" ? "Le remboursement nécessite une vérification par la boutique." : "The refund needs to be reviewed by the shop.";
@@ -212,11 +213,50 @@ function paymentDescription(order: PublicOrder, language: "fr" | "en", paymentRe
   return language === "fr" ? "La page s’actualise automatiquement dès que Stripe confirme le paiement." : "This page updates automatically as soon as Stripe confirms the payment.";
 }
 
-function statusLabel(status: PublicOrder["status"] | (typeof steps)[number], language: "fr" | "en", type: "pickup" | "shipping") {
-  const pickupFr: Record<string, string> = { pending: "Nouvelle", preparing: "En préparation", ready: "Prête", completed: "Terminée", cancelled: "Annulée", refunded: "Remboursée" };
-  const pickupEn: Record<string, string> = { pending: "Received", preparing: "Preparing", ready: "Ready", completed: "Completed", cancelled: "Cancelled", refunded: "Refunded" };
-  const shippingFr: Record<string, string> = { pending: "Reçue", preparing: "Préparation colis", ready: "Prête à expédier", completed: "Expédiée", cancelled: "Annulée", refunded: "Remboursée" };
-  const shippingEn: Record<string, string> = { pending: "Received", preparing: "Packing", ready: "Ready to ship", completed: "Shipped", cancelled: "Cancelled", refunded: "Refunded" };
-  if (type === "shipping") return (language === "fr" ? shippingFr : shippingEn)[status] ?? status;
+function statusLabel(
+  status: PublicOrder["status"] | (typeof steps)[number],
+  language: "fr" | "en",
+  type: "pickup" | "shipping"
+) {
+  const pickupFr: Record<string, string> = {
+    pending: "Commande confirmée",
+    preparing: "En préparation",
+    ready: "Prête à retirer",
+    completed: "Retirée",
+    cancelled: "Annulée",
+    refunded: "Remboursée",
+  };
+
+  const pickupEn: Record<string, string> = {
+    pending: "Order confirmed",
+    preparing: "Preparing",
+    ready: "Ready for pickup",
+    completed: "Collected",
+    cancelled: "Cancelled",
+    refunded: "Refunded",
+  };
+
+  const shippingFr: Record<string, string> = {
+    pending: "Commande confirmée",
+    preparing: "En préparation",
+    ready: "Prête à expédier",
+    completed: "Expédiée",
+    cancelled: "Annulée",
+    refunded: "Remboursée",
+  };
+
+  const shippingEn: Record<string, string> = {
+    pending: "Order confirmed",
+    preparing: "Preparing",
+    ready: "Ready to ship",
+    completed: "Shipped",
+    cancelled: "Cancelled",
+    refunded: "Refunded",
+  };
+
+  if (type === "shipping") {
+    return (language === "fr" ? shippingFr : shippingEn)[status] ?? status;
+  }
+
   return (language === "fr" ? pickupFr : pickupEn)[status] ?? status;
 }
