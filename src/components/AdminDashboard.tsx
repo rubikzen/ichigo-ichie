@@ -69,8 +69,11 @@ export function AdminDashboard() {
   const [contactMessages, setContactMessages] = useState<ContactMessageRow[]>([]);
   const [contactFilter, setContactFilter] = useState<"new" | "all" | "archived">("new");
   const [contactSearch, setContactSearch] = useState("");
-  const [orderFilter, setOrderFilter] = useState("active");
-  const [orderSearch, setOrderSearch] = useState("");
+ const [orderFilter, setOrderFilter] = useState("active");
+const [orderEnvironmentFilter, setOrderEnvironmentFilter] =
+  useState<"live" | "test" | "all">("live");
+const [orderSearch, setOrderSearch] = useState("");
+const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
   const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
   const orderSoundEnabledRef = useRef(false);
@@ -437,11 +440,28 @@ export function AdminDashboard() {
   };
   const search = orderSearch.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
-    const matchesFilter = orderFilter === "all" ? true : orderFilter === "active" ? ["pending", "preparing", "ready"].includes(order.status) : order.status === orderFilter;
-    const haystack = `${order.order_number} ${order.customer_first_name} ${order.customer_last_name} ${order.customer_phone} ${order.customer_email} ${order.shipping_city ?? ""}`.toLowerCase();
-    return orderMatchesZone(order) && matchesFilter && (!search || haystack.includes(search));
-  });
+  const matchesFilter =
+    orderFilter === "all"
+      ? true
+      : orderFilter === "active"
+        ? ["pending", "preparing", "ready"].includes(order.status)
+        : order.status === orderFilter;
 
+  const matchesEnvironment =
+    orderEnvironmentFilter === "all"
+      ? true
+      : order.environment === orderEnvironmentFilter;
+
+  const haystack =
+    `${order.order_number} ${order.customer_first_name} ${order.customer_last_name} ${order.customer_phone} ${order.customer_email} ${order.shipping_city ?? ""}`.toLowerCase();
+
+  return (
+    orderMatchesZone(order) &&
+    matchesFilter &&
+    matchesEnvironment &&
+    (!search || haystack.includes(search))
+  );
+});
   const contactNeedle = contactSearch.trim().toLowerCase();
   const filteredContactMessages = contactMessages.filter((item) => {
     const matchesStatus = contactFilter === "all" ? item.status !== "archived" : item.status === contactFilter;
@@ -586,6 +606,37 @@ export function AdminDashboard() {
       <OrderStatistics supabase={supabase} refreshKey={orders.map((order) => `${order.id}:${order.status}:${order.payment_status}:${order.total}`).join("|")} />
       <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
       <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
+      <div className="order-environment-switch">
+  <button
+    type="button"
+    className={orderEnvironmentFilter === "live" ? "active live" : ""}
+    onClick={() => setOrderEnvironmentFilter("live")}
+  >
+    LIVE
+    <strong>
+      {zoneOrders.filter((order) => order.environment === "live").length}
+    </strong>
+  </button>
+
+  <button
+    type="button"
+    className={orderEnvironmentFilter === "test" ? "active test" : ""}
+    onClick={() => setOrderEnvironmentFilter("test")}
+  >
+    TEST
+    <strong>
+      {zoneOrders.filter((order) => order.environment === "test").length}
+    </strong>
+  </button>
+
+  <button
+    type="button"
+    className={orderEnvironmentFilter === "all" ? "active" : ""}
+    onClick={() => setOrderEnvironmentFilter("all")}
+  >
+    Toutes
+  </button>
+</div>
       <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["completed","Terminées / expédiées"],["cancelled","Annulées"],["refunded","Remboursées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone, ville…" /></div>
       {filteredOrders.length ? <div className="order-grid">{filteredOrders.map((order) => {
         const paymentBlocked = order.payment_method === "online" && order.payment_status !== "paid";
