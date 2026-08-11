@@ -5474,3 +5474,486 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     padding-bottom: 30px;
   }
 }
+/* =========================================================
+   CUSTOMER ORDER TRACKING UX v256
+   ========================================================= */
+
+.tracking-page {
+  width: 100%;
+  padding: clamp(28px, 5vw, 70px) 16px 100px;
+}
+
+.tracking-card {
+  width: min(820px, 100%);
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid var(--line, #dde3da);
+  border-radius: 30px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(30, 48, 37, .07);
+}
+
+/* =====================================================
+   Header
+   ===================================================== */
+
+.tracking-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line, #dde3da);
+}
+
+.tracking-head .eyebrow {
+  margin: 0 0 8px;
+}
+
+.tracking-head h1 {
+  margin: 0 0 10px;
+  font-size: clamp(34px, 6vw, 54px);
+  line-height: 1.02;
+}
+
+.tracking-head > div:first-child > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tracking-status {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #edf3e9;
+  color: var(--moss-dark, #294237);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tracking-status.cancelled,
+.tracking-status.refunded {
+  background: #f5efec;
+  color: #98544b;
+}
+
+
+/* =====================================================
+   Payment banner
+   ===================================================== */
+
+.payment-tracking-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+
+  margin-top: 22px;
+  padding: 16px;
+
+  border: 1px solid #dce7d7;
+  border-radius: 18px;
+  background: #f5f9f2;
+}
+
+.payment-tracking-icon {
+  display: grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+  background: var(--moss-dark, #294237);
+  color: #fff;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.payment-tracking-banner > div:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.payment-tracking-banner strong {
+  font-size: 14px;
+}
+
+.payment-tracking-banner small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.payment-tracking-banner.failed,
+.payment-tracking-banner.expired,
+.payment-tracking-banner.refund_failed {
+  border-color: #ebc8c2;
+  background: #fff5f3;
+}
+
+.payment-tracking-banner.failed .payment-tracking-icon,
+.payment-tracking-banner.expired .payment-tracking-icon,
+.payment-tracking-banner.refund_failed .payment-tracking-icon {
+  background: #9b4d43;
+}
+
+
+/* =====================================================
+   Timeline
+   ===================================================== */
+
+.tracking-timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 30px 0;
+}
+
+.tracking-timeline::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #e1e5de;
+}
+
+.tracking-step {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+
+  text-align: center;
+}
+
+.tracking-step > span {
+  display: grid;
+  place-items: center;
+
+  width: 36px;
+  height: 36px;
+
+  border: 2px solid #d9ded6;
+  border-radius: 50%;
+
+  background: #fff;
+  color: #969d96;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tracking-step > strong {
+  max-width: 130px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #8a928b;
+}
+
+.tracking-step.done > span {
+  border-color: var(--moss-dark, #294237);
+  background: var(--moss-dark, #294237);
+  color: #fff;
+}
+
+.tracking-step.done > strong {
+  color: var(--ink, #26362d);
+}
+
+.tracking-step.current > span {
+  box-shadow: 0 0 0 6px rgba(72, 106, 75, .12);
+}
+
+.tracking-step.current > strong {
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   Livraison / retrait
+   ===================================================== */
+
+.tracking-pickup {
+  display: grid;
+  gap: 4px;
+
+  margin-top: 18px;
+  padding: 17px;
+
+  border: 1px solid var(--line, #dde3da);
+  border-radius: 17px;
+  background: #fafbf8;
+}
+
+.tracking-pickup > strong {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tracking-pickup > span {
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.tracking-pickup > small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+
+/* =====================================================
+   Parcel tracking
+   ===================================================== */
+
+.tracking-parcel-v227 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  margin-top: 12px;
+  padding: 17px;
+
+  border-radius: 17px;
+  background: #eef5eb;
+}
+
+.tracking-parcel-v227 > div {
+  display: grid;
+  gap: 4px;
+}
+
+.tracking-parcel-v227 strong {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.tracking-parcel-v227 span {
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   Products
+   ===================================================== */
+
+.tracking-lines {
+  display: grid;
+  margin-top: 26px;
+  border-top: 1px solid var(--line, #dde3da);
+}
+
+.tracking-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+
+  padding: 14px 0;
+  border-bottom: 1px solid #edf0e9;
+}
+
+.tracking-lines > div > span {
+  display: grid;
+  gap: 3px;
+}
+
+.tracking-lines strong {
+  font-size: 13px;
+}
+
+.tracking-lines small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+
+/* =====================================================
+   Totals
+   ===================================================== */
+
+.tracking-shipping-cost {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 11px 0;
+  font-size: 13px;
+}
+
+.tracking-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 4px;
+  padding: 18px 0;
+
+  border-top: 1px solid var(--line, #dde3da);
+
+  font-size: 17px;
+}
+
+.tracking-total strong {
+  font-size: 23px;
+}
+
+.tracking-refresh {
+  margin: 12px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   Bottom actions
+   ===================================================== */
+
+.tracking-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+
+  margin-top: 24px;
+  padding-top: 22px;
+
+  border-top: 1px solid var(--line, #dde3da);
+}
+
+
+/* =====================================================
+   Mobile
+   ===================================================== */
+
+@media (max-width: 680px) {
+
+  .tracking-page {
+    padding:
+      18px
+      12px
+      calc(120px + env(safe-area-inset-bottom));
+  }
+
+  .tracking-card {
+    padding: 20px 16px 22px;
+    border-radius: 22px;
+    box-shadow: none;
+  }
+
+  .tracking-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tracking-head h1 {
+    font-size: 35px;
+  }
+
+  .tracking-status {
+    align-self: flex-start;
+  }
+
+
+  /* Vertical timeline on mobile */
+
+  .tracking-timeline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+
+    margin: 25px 0;
+  }
+
+  .tracking-timeline::before {
+    top: 20px;
+    bottom: 20px;
+    left: 18px;
+    right: auto;
+
+    width: 2px;
+    height: auto;
+  }
+
+  .tracking-step {
+    min-height: 64px;
+
+    grid-template-columns: 36px minmax(0, 1fr);
+    justify-items: stretch;
+    align-items: start;
+
+    gap: 13px;
+
+    text-align: left;
+  }
+
+  .tracking-step > span {
+    grid-column: 1;
+  }
+
+  .tracking-step > strong {
+    grid-column: 2;
+    align-self: center;
+
+    max-width: none;
+
+    padding-bottom: 22px;
+
+    font-size: 13px;
+  }
+
+
+  /* Payment */
+
+  .payment-tracking-banner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .payment-tracking-banner > .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+
+  /* Tracking parcel */
+
+  .tracking-parcel-v227 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tracking-parcel-v227 .button {
+    width: 100%;
+  }
+
+
+  /* Products */
+
+  .tracking-lines > div {
+    gap: 12px;
+  }
+
+  .tracking-lines > div > strong {
+    white-space: nowrap;
+  }
+
+
+  /* Actions */
+
+  .tracking-actions {
+    flex-direction: column;
+  }
+
+  .tracking-actions .button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
