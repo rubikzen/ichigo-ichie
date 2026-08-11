@@ -422,7 +422,7 @@ export async function generateInvoicePdf(invoice: InvoiceRow, orderNumber: strin
 
   const margin = 42;
   let y = 792;
-  drawText(page, bold, String(seller.trade_name || seller.legal_name || "ICHIGO ICHIE"), margin, y, 11, green);
+  drawText(page, bold, "ICHIGO ICHIE", margin, y, 11, green);
   y -= 36;
   drawText(page, serif, invoice.document_type === "credit_note" ? "AVOIR" : "FACTURE", margin, y, 30, green);
   drawText(page, bold, invoice.document_number, 390, y + 8, 12, green);
