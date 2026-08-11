@@ -1,11 +1,28 @@
 import type { NextConfig } from "next";
 
+const noIndexHeader = [
+  {
+    key: "X-Robots-Tag",
+    value: "noindex, nofollow, noarchive",
+  },
+];
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" }
     ]
-  }
+  },
+  async headers() {
+    return [
+      { source: "/admin/:path*", headers: noIndexHeader },
+      { source: "/api/:path*", headers: noIndexHeader },
+      { source: "/checkout/:path*", headers: noIndexHeader },
+      { source: "/panier/:path*", headers: noIndexHeader },
+      { source: "/compte/:path*", headers: noIndexHeader },
+      { source: "/commande/:path*", headers: noIndexHeader },
+    ];
+  },
 };
 
 export default nextConfig;

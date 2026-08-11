@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { getCatalog } from "@/lib/catalog";
 import { HomePageContent } from "@/components/HomePageContent";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function Home() {
   const [menu, shop] = await Promise.all([getCatalog("menu"), getCatalog("shop")]);
