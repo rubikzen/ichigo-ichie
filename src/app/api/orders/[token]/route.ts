@@ -12,8 +12,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
 
   const { data, error } = await supabase
     .from("orders")
-    .select("order_number,status,payment_status,payment_method,payment_expires_at,order_type,pickup_time,subtotal,discount_amount,promo_code,shipping_fee,total,created_at,shipping_method_name,shipping_address1,shipping_address2,shipping_postal_code,shipping_city,shipping_country,package_weight_g,tracking_carrier,tracking_number,tracking_url,shipped_at,order_items(id,product_name,quantity,line_total,choices)")
-    .eq("public_token", token)
+    .select("id,order_number,status,payment_status,payment_method,payment_expires_at,order_type,pickup_time,subtotal,discount_amount,promo_code,shipping_fee,total,created_at,shipping_method_name,shipping_address1,shipping_address2,shipping_postal_code,shipping_city,shipping_country,package_weight_g,tracking_carrier,tracking_number,tracking_url,shipped_at,invoices(id,document_type,document_number),order_items(id,product_name,quantity,line_total,choices)")
     .maybeSingle();
 
   if (error) {

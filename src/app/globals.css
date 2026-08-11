@@ -5957,3 +5957,125 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     min-height: 48px;
   }
 }
+/* =========================================================
+   ORDER DOCUMENTS UX v257
+   ========================================================= */
+
+.tracking-documents-v257 {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid var(--line, #dde3da);
+  border-radius: 18px;
+  background: #fafbf8;
+}
+
+.tracking-documents-head-v257 > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracking-documents-icon-v257 {
+  display: grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  background: #edf3e9;
+  color: var(--moss-dark, #294237);
+
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tracking-documents-head-v257 strong {
+  display: block;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.tracking-documents-head-v257 small {
+  display: block;
+  margin-top: 3px;
+
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tracking-documents-list-v257 {
+  display: grid;
+  gap: 9px;
+
+  margin-top: 15px;
+}
+
+.tracking-document-row-v257 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 13px 14px;
+
+  border-radius: 14px;
+
+  background: #fff;
+  border: 1px solid #e5e9e2;
+}
+
+.tracking-document-row-v257 > div {
+  min-width: 0;
+
+  display: grid;
+  gap: 3px;
+}
+
+.tracking-document-row-v257 strong {
+  font-size: 13px;
+}
+
+.tracking-document-row-v257 small {
+  color: var(--muted);
+
+  font-size: 11px;
+
+  overflow-wrap: anywhere;
+}
+
+.tracking-document-download-v257 {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+
+@media (max-width: 680px) {
+
+  .tracking-documents-v257 {
+    padding: 15px;
+    border-radius: 17px;
+  }
+
+  .tracking-document-row-v257 {
+    align-items: stretch;
+    flex-direction: column;
+
+    gap: 10px;
+  }
+
+  .tracking-document-download-v257 {
+    width: 100%;
+
+    min-height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

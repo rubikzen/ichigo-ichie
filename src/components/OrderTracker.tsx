@@ -7,6 +7,7 @@ import { useCart } from "@/components/CartProvider";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 
 type PublicOrder = {
+  id: string;
   order_number: string;
   status: "pending" | "preparing" | "ready" | "completed" | "cancelled" | "refunded";
   payment_status: "unpaid" | "pending" | "paid" | "refunded" | "refund_pending" | "refund_failed" | "failed" | "expired";
@@ -31,6 +32,11 @@ type PublicOrder = {
   tracking_number?: string | null;
   tracking_url?: string | null;
   shipped_at?: string | null;
+  invoices?: Array<{
+  id: string;
+  document_type: "invoice" | "credit_note";
+  document_number: string;
+}>;
   order_items?: Array<{
     id: string;
     product_name: string;
@@ -129,6 +135,13 @@ export function OrderTracker({ token }: { token: string }) {
   const onlinePayment = order.payment_method === "online";
   const paymentPaid = paymentConfirmed;
   const paymentNeedsAction = onlinePayment && ["failed", "expired"].includes(order.payment_status);
+  const invoice = order.invoices?.find((doc) => doc.document_type === "invoice");
+const creditNote = order.invoices?.find((doc) => doc.document_type === "credit_note");
+
+const canDownloadInvoice =
+  Boolean(invoice) ||
+  order.payment_status === "paid" ||
+  order.payment_status === "refunded";
   const title = order.payment_status === "refund_pending"
     ? (language === "fr" ? "Remboursement en cours" : "Refund pending")
     : order.payment_status === "refund_failed"
@@ -170,6 +183,81 @@ export function OrderTracker({ token }: { token: string }) {
       : <div className="tracking-pickup"><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><span>{order.pickup_time ? new Date(order.pickup_time).toLocaleString(language === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" }) : (language === "fr" ? "Dès que possible" : "As soon as possible")}</span><small>14 rue Centrale, Nice</small></div>}
 
     {order.order_type === "shipping" && order.tracking_number && <div className="tracking-parcel-v227"><div><strong>{language === "fr" ? "Suivi du colis" : "Parcel tracking"}</strong><span>{order.tracking_carrier || order.shipping_method_name || "Transporteur"} · {order.tracking_number}</span></div>{order.tracking_url && <a className="button primary small" href={order.tracking_url} target="_blank" rel="noreferrer">{language === "fr" ? "Suivre mon colis ↗" : "Track parcel ↗"}</a>}</div>}
+    {(canDownloadInvoice || creditNote) && (
+  <section
+    className="tracking-documents-v257"
+    aria-label={language === "fr" ? "Documents" : "Documents"}
+  >
+    <div className="tracking-documents-head-v257">
+      <div>
+        <span className="tracking-documents-icon-v257" aria-hidden="true">
+          ↓
+        </span>
+
+        <div>
+          <strong>
+            {language === "fr" ? "Documents" : "Documents"}
+          </strong>
+
+          <small>
+            {language === "fr"
+              ? "Vos documents comptables au format PDF."
+              : "Your accounting documents in PDF format."}
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div className="tracking-documents-list-v257">
+      {canDownloadInvoice && (
+        <div className="tracking-document-row-v257">
+          <div>
+            <strong>
+              {language === "fr" ? "Facture" : "Invoice"}
+            </strong>
+
+            <small>
+              {invoice?.document_number ||
+                (language === "fr"
+                  ? "Facture disponible"
+                  : "Invoice available")}
+            </small>
+          </div>
+
+          <a
+            className="button ghost tracking-document-download-v257"
+            href={`/api/invoices/${order.id}?token=${encodeURIComponent(token)}`}
+          >
+            {language === "fr"
+              ? "Télécharger PDF ↓"
+              : "Download PDF ↓"}
+          </a>
+        </div>
+      )}
+
+      {creditNote && (
+        <div className="tracking-document-row-v257">
+          <div>
+            <strong>
+              {language === "fr" ? "Avoir" : "Credit note"}
+            </strong>
+
+            <small>{creditNote.document_number}</small>
+          </div>
+
+          <a
+            className="button ghost tracking-document-download-v257"
+            href={`/api/invoices/${order.id}?token=${encodeURIComponent(token)}&type=credit_note`}
+          >
+            {language === "fr"
+              ? "Télécharger PDF ↓"
+              : "Download PDF ↓"}
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
 
     <div className="tracking-lines">{order.order_items?.map((item) => <div key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span><strong>{money.format(Number(item.line_total))}</strong></div>)}</div>
     {Number(order.discount_amount || 0) > 0 && <div className="tracking-shipping-cost tracking-promo-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong>{order.promo_code && <small>{order.promo_code}</small>}</span><strong>− {money.format(Number(order.discount_amount))}</strong></div>}
