@@ -145,8 +145,14 @@ export function CartPageClient({ products }: { products: Product[] }) {
         <p className="eyebrow">{language === "fr" ? "RÉCAPITULATIF" : "SUMMARY"}</p>
         <h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>
         <div className="cart-summary-line-v216"><span>{language === "fr" ? "Articles" : "Items"}</span><strong>{count}</strong></div>
-        <div className="cart-summary-line-v216 cart-summary-total-v216"><span>{language === "fr" ? "Sous-total" : "Subtotal"}</span><strong>{money(subtotal, language)}</strong></div>
-
+<div className="cart-summary-line-v216 cart-shipping-preview-v254">
+  <span>{language === "fr" ? "Livraison" : "Shipping"}</span>
+  <strong>
+    {language === "fr"
+      ? "Calculée ensuite"
+      : "Calculated next"}
+  </strong>
+</div>
         <div className="cart-fulfilment-v216">
           {hasPickupOnly && <p><b>●</b>{language === "fr" ? " Cette commande contient un article à retirer en boutique." : " This order contains an item requiring boutique pickup."}</p>}
           {!hasPickupOnly && hasShippingItems && <p><b>●</b>{language === "fr" ? " Livraison ou retrait à choisir à l’étape suivante." : " Choose shipping or pickup at the next step."}</p>}
