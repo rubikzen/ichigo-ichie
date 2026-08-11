@@ -22,6 +22,7 @@ type AdminProduct = {
 type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
 type TrackingDraft = { carrier: string; number: string; url: string };
+const TRACKING_CARRIERS = ["Colissimo", "Chronopost", "Mondial Relay", "DHL", "UPS", "Autre"] as const;
 type Tab = "products" | "categories" | "orders" | "promos" | "messages" | "invoices" | "settings" | "system";
 
 const blankProduct: AdminProduct = { id: "", slug: "", category_id: "", type: "drink", name_fr: "", name_en: "", description_fr: "", description_en: "", long_description_fr: "", long_description_en: "", origin: "", cultivar: "", badge: "", base_price: 0, stock: 99, pickup_only: true, active: true, featured: false, sort_order: 1, image_url: "", ideal_for: [], shipping_weight_g: 0 };
@@ -32,6 +33,20 @@ function slugify(value: string) {
 
 function normalizeCategoryName(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function buildTrackingUrl(carrier: string, trackingNumber: string) {
+  const number = trackingNumber.trim();
+  if (!number) return "";
+  const encoded = encodeURIComponent(number);
+
+  if (carrier === "Colissimo" || carrier === "Chronopost") {
+    return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encoded}`;
+  }
+  if (carrier === "Mondial Relay") return "https://www.mondialrelay.fr/suivi-de-colis/";
+  if (carrier === "DHL") return "https://www.dhl.com/fr-fr/home/suivi.html";
+  if (carrier === "UPS") return "https://www.ups.com/track?loc=fr_FR";
+  return "";
 }
 
 function inferProductPreset(category: Category | undefined, zone: "menu" | "shop") {
@@ -402,10 +417,19 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       return;
     }
 
+    const savedCarrier = String(order.tracking_carrier || "").trim();
+    const carrier = TRACKING_CARRIERS.includes(savedCarrier as (typeof TRACKING_CARRIERS)[number])
+      ? savedCarrier
+      : savedCarrier
+        ? "Autre"
+        : "Colissimo";
+    const number = String(order.tracking_number || "");
+    const generatedUrl = buildTrackingUrl(carrier, number);
+
     setTrackingDraft({
-      carrier: order.tracking_carrier ?? "",
-      number: order.tracking_number ?? "",
-      url: order.tracking_url ?? "",
+      carrier,
+      number,
+      url: order.tracking_url || generatedUrl,
     });
     setTrackingEditOrderId(order.id);
   }
@@ -427,8 +451,10 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       return;
     }
 
-    const carrier = trackingDraft.carrier.trim();
-    const url = trackingDraft.url.trim();
+    const carrier = trackingDraft.carrier.trim() || "Colissimo";
+    const url = carrier === "Autre"
+      ? trackingDraft.url.trim()
+      : buildTrackingUrl(carrier, number);
 
     try {
       const response = await fetch(`/api/admin/orders/${orderId}`, {
@@ -885,16 +911,21 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
         <div className="tracking-admin-grid-v227 tracking-editor-v249">
           <label>
             Transporteur
-            <input
+            <select
               value={trackingDraft.carrier}
-              placeholder="Colissimo"
-              onChange={(e) =>
+              onChange={(e) => {
+                const carrier = e.target.value;
                 setTrackingDraft((current) => ({
                   ...current,
-                  carrier: e.target.value,
-                }))
-              }
-            />
+                  carrier,
+                  url: carrier === "Autre" ? current.url : buildTrackingUrl(carrier, current.number),
+                }));
+              }}
+            >
+              {TRACKING_CARRIERS.map((carrier) => (
+                <option key={carrier} value={carrier}>{carrier}</option>
+              ))}
+            </select>
           </label>
 
           <label>
@@ -902,28 +933,53 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
             <input
               value={trackingDraft.number}
               placeholder="XXXXXXXXXXXXX"
-              onChange={(e) =>
+              autoComplete="off"
+              onChange={(e) => {
+                const number = e.target.value;
                 setTrackingDraft((current) => ({
                   ...current,
-                  number: e.target.value,
-                }))
-              }
+                  number,
+                  url: current.carrier === "Autre" ? current.url : buildTrackingUrl(current.carrier, number),
+                }));
+              }}
             />
           </label>
 
-          <label className="tracking-url-field-v227">
-            Lien de suivi
-            <input
-              value={trackingDraft.url}
-              placeholder="https://…"
-              onChange={(e) =>
-                setTrackingDraft((current) => ({
-                  ...current,
-                  url: e.target.value,
-                }))
-              }
-            />
-          </label>
+          {trackingDraft.carrier === "Autre" ? (
+            <label className="tracking-url-field-v227">
+              Lien de suivi
+              <input
+                value={trackingDraft.url}
+                placeholder="https://…"
+                onChange={(e) =>
+                  setTrackingDraft((current) => ({
+                    ...current,
+                    url: e.target.value,
+                  }))
+                }
+              />
+            </label>
+          ) : (
+            <label className="tracking-url-field-v227">
+              Lien généré automatiquement
+              <input
+                value={trackingDraft.url}
+                placeholder="Saisissez le numéro de suivi"
+                readOnly
+              />
+            </label>
+          )}
+
+          {trackingDraft.url && (
+            <a
+              className="button ghost small"
+              href={trackingDraft.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Tester le lien ↗
+            </a>
+          )}
 
           <button
             type="button"
