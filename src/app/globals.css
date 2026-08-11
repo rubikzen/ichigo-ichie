@@ -4178,4 +4178,41 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     padding-right: 16px !important;
   }
 }
+/* =========================================================
+   GLOBAL MOBILE BOTTOM NAV SPACING
+   ========================================================= */
 
+:root {
+  --mobile-nav-space: 118px;
+}
+
+@media (max-width: 820px) {
+  body {
+    padding-bottom: 0 !important;
+  }
+
+  main {
+    padding-bottom:
+      calc(
+        var(--mobile-nav-space)
+        + env(safe-area-inset-bottom, 0px)
+      ) !important;
+  }
+
+  footer {
+    padding-bottom:
+      calc(
+        var(--mobile-nav-space)
+        + env(safe-area-inset-bottom, 0px)
+      ) !important;
+  }
+
+  .product-card-v28,
+  .contact-form-v228 {
+    scroll-margin-bottom:
+      calc(
+        var(--mobile-nav-space)
+        + env(safe-area-inset-bottom, 0px)
+      );
+  }
+}
