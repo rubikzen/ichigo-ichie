@@ -2,7 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { seedCategories, seedProducts } from "./seed";
 import type { Category, OptionGroup, Product, ProductImage, Variant } from "./types";
 
-export async function getCatalog(kind?: "menu" | "shop"): Promise<{ categories: Category[]; products: Product[]; demo: boolean }> {
+export type CatalogKind = "menu" | "shop";
+
+export async function getCatalog(kind?: CatalogKind): Promise<{ categories: Category[]; products: Product[]; demo: boolean }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 

@@ -2,14 +2,15 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { siteSettingDefaults, type SiteSettings } from "@/lib/settings";
+import { siteSettingDefaults, toPublicSiteSettings, type SiteSettings } from "@/lib/settings";
 import { subscribeSiteSettingsUpdate } from "@/lib/settings-events";
 
 type SettingsContextValue = { settings: SiteSettings; refreshSettings: () => Promise<void> };
-const SiteSettingsContext = createContext<SettingsContextValue>({ settings: siteSettingDefaults, refreshSettings: async () => undefined });
+const publicDefaults = toPublicSiteSettings(siteSettingDefaults);
+const SiteSettingsContext = createContext<SettingsContextValue>({ settings: publicDefaults, refreshSettings: async () => undefined });
 
 export function SiteSettingsProvider({ initialSettings, children }: { initialSettings: SiteSettings; children: React.ReactNode }) {
-  const [settings, setSettings] = useState<SiteSettings>({ ...siteSettingDefaults, ...initialSettings });
+  const [settings, setSettings] = useState<SiteSettings>({ ...publicDefaults, ...toPublicSiteSettings(initialSettings) });
   const supabase = useMemo(() => createBrowserSupabase(), []);
 
   async function refreshSettings() {
@@ -17,7 +18,7 @@ export function SiteSettingsProvider({ initialSettings, children }: { initialSet
     const { data } = await supabase.from("site_settings").select("key,value");
     if (!data) return;
     const values = Object.fromEntries(data.map((row) => [row.key, typeof row.value === "string" ? row.value : String(row.value ?? "")]));
-    setSettings({ ...siteSettingDefaults, ...values });
+    setSettings({ ...publicDefaults, ...toPublicSiteSettings(values) });
   }
 
   useEffect(() => {

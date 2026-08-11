@@ -344,7 +344,7 @@ const requiresChoice = selectableVariants.length > 1;
   return <>
     <article className="product-card product-card-compact">
       <button className="product-image-button" onClick={() => setOpen(true)} aria-label={name}>
-        <img className="product-image" src={coverImage} alt={name} />
+        <img className="product-image" src={coverImage} alt={name} loading="lazy" decoding="async" />
         {product.badge && <span className="badge">{product.badge}</span>}
         {gallery.length > 1 && <span className="photo-count">{gallery.length} photos</span>}
       </button>

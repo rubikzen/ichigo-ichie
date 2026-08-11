@@ -231,6 +231,23 @@ export const siteSettingDefaults: SiteSettings = {
   theme_radius: "26",
 };
 
+const publicHeavySettingKeys = new Set([
+  "legal_notice_body_fr",
+  "legal_notice_body_en",
+  "terms_body_fr",
+  "terms_body_en",
+  "privacy_body_fr",
+  "privacy_body_en",
+  "shipping_returns_body_fr",
+  "shipping_returns_body_en",
+]);
+
+export function toPublicSiteSettings(settings: SiteSettings): SiteSettings {
+  return Object.fromEntries(
+    Object.entries(settings).filter(([key]) => !publicHeavySettingKeys.has(key)),
+  );
+}
+
 export async function getSiteSettings(): Promise<SiteSettings> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;

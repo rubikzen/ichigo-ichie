@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
-import { getCatalog } from "@/lib/catalog";
+import { getCachedCatalog } from "@/lib/catalog-server";
 import { HomePageContent } from "@/components/HomePageContent";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30;
 
 export const metadata: Metadata = {
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
 };
 
 export default async function Home() {
-  const [menu, shop] = await Promise.all([getCatalog("menu"), getCatalog("shop")]);
+  const [menu, shop] = await Promise.all([
+    getCachedCatalog("menu"),
+    getCachedCatalog("shop"),
+  ]);
   const featured = menu.products.filter((product) => product.featured).slice(0, 4);
-
   const highlightedShopProducts = shop.products.filter((product) => product.featured);
   const shopFeatured = (highlightedShopProducts.length ? highlightedShopProducts : shop.products).slice(0, 3);
 

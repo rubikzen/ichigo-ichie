@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { SiteChrome } from "@/components/SiteChrome";
-import { getSiteSettings } from "@/lib/settings";
+import { getCachedSiteSettings, getPublicSiteSettings } from "@/lib/settings-server";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://www.ichigoichiematcha.fr").replace(/\/$/, "");
@@ -22,75 +22,55 @@ function instagramUrl(value: string | undefined) {
   return `https://www.instagram.com/${raw.replace(/^@/, "").replace(/\/$/, "")}`;
 }
 
+function schemaStreetAddress(value: string | undefined) {
+  const raw = String(value || "").trim();
+  return (raw.split("·")[0] || raw || "14 rue Centrale").trim();
+}
+
+function schemaOpeningHours(value: string | undefined) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/(\d{1,2})\s*h(?:\s*(\d{2}))?.*?(\d{1,2})\s*h(?:\s*(\d{2}))?/i);
+  if (!match) return raw || undefined;
+  const start = `${match[1].padStart(2, "0")}:${(match[2] || "00").padStart(2, "0")}`;
+  const end = `${match[3].padStart(2, "0")}:${(match[4] || "00").padStart(2, "0")}`;
+  return `Mo-Su ${start}-${end}`;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSiteSettings();
+  const settings = await getCachedSiteSettings();
   const brand = settings.brand_name || "ICHIGO ICHIE";
   const title = settings.seo_title || "Ichigo Ichie — Maison de Matcha à Nice";
-  const description =
-    settings.seo_description ||
-    "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.";
+  const description = settings.seo_description || "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.";
   const previewImage = absoluteUrl(settings.home_hero_image_url, "/brand-mark.svg");
 
   return {
     metadataBase: new URL(siteUrl()),
     applicationName: brand,
-    title: {
-      default: title,
-      template: `%s · ${brand}`,
-    },
+    title: { default: title, template: `%s · ${brand}` },
     description,
     creator: brand,
     publisher: brand,
-    formatDetection: {
-      email: false,
-      address: false,
-      telephone: false,
-    },
-    icons: {
-      icon: "/brand-mark.svg",
-      shortcut: "/brand-mark.svg",
-      apple: "/brand-mark.svg",
-    },
+    formatDetection: { email: false, address: false, telephone: false },
+    icons: { icon: "/brand-mark.svg", shortcut: "/brand-mark.svg", apple: "/brand-mark.svg" },
     openGraph: {
       type: "website",
       locale: "fr_FR",
       siteName: brand,
       title,
       description,
-      images: [
-        {
-          url: previewImage,
-          alt: `${brand} — Maison de matcha à Nice`,
-        },
-      ],
+      images: [{ url: previewImage, alt: `${brand} — Maison de matcha à Nice` }],
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [previewImage],
-    },
+    twitter: { card: "summary_large_image", title, description, images: [previewImage] },
     robots: {
       index: true,
       follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
-      },
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
     },
   };
 }
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const settings = await getSiteSettings();
-
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const settings = await getPublicSiteSettings();
   const themeStyle = {
     "--ink": settings.theme_ink || "#26362d",
     "--moss": settings.theme_moss || "#486a4b",
@@ -101,11 +81,9 @@ export default async function RootLayout({
   } as CSSProperties;
 
   const brand = settings.brand_name || "ICHIGO ICHIE";
-  const description =
-    settings.seo_description ||
-    "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.";
+  const description = settings.seo_description || "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.";
   const sameAs = [instagramUrl(settings.instagram)].filter(Boolean) as string[];
-
+  const openingHours = schemaOpeningHours(settings.opening_hours);
   const storeSchema = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -117,25 +95,22 @@ export default async function RootLayout({
     logo: absoluteUrl(settings.brand_logo_url, "/brand-mark.svg"),
     ...(settings.phone ? { telephone: settings.phone } : {}),
     ...(settings.support_email ? { email: settings.support_email } : {}),
-    ...(settings.opening_hours ? { openingHours: settings.opening_hours } : {}),
+    ...(openingHours ? { openingHours } : {}),
     address: {
       "@type": "PostalAddress",
-      ...(settings.store_address ? { streetAddress: settings.store_address } : {}),
+      streetAddress: schemaStreetAddress(settings.store_address),
+      postalCode: "06300",
       addressLocality: "Nice",
       addressCountry: "FR",
     },
     ...(sameAs.length ? { sameAs } : {}),
   };
-
   const structuredData = JSON.stringify(storeSchema).replace(/</g, "\\u003c");
 
   return (
     <html lang="fr" style={themeStyle}>
       <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: structuredData }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
         <Providers siteSettings={settings}>
           <SiteChrome>{children}</SiteChrome>
         </Providers>
