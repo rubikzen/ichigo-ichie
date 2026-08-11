@@ -327,6 +327,8 @@ export function ProductCard({ product }: { product: Product }) {
   const minimumPrice = selectableVariants.length ? Math.min(...selectableVariants.map((item) => item.price)) : product.base_price;
   const formatLabels = [...new Set(selectableVariants.map((item) => variantLabel(item)))];
   const packagingLabels = packageOptions.map((option) => packagingLabel(option.packaging, language));
+  const isSoldOut = totalStock <= 0;
+const requiresChoice = selectableVariants.length > 1;
 
   return <>
     <article className="product-card product-card-compact">
@@ -354,7 +356,35 @@ export function ProductCard({ product }: { product: Product }) {
           {showStock && <p className={`product-stock-card ${totalStock <= 0 ? "sold" : totalStock <= 5 ? "low" : "available"}`}><span className="stock-dot" aria-hidden="true"></span>{stockCopy(totalStock, language)}</p>}
         </div>
 
-        <button className="button primary full product-card-cta" onClick={() => setOpen(true)}>{language === "fr" ? "Choisir" : "Choose"}</button>
+        <button
+  type="button"
+  className={`button full product-card-cta ${
+    isSoldOut ? "product-card-cta-soldout" : "primary"
+  }`}
+  disabled={isSoldOut}
+  onClick={() => {
+    if (isSoldOut) return;
+
+    if (requiresChoice) {
+      setOpen(true);
+      return;
+    }
+
+    handleAdd();
+  }}
+>
+  {isSoldOut
+    ? language === "fr"
+      ? "Indisponible"
+      : "Unavailable"
+    : requiresChoice
+      ? language === "fr"
+        ? "Choisir"
+        : "Choose"
+      : language === "fr"
+        ? `Ajouter · ${money(minimumPrice, language)}`
+        : `Add · ${money(minimumPrice, language)}`}
+</button>
       </div>
     </article>
     {modal}

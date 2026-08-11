@@ -4339,3 +4339,16 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     margin-bottom: 26px;
   }
 }
+/* =========================================================
+   PRODUCT CARD CTA UX v251
+   ========================================================= */
+
+.product-card-cta-soldout,
+.product-card-cta-soldout:disabled {
+  background: #eceee8 !important;
+  border-color: #dde1d8 !important;
+  color: #8b9189 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
