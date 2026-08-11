@@ -270,10 +270,10 @@ export function CustomerAccount() {
     }
 
     setAuthSuccess(
-      language === "fr"
-        ? "Un lien de réinitialisation a été envoyé à votre adresse e-mail."
-        : "A password reset link has been sent to your email address."
-    );
+  language === "fr"
+    ? "Si un compte est associé à cette adresse e-mail, vous recevrez un lien de réinitialisation."
+    : "If an account is associated with this email address, you will receive a password reset link."
+);
   }
 
   async function updateRecoveredPassword(event: FormEvent) {
