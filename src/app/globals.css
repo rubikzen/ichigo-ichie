@@ -6079,3 +6079,483 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     justify-content: center;
   }
 }
+/* =========================================================
+   MOBILE CUSTOMER ACCOUNT UX v258
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  .customer-account-page-v243 {
+    padding:
+      22px
+      12px
+      calc(125px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .customer-account-shell-v243 {
+    width: 100%;
+    max-width: none;
+  }
+
+
+  /* =====================================================
+     Account header
+     ===================================================== */
+
+  .customer-account-head-v243 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    gap: 12px !important;
+    align-items: end !important;
+
+    padding: 0 2px 18px !important;
+  }
+
+  .customer-account-head-v243 .eyebrow {
+    margin-bottom: 5px;
+  }
+
+  .customer-account-head-v243 h1 {
+    margin: 0 0 5px !important;
+
+    font-size: clamp(31px, 9vw, 40px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .customer-account-head-v243 > div > p:last-child {
+    margin: 0;
+
+    color: var(--muted);
+
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .customer-account-head-v243 > .button {
+    min-height: 38px !important;
+
+    padding-inline: 12px !important;
+
+    font-size: 10px !important;
+  }
+
+
+  /* =====================================================
+     Account tabs
+     ===================================================== */
+
+  .customer-account-tabs-v243 {
+    display: flex !important;
+
+    gap: 7px !important;
+
+    width: 100%;
+
+    margin: 0 0 22px !important;
+    padding: 0 0 5px !important;
+
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .customer-account-tabs-v243::-webkit-scrollbar {
+    display: none;
+  }
+
+  .customer-account-tabs-v243 button {
+    flex: 0 0 auto;
+
+    min-height: 42px;
+
+    padding: 8px 13px !important;
+
+    border-radius: 999px !important;
+
+    white-space: nowrap;
+
+    font-size: 11px !important;
+  }
+
+  .customer-account-tabs-v243 button span {
+    display: inline-grid;
+    place-items: center;
+
+    min-width: 19px;
+    height: 19px;
+
+    margin-left: 5px;
+
+    border-radius: 999px;
+
+    font-size: 9px;
+  }
+
+
+  /* =====================================================
+     Orders heading
+     ===================================================== */
+
+  .customer-section-heading-v244 {
+    align-items: flex-end !important;
+
+    margin-bottom: 15px !important;
+  }
+
+  .customer-section-heading-v244 h2 {
+    margin: 0 !important;
+
+    font-size: 28px !important;
+    line-height: 1.05;
+  }
+
+  .customer-section-heading-v244 > .button {
+    display: none !important;
+  }
+
+
+  /* =====================================================
+     Remove duplicated order KPI cards on mobile
+
+     Filters below are enough.
+     ===================================================== */
+
+  .customer-order-summary-v244 {
+    display: none !important;
+  }
+
+
+  /* =====================================================
+     Order filters
+     ===================================================== */
+
+  .customer-order-filters-v244 {
+    display: flex !important;
+
+    gap: 7px !important;
+
+    margin: 0 -2px 16px !important;
+    padding: 0 2px 5px;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+  }
+
+  .customer-order-filters-v244::-webkit-scrollbar {
+    display: none;
+  }
+
+  .customer-order-filters-v244 button {
+    flex: 0 0 auto;
+
+    min-height: 38px;
+
+    padding: 7px 12px !important;
+
+    border-radius: 999px !important;
+
+    white-space: nowrap;
+
+    font-size: 10px !important;
+  }
+
+  .customer-order-filters-v244 button span {
+    margin-left: 5px;
+
+    font-size: 9px;
+  }
+
+
+  /* =====================================================
+     Order card
+     ===================================================== */
+
+  .customer-order-card-v244 {
+    margin-bottom: 12px !important;
+
+    padding: 15px !important;
+
+    border-radius: 20px !important;
+
+    box-shadow: none !important;
+  }
+
+  .customer-order-top-v244 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+
+    gap: 10px !important;
+
+    padding-bottom: 12px !important;
+  }
+
+  .customer-order-top-v244 > div:first-child {
+    min-width: 0;
+  }
+
+  .customer-order-top-v244 > div:first-child > span {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: var(--muted);
+
+    font-size: 9px !important;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .customer-order-top-v244 h3 {
+    margin: 0 !important;
+
+    font-size: 17px !important;
+    line-height: 1.15;
+
+    overflow-wrap: anywhere;
+  }
+
+  .customer-order-top-v244 > div:last-child {
+    display: grid !important;
+
+    justify-items: end;
+    align-content: start;
+
+    gap: 6px !important;
+  }
+
+  .customer-order-top-v244 > div:last-child > strong {
+    font-size: 16px !important;
+    white-space: nowrap;
+  }
+
+  .customer-state-badge-v244 {
+    padding: 5px 8px !important;
+
+    font-size: 9px !important;
+
+    white-space: nowrap;
+  }
+
+
+  /* =====================================================
+     Customer-friendly status
+     ===================================================== */
+
+  .customer-order-progress-v244 {
+    display: flex !important;
+
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 6px 9px !important;
+
+    padding: 11px 0 !important;
+  }
+
+  .customer-order-state-v244 {
+    font-size: 12px !important;
+    font-weight: 800;
+  }
+
+  .customer-order-progress-v244 > small {
+    color: var(--muted);
+
+    font-size: 10px !important;
+  }
+
+  .customer-tracking-number-v244 {
+    width: 100%;
+
+    overflow-wrap: anywhere;
+  }
+
+
+  /* =====================================================
+     Items
+     ===================================================== */
+
+  .customer-order-items-v244 {
+    margin-top: 2px !important;
+
+    padding: 4px 0 !important;
+  }
+
+  .customer-order-items-v244 > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    gap: 10px !important;
+
+    padding: 10px 0 !important;
+  }
+
+  .customer-order-items-v244 > div > span {
+    min-width: 0;
+
+    display: grid;
+    gap: 3px;
+  }
+
+  .customer-order-items-v244 > div strong {
+    font-size: 11px !important;
+    line-height: 1.4;
+  }
+
+  .customer-order-items-v244 > div > strong {
+    white-space: nowrap;
+  }
+
+  .customer-order-items-v244 small {
+    font-size: 9px !important;
+    line-height: 1.4;
+  }
+
+
+  /* =====================================================
+     Order actions
+
+     Main action first, secondary buttons compact.
+     ===================================================== */
+
+  .customer-order-actions-v244 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 7px !important;
+
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+  }
+
+  .customer-order-actions-v244 .button {
+    width: 100%;
+
+    min-height: 43px !important;
+
+    padding: 7px 10px !important;
+
+    font-size: 10px !important;
+
+    text-align: center;
+  }
+
+  .customer-order-actions-v244 .button.primary {
+    grid-column: 1 / -1;
+
+    order: -2;
+
+    min-height: 48px !important;
+
+    font-size: 12px !important;
+  }
+
+  .customer-order-actions-v244 .invoice-download-v245 {
+    min-width: 0;
+  }
+
+
+  /* =====================================================
+     Empty state
+     ===================================================== */
+
+  .customer-empty-v243 {
+    padding: 32px 18px !important;
+
+    border-radius: 20px !important;
+  }
+
+  .customer-empty-v243 strong {
+    font-size: 23px !important;
+  }
+
+  .customer-empty-v243 p {
+    font-size: 12px !important;
+    line-height: 1.5;
+  }
+
+
+  /* =====================================================
+     Profile
+     ===================================================== */
+
+  .customer-profile-grid-v243 {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+
+    gap: 12px !important;
+  }
+
+  .customer-account-panel-v243 {
+    padding: 18px 16px !important;
+
+    border-radius: 20px !important;
+  }
+
+  .customer-account-panel-v243 h2 {
+    font-size: 27px !important;
+  }
+
+  .customer-profile-form-v243 .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .customer-profile-form-v243 input {
+    min-height: 49px !important;
+
+    font-size: 16px !important;
+  }
+
+
+  /* =====================================================
+     Addresses
+     ===================================================== */
+
+  .customer-address-layout-v243 {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+
+    gap: 14px !important;
+  }
+
+  .customer-address-card-v243 {
+    display: grid !important;
+
+    gap: 14px !important;
+
+    padding: 16px !important;
+
+    border-radius: 18px !important;
+  }
+
+  .customer-address-card-v243 > div:last-child {
+    display: flex;
+
+    gap: 12px;
+    align-items: center;
+  }
+
+  .customer-address-form-v243 {
+    scroll-margin-top: 90px;
+  }
+
+  .customer-address-form-v243 .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .customer-address-form-v243 input {
+    min-height: 49px !important;
+
+    font-size: 16px !important;
+  }
+
+  .customer-address-form-actions-v243 {
+    display: grid !important;
+
+    gap: 8px !important;
+  }
+
+  .customer-address-form-actions-v243 .button {
+    width: 100%;
+  }
+}
