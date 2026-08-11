@@ -312,9 +312,20 @@ export function ProductCard({ product }: { product: Product }) {
                   <span>{language === "fr" ? "Prix" : "Price"}</span>
                   <strong>{money(price, language)}</strong>
                 </div>
-                <button className="button primary product-buy-button" disabled={!canAdd} onClick={handleAdd}>
-                  {!hasStock ? (language === "fr" ? "Épuisé" : "Sold out") : (language === "fr" ? "Ajouter au panier" : "Add to cart")}
-                </button>
+                <button
+  type="button"
+  className="button primary product-buy-button"
+  disabled={!canAdd}
+  onClick={handleAdd}
+>
+  {!hasStock
+    ? language === "fr"
+      ? "Indisponible"
+      : "Unavailable"
+    : language === "fr"
+      ? `Ajouter au panier · ${money(price, language)}`
+      : `Add to cart · ${money(price, language)}`}
+</button>
               </>
             )}
           </div>
