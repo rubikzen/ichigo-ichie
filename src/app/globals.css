@@ -4962,3 +4962,515 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     line-height: 1.4;
   }
 }
+/* =========================================================
+   MOBILE CHECKOUT UX v255
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  /* Page */
+  .checkout-page {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
+  }
+
+  .checkout-page > .page-heading {
+    margin-bottom: 20px !important;
+  }
+
+  .checkout-page > .page-heading h1 {
+    font-size: clamp(34px, 10vw, 46px) !important;
+    line-height: 1.02 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .checkout-page > .page-heading > p:last-child {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 0 !important;
+  }
+
+
+  /* =====================================================
+     Layout — summary first
+     ===================================================== */
+
+  .checkout-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .checkout-summary-v236 {
+    order: 1;
+  }
+
+  .checkout-form {
+    order: 2;
+  }
+
+
+  /* =====================================================
+     Compact order summary
+     ===================================================== */
+
+  .checkout-summary-v236 {
+    position: static !important;
+    top: auto !important;
+
+    padding: 15px 16px !important;
+
+    border-radius: 18px !important;
+
+    box-shadow: none !important;
+  }
+
+  .checkout-summary-v236 > .checkout-summary-kicker,
+  .checkout-summary-v236 > h2 {
+    display: none !important;
+  }
+
+  .mobile-summary-toggle-v236 {
+    width: 100%;
+
+    display: grid !important;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+
+    gap: 10px;
+
+    min-height: 48px;
+
+    padding: 0 !important;
+
+    border: 0 !important;
+    background: transparent !important;
+
+    color: var(--ink);
+    text-align: left;
+  }
+
+  .mobile-summary-toggle-v236 span {
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .mobile-summary-toggle-v236 strong {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  .mobile-summary-toggle-v236 b {
+    display: grid;
+    place-items: center;
+
+    width: 28px;
+    height: 28px;
+
+    border-radius: 50%;
+    background: var(--soft);
+
+    font-size: 17px;
+  }
+
+  .checkout-summary-products-v236 {
+    margin-top: 6px;
+  }
+
+  .checkout-summary-products-v236:not(.is-open) {
+    display: none !important;
+  }
+
+  .checkout-summary-products-v236 .checkout-line {
+    padding: 10px 0 !important;
+  }
+
+  .checkout-summary-products-v236 .checkout-line strong {
+    font-size: 12px;
+  }
+
+  .checkout-summary-totals {
+    margin-top: 8px;
+  }
+
+  .checkout-summary-totals .checkout-line {
+    padding: 8px 0 !important;
+    font-size: 12px !important;
+  }
+
+  .checkout-summary-v236 .checkout-total {
+    margin-top: 5px !important;
+
+    padding: 12px 0 0 !important;
+
+    font-size: 16px !important;
+  }
+
+  .checkout-summary-v236 .checkout-total strong {
+    font-size: 20px !important;
+  }
+
+
+  /* =====================================================
+     Form container
+     ===================================================== */
+
+  .checkout-form {
+    padding: 0 !important;
+
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .checkout-details-lock-v242 {
+    display: grid;
+    gap: 12px;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border: 0 !important;
+  }
+
+
+  /* =====================================================
+     Each checkout section = clear card
+     ===================================================== */
+
+  .checkout-section-card,
+  .pickup-choice-block.delivery-mode-block,
+  .smart-payment-v235 {
+    margin: 0 !important;
+
+    padding: 18px 16px !important;
+
+    border: 1px solid var(--line) !important;
+    border-radius: 20px !important;
+
+    background: #fff !important;
+  }
+
+  .checkout-step-kicker {
+    margin: 0 0 6px !important;
+
+    font-size: 10px !important;
+    letter-spacing: .12em;
+  }
+
+  .checkout-section-card h2,
+  .pickup-choice-block h2 {
+    margin: 0 0 15px !important;
+
+    font-size: 23px !important;
+    line-height: 1.15 !important;
+  }
+
+
+  /* =====================================================
+     Delivery / pickup choice
+     ===================================================== */
+
+  .pickup-choice-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+
+    gap: 8px !important;
+  }
+
+  .pickup-choice {
+    min-width: 0;
+
+    padding: 13px !important;
+
+    border-radius: 15px !important;
+  }
+
+  .pickup-choice > input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pickup-choice span {
+    display: grid;
+    gap: 4px;
+  }
+
+  .pickup-choice strong {
+    font-size: 13px !important;
+  }
+
+  .pickup-choice small {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .pickup-choice.active {
+    border-color: var(--moss-dark) !important;
+
+    box-shadow:
+      inset 0 0 0 1px var(--moss-dark) !important;
+
+    background: #f5f8f2 !important;
+  }
+
+
+  /* =====================================================
+     Customer form
+     ===================================================== */
+
+  .customer-details-card .form-grid,
+  .smart-city-grid-v235 {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .checkout-form label {
+    margin-bottom: 13px !important;
+  }
+
+  .checkout-form label:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .checkout-form input,
+  .checkout-form select,
+  .checkout-form textarea {
+    min-height: 50px !important;
+
+    border-radius: 13px !important;
+
+    font-size: 16px !important;
+  }
+
+  .checkout-form textarea {
+    min-height: 90px !important;
+  }
+
+
+  /* =====================================================
+     Smart address
+     ===================================================== */
+
+  .smart-section-head-v235 {
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .smart-address-suggestions-v235 {
+    position: relative !important;
+
+    max-height: 230px;
+    overflow-y: auto;
+
+    margin-top: 6px !important;
+
+    border-radius: 14px !important;
+  }
+
+  .smart-address-suggestions-v235 button {
+    min-height: 54px;
+  }
+
+  .smart-helper-v235 {
+    line-height: 1.45 !important;
+  }
+
+  .smart-text-button-v235 {
+    min-height: 40px;
+
+    font-size: 12px !important;
+  }
+
+  .smart-country-v235 {
+    margin-top: 10px !important;
+  }
+
+
+  /* =====================================================
+     Shipping methods
+     ===================================================== */
+
+  .shipping-method {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+
+    gap: 10px !important;
+
+    padding: 14px !important;
+
+    border-radius: 15px !important;
+  }
+
+  .shipping-method > input {
+    width: 18px !important;
+    min-height: 18px !important;
+
+    margin-top: 2px;
+  }
+
+  .shipping-method span {
+    min-width: 0;
+  }
+
+  .shipping-method strong {
+    font-size: 13px;
+  }
+
+  .shipping-method small {
+    font-size: 10px !important;
+    line-height: 1.4;
+  }
+
+  .shipping-method > b {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+
+  /* =====================================================
+     Promo + payment reassurance
+     ===================================================== */
+
+  .smart-optional-card-v235 {
+    margin: 0 !important;
+  }
+
+  .smart-payment-v235 {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+
+    gap: 10px !important;
+    align-items: start !important;
+  }
+
+  .smart-payment-v235 strong {
+    font-size: 13px;
+  }
+
+  .smart-payment-v235 small {
+    font-size: 10px !important;
+    line-height: 1.45;
+  }
+
+  .secure-payment-pill {
+    font-size: 10px !important;
+  }
+
+
+  /* =====================================================
+     Terms
+     ===================================================== */
+
+  .checkout-terms-v227 {
+    display: grid !important;
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+
+    gap: 10px !important;
+    align-items: start !important;
+
+    margin: 3px 2px 0 !important;
+  }
+
+  .checkout-terms-v227 input {
+    width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+
+    margin-top: 1px;
+  }
+
+  .checkout-terms-v227 span {
+    font-size: 11px !important;
+    line-height: 1.45;
+  }
+
+
+  /* =====================================================
+     Main submit button
+     ===================================================== */
+
+  .checkout-submit {
+    min-height: 55px !important;
+
+    margin-top: 16px;
+
+    border-radius: 999px !important;
+
+    font-size: 14px !important;
+    font-weight: 750 !important;
+  }
+
+  .checkout-disclaimer {
+    margin: 8px 12px 0 !important;
+
+    text-align: center;
+
+    font-size: 10px !important;
+    line-height: 1.4;
+  }
+
+
+  /* =====================================================
+     Mobile fixed pay bar
+     ===================================================== */
+
+  .mobile-checkout-paybar-v236 {
+    position: fixed !important;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 90;
+
+    display: grid !important;
+    grid-template-columns: auto minmax(150px, 1fr);
+
+    gap: 14px;
+    align-items: center;
+
+    padding:
+      11px
+      16px
+      max(11px, env(safe-area-inset-bottom)) !important;
+
+    background: rgba(255, 253, 248, .98) !important;
+
+    border-top: 1px solid var(--line) !important;
+
+    box-shadow:
+      0 -12px 35px rgba(28, 43, 34, .10);
+
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-checkout-paybar-v236 > div {
+    display: grid;
+    gap: 1px;
+  }
+
+  .mobile-checkout-paybar-v236 small {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .mobile-checkout-paybar-v236 strong {
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .mobile-checkout-paybar-v236 .button {
+    min-height: 50px;
+
+    border-radius: 999px !important;
+
+    font-weight: 750;
+  }
+
+
+  /* Once embedded Stripe is open, it needs space */
+  .embedded-payment-host-v242 {
+    margin-top: 14px;
+    padding-bottom: 30px;
+  }
+}

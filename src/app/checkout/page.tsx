@@ -605,7 +605,11 @@ export default function CheckoutPage() {
           <div className="mobile-checkout-paybar-v236" aria-label={language === "fr" ? "Paiement" : "Payment"}>
             <div><small>Total</small><strong>{money.format(checkoutTotal)}</strong></div>
             <button type="submit" className="button primary" disabled={submitDisabled}>
-              {loading ? "…" : (language === "fr" ? "Continuer" : "Continue")}
+              {loading
+  ? "…"
+  : language === "fr"
+    ? "Continuer vers le paiement"
+    : "Continue to payment"}
             </button>
           </div>
         </> : <div id="embedded-payment-v242" className="embedded-payment-host-v242">
