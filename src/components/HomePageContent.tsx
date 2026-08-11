@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Category, Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
@@ -114,12 +115,13 @@ export function HomePageContent({
           </div>
 
           <div className="hero-visual hero-visual-v224" aria-hidden="true">
-            <img
+            <Image
               src={settings.home_hero_image_url || "/products/matcha-coconut-cloud.webp"}
               alt=""
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
+              width={1200}
+              height={1000}
+              priority
+              sizes="(max-width: 760px) calc(100vw - 36px), (max-width: 1200px) 45vw, 520px"
             />
             {t("home_hero_note1_fr", "home_hero_note1_en") && (
               <span className="floating-note note-one note-one-v224">

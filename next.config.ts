@@ -11,7 +11,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" }
-    ]
+    ],
+    minimumCacheTTL: 86400,
   },
   async headers() {
     return [
