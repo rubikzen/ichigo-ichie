@@ -434,21 +434,24 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
     setTrackingEditOrderId(order.id);
   }
 
-  async function saveTracking(orderId: string) {
-    if (!supabase) return;
+  async function saveTracking(orderId: string, markShipped = false) {
+    if (!supabase) return false;
+
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return false;
 
     const number = trackingDraft.number.trim();
     if (!number) {
       setOrderActionMessage("Ajoutez un numéro de suivi.");
-      return;
+      return false;
     }
 
-    setOrderActionMessage("Enregistrement du suivi…");
+    setOrderActionMessage(markShipped ? "Enregistrement et expédition…" : "Enregistrement du suivi…");
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) {
       setOrderActionMessage("Session admin expirée.");
-      return;
+      return false;
     }
 
     const carrier = trackingDraft.carrier.trim() || "Colissimo";
@@ -464,6 +467,7 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          ...(markShipped ? { status: "completed" } : {}),
           trackingCarrier: carrier,
           trackingNumber: number,
           trackingUrl: url,
@@ -471,14 +475,14 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Impossible d’enregistrer le suivi.");
+      if (!response.ok) throw new Error(data.error || (markShipped ? "Impossible de marquer la commande comme expédiée." : "Impossible d’enregistrer le suivi."));
 
-      // Met à jour immédiatement l'interface sans dépendre du rafraîchissement des commandes.
       setOrders((current) =>
         current.map((item) =>
           item.id === orderId
             ? {
                 ...item,
+                ...(markShipped ? { status: "completed", shipped_at: item.shipped_at || new Date().toISOString() } : {}),
                 tracking_carrier: carrier || null,
                 tracking_number: number,
                 tracking_url: url || null,
@@ -487,15 +491,30 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
         )
       );
 
-      setOrderActionMessage("Suivi enregistré ✓");
+      setOrderActionMessage(markShipped ? "Commande expédiée ✓ · E-mail client déclenché" : "Suivi enregistré ✓");
       setTrackingEditOrderId(null);
       setTrackingDraft({ carrier: "", number: "", url: "" });
-
-      // Recharge ensuite depuis Supabase pour confirmer la persistance réelle.
       await loadOrders();
+      return true;
     } catch (error) {
-      setOrderActionMessage(error instanceof Error ? error.message : "Impossible d’enregistrer le suivi.");
+      setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
+      return false;
     }
+  }
+
+  async function markOrderCompleted(order: OrderRow) {
+    if (order.order_type !== "shipping") {
+      await updateOrder(order.id, "completed");
+      return;
+    }
+
+    if (!String(order.tracking_number || "").trim()) {
+      setOrderActionMessage("Ajoutez d’abord le numéro de suivi avant de marquer le colis comme expédié.");
+      if (trackingEditOrderId !== order.id) toggleTrackingEditor(order);
+      return;
+    }
+
+    await updateOrder(order.id, "completed");
   }
   async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note") {
     if (!supabase) return;
@@ -981,14 +1000,27 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
             </a>
           )}
 
-          <button
-            type="button"
-            className="button primary small"
-            disabled={order.status === "refunded" || !trackingDraft.number.trim()}
-            onClick={() => saveTracking(order.id)}
-          >
-            Enregistrer le suivi
-          </button>
+          <div className="tracking-save-actions-v259">
+            <button
+              type="button"
+              className="button ghost small"
+              disabled={order.status === "refunded" || !trackingDraft.number.trim()}
+              onClick={() => saveTracking(order.id)}
+            >
+              Enregistrer le suivi
+            </button>
+
+            {order.status === "ready" && (
+              <button
+                type="button"
+                className="button primary small"
+                disabled={!trackingDraft.number.trim()}
+                onClick={() => saveTracking(order.id, true)}
+              >
+                Enregistrer et expédier
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -996,7 +1028,7 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
 )}
           <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
           <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
-            {paymentBlocked ? <div className="payment-blocked-admin"><strong>{order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : "Paiement requis"}</strong><small>{order.payment_status === "refund_pending" ? "Stripe traite le remboursement." : order.payment_status === "refund_failed" ? "Vérifiez Stripe avant toute nouvelle action." : "La préparation est bloquée jusqu’à confirmation Stripe."}</small>{!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && <button type="button" className="button ghost small" onClick={() => updateOrder(order.id, "cancelled")}>Annuler la commande</button>}</div> : <>{order.status === "pending" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "preparing")}>Préparer</button>}{order.status === "preparing" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Prête"}</button>}{order.status === "ready" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "completed")}>{order.order_type === "shipping" ? "Marquer expédiée" : "Remise"}</button>}</>}
+            {paymentBlocked ? <div className="payment-blocked-admin"><strong>{order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : "Paiement requis"}</strong><small>{order.payment_status === "refund_pending" ? "Stripe traite le remboursement." : order.payment_status === "refund_failed" ? "Vérifiez Stripe avant toute nouvelle action." : "La préparation est bloquée jusqu’à confirmation Stripe."}</small>{!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && <button type="button" className="button ghost small" onClick={() => updateOrder(order.id, "cancelled")}>Annuler la commande</button>}</div> : <>{order.status === "pending" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "preparing")}>Préparer</button>}{order.status === "preparing" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Prête"}</button>}{order.status === "ready" && <button className="button primary order-next-action" onClick={() => markOrderCompleted(order)}>{order.order_type === "shipping" ? (order.tracking_number ? "Marquer expédiée" : "Ajouter suivi & expédier") : "Remise"}</button>}</>}
             
             {order.payment_status === "paid" && !order.invoices?.some((doc) => doc.document_type === "invoice") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "issue")}>Créer la facture</button>}
             {order.public_token && order.invoices?.some((doc) => doc.document_type === "invoice") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}>Facture PDF ↓</a>}
