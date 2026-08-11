@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     // Optional notification: reuses the Resend configuration already introduced in V2.27.
     const apiKey = process.env.RESEND_API_KEY?.trim();
     const from = process.env.EMAIL_FROM?.trim();
-    const to = process.env.CONTACT_EMAIL_TO?.trim() || settings.support_email?.trim();
+    const to = process.env.CONTACT_NOTIFICATION_EMAIL?.trim() || settings.support_email?.trim();
     if (apiKey && from && to) {
       const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Visiteur du site";
       const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#26362d"><h2>Nouveau message — Ichigo Ichie</h2><p><strong>De :</strong> ${escapeHtml(fullName)}</p><p><strong>E-mail :</strong> ${escapeHtml(email || "—")}</p><p><strong>Téléphone :</strong> ${escapeHtml(phone || "—")}</p><p><strong>Message :</strong></p><p style="white-space:pre-wrap">${escapeHtml(message)}</p></div>`;
