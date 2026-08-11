@@ -74,6 +74,8 @@ const [orderEnvironmentFilter, setOrderEnvironmentFilter] =
   useState<"live" | "test" | "all">("live");
 const [orderSearch, setOrderSearch] = useState("");
 const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+const [trackingEditOrderId, setTrackingEditOrderId] = useState<string | null>(null);
+const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
   const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
   const orderSoundEnabledRef = useRef(false);
@@ -712,18 +714,264 @@ const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
           <div className="order-card-top"><div><span className={`order-status-dot ${order.status}`}></span><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><span className="channel-pill shop">Boutique</span>{order.environment && <span className={`order-env-pill-v246 ${order.environment}`}>{order.environment === "live" ? "LIVE" : order.environment === "test" ? "TEST" : "LEGACY"}</span>}</div><div><span className={`payment-pill ${order.payment_status}`}>{paymentLabel}</span><strong>{Number(order.total).toFixed(2)} €</strong></div></div>
           {expandedOrderId === order.id && (
   <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
-          {order.order_type === "shipping" && <><div className="order-shipping-box"><strong>{order.shipping_method_name || "Livraison"}</strong><span>{[order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(), order.shipping_country === "FR" ? "France" : order.shipping_country].filter(Boolean).join(" · ")}</span><small>Frais : {Number(order.shipping_fee || 0).toFixed(2)} € · Poids colis : {Number(order.package_weight_g || 0)} g</small></div><div className="tracking-admin-v227"><strong>Suivi d’expédition</strong><div className="tracking-admin-grid-v227"><label>Transporteur<input value={order.tracking_carrier || ""} placeholder="Colissimo" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_carrier: e.target.value } : item))} /></label><label>N° de suivi<input value={order.tracking_number || ""} placeholder="XXXXXXXXXXXXX" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_number: e.target.value } : item))} /></label><label className="tracking-url-field-v227">Lien de suivi<input value={order.tracking_url || ""} placeholder="https://…" onChange={(e) => setOrders((current) => current.map((item) => item.id === order.id ? { ...item, tracking_url: e.target.value } : item))} /></label><button type="button" className="button ghost small" disabled={order.status === "refunded"} onClick={() => updateOrder(order.id, order.status)}>Enregistrer le suivi</button></div></div></>}
+          {order.order_type === "shipping" && (
+  <>
+    <div className="order-shipping-box">
+      <strong>{order.shipping_method_name || "Livraison"}</strong>
+
+      <span>
+        {[
+          order.shipping_address1,
+          order.shipping_address2,
+          `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(),
+          order.shipping_country === "FR"
+            ? "France"
+            : order.shipping_country,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+
+      <small>
+        Frais : {Number(order.shipping_fee || 0).toFixed(2)} €
+        {" · "}
+        Poids colis : {Number(order.package_weight_g || 0)} g
+      </small>
+    </div>
+
+    <div className="tracking-compact-v249">
+      <div className="tracking-compact-head-v249">
+        <div>
+          <span className="tracking-label-v249">SUIVI</span>
+
+          {order.tracking_number ? (
+            <>
+              <strong>
+                {order.tracking_carrier || "Transporteur"} ·{" "}
+                {order.tracking_number}
+              </strong>
+
+              {order.shipped_at && (
+                <small>
+                  Expédiée le{" "}
+                  {new Date(order.shipped_at).toLocaleDateString("fr-FR")}
+                </small>
+              )}
+            </>
+          ) : (
+            <>
+              <strong>Aucun suivi enregistré</strong>
+              <small>
+                Ajoutez le numéro lorsque le colis est prêt à partir.
+              </small>
+            </>
+          )}
+        </div>
+
+        <div className="tracking-compact-actions-v249">
+          {order.tracking_url && order.tracking_number && (
+            <a
+              href={order.tracking_url}
+              target="_blank"
+              rel="noreferrer"
+              className="button ghost small"
+            >
+              Ouvrir ↗
+            </a>
+          )}
+
+          <button
+            type="button"
+            className="button ghost small"
+            onClick={() =>
+              setTrackingEditOrderId((current) =>
+                current === order.id ? null : order.id
+              )
+            }
+          >
+            {trackingEditOrderId === order.id
+              ? "Fermer"
+              : order.tracking_number
+                ? "Modifier"
+                : "+ Ajouter"}
+          </button>
+        </div>
+      </div>
+
+      {trackingEditOrderId === order.id && (
+        <div className="tracking-admin-grid-v227 tracking-editor-v249">
+          <label>
+            Transporteur
+            <input
+              value={order.tracking_carrier || ""}
+              placeholder="Colissimo"
+              onChange={(e) =>
+                setOrders((current) =>
+                  current.map((item) =>
+                    item.id === order.id
+                      ? {
+                          ...item,
+                          tracking_carrier: e.target.value,
+                        }
+                      : item
+                  )
+                )
+              }
+            />
+          </label>
+
+          <label>
+            N° de suivi
+            <input
+              value={order.tracking_number || ""}
+              placeholder="XXXXXXXXXXXXX"
+              onChange={(e) =>
+                setOrders((current) =>
+                  current.map((item) =>
+                    item.id === order.id
+                      ? {
+                          ...item,
+                          tracking_number: e.target.value,
+                        }
+                      : item
+                  )
+                )
+              }
+            />
+          </label>
+
+          <label className="tracking-url-field-v227">
+            Lien de suivi
+            <input
+              value={order.tracking_url || ""}
+              placeholder="https://…"
+              onChange={(e) =>
+                setOrders((current) =>
+                  current.map((item) =>
+                    item.id === order.id
+                      ? {
+                          ...item,
+                          tracking_url: e.target.value,
+                        }
+                      : item
+                  )
+                )
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            className="button primary small"
+            disabled={order.status === "refunded"}
+            onClick={async () => {
+              await updateOrder(order.id, order.status);
+              setTrackingEditOrderId(null);
+            }}
+          >
+            Enregistrer
+          </button>
+        </div>
+      )}
+    </div>
+  </>
+)}
           <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
           <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
             {paymentBlocked ? <div className="payment-blocked-admin"><strong>{order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : "Paiement requis"}</strong><small>{order.payment_status === "refund_pending" ? "Stripe traite le remboursement." : order.payment_status === "refund_failed" ? "Vérifiez Stripe avant toute nouvelle action." : "La préparation est bloquée jusqu’à confirmation Stripe."}</small>{!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && <button type="button" className="button ghost small" onClick={() => updateOrder(order.id, "cancelled")}>Annuler la commande</button>}</div> : <>{order.status === "pending" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "preparing")}>Préparer</button>}{order.status === "preparing" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Prête"}</button>}{order.status === "ready" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "completed")}>{order.order_type === "shipping" ? "Marquer expédiée" : "Remise"}</button>}</>}
             
-            {canRefund && <button type="button" className="button danger small" onClick={() => { if (window.confirm(`Rembourser ${order.order_number} via Stripe ?`)) updateOrder(order.id, "refunded"); }}>Rembourser via Stripe</button>}
             {order.payment_status === "paid" && !order.invoices?.some((doc) => doc.document_type === "invoice") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "issue")}>Créer la facture</button>}
             {order.public_token && order.invoices?.some((doc) => doc.document_type === "invoice") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}>Facture PDF ↓</a>}
-            {order.invoices?.some((doc) => doc.document_type === "invoice") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "email")}>Renvoyer facture</button>}
-            {order.payment_status === "refunded" && !order.invoices?.some((doc) => doc.document_type === "credit_note") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "credit_note")}>Créer l’avoir</button>}
-            {order.public_token && order.invoices?.some((doc) => doc.document_type === "credit_note") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}&type=credit_note`}>Avoir PDF ↓</a>}
-            {order.public_token && <a className="button ghost small" href={`/commande/${order.public_token}`} target="_blank">Vue client ↗</a>}
+            <div className="order-more-menu-v249">
+              <button
+                type="button"
+                className="button ghost small order-more-button-v249"
+                onClick={() =>
+                  setMoreActionsOrderId((current) =>
+                    current === order.id ? null : order.id
+                  )
+                }
+                aria-expanded={moreActionsOrderId === order.id}
+                aria-label="Plus d’actions"
+              >
+                •••
+              </button>
+
+              {moreActionsOrderId === order.id && (
+                <div className="order-more-popover-v249">
+                  {order.invoices?.some(
+                    (doc) => doc.document_type === "invoice"
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMoreActionsOrderId(null);
+                        await invoiceAction(order, "email");
+                      }}
+                    >
+                      Renvoyer la facture
+                    </button>
+                  )}
+
+                  {order.public_token && (
+                    <a
+                      href={`/commande/${order.public_token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Vue client ↗
+                    </a>
+                  )}
+
+                  {order.payment_status === "refunded" &&
+                    !order.invoices?.some(
+                      (doc) => doc.document_type === "credit_note"
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setMoreActionsOrderId(null);
+                          await invoiceAction(order, "credit_note");
+                        }}
+                      >
+                        Créer l’avoir
+                      </button>
+                    )}
+
+                  {order.public_token &&
+                    order.invoices?.some(
+                      (doc) => doc.document_type === "credit_note"
+                    ) && (
+                      <a
+                        href={`/api/invoices/${order.id}?token=${encodeURIComponent(
+                          order.public_token
+                        )}&type=credit_note`}
+                      >
+                        Avoir PDF ↓
+                      </a>
+                    )}
+
+                  {canRefund && (
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => {
+                        setMoreActionsOrderId(null);
+                        if (
+                          window.confirm(
+                            `Rembourser ${order.order_number} via Stripe ?`
+                          )
+                        ) {
+                          void updateOrder(order.id, "refunded");
+                        }
+                      }}
+                    >
+                      Rembourser via Stripe
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </aside>
 </div>
 )}
