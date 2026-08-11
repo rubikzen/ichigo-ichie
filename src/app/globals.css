@@ -4318,3 +4318,24 @@ html { scroll-behavior: smooth; scroll-padding-top: 92px; }
     width: 100%;
   }
 }
+/* =========================================================
+   MOBILE SHOP UX — filters scroll naturally v250
+   ========================================================= */
+
+@media (max-width: 820px) {
+  .onepage-jumpnav,
+  .onepage-catalog-toolbar,
+  .catalog-toolbar-v218 {
+    position: static !important;
+    top: auto !important;
+  }
+
+  .onepage-jumpnav {
+    margin-top: 18px;
+    margin-bottom: 12px;
+  }
+
+  .onepage-catalog-toolbar {
+    margin-bottom: 26px;
+  }
+}
