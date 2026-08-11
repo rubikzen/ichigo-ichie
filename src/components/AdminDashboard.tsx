@@ -21,6 +21,7 @@ type AdminProduct = {
 };
 type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
+type TrackingDraft = { carrier: string; number: string; url: string };
 type Tab = "products" | "categories" | "orders" | "promos" | "messages" | "invoices" | "settings" | "system";
 
 const blankProduct: AdminProduct = { id: "", slug: "", category_id: "", type: "drink", name_fr: "", name_en: "", description_fr: "", description_en: "", long_description_fr: "", long_description_en: "", origin: "", cultivar: "", badge: "", base_price: 0, stock: 99, pickup_only: true, active: true, featured: false, sort_order: 1, image_url: "", ideal_for: [], shipping_weight_g: 0 };
@@ -75,6 +76,7 @@ const [orderEnvironmentFilter, setOrderEnvironmentFilter] =
 const [orderSearch, setOrderSearch] = useState("");
 const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 const [trackingEditOrderId, setTrackingEditOrderId] = useState<string | null>(null);
+const [trackingDraft, setTrackingDraft] = useState<TrackingDraft>({ carrier: "", number: "", url: "" });
 const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
   const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
@@ -106,15 +108,23 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
   }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!supabase) return;
-    const stored = window.localStorage.getItem("ichigo-order-sound");
-    const enabled = stored === "1";
-    setOrderSoundEnabled(enabled);
-    orderSoundEnabledRef.current = enabled;
-    const timer = window.setInterval(() => { loadOrders(); }, 10000);
-    return () => window.clearInterval(timer);
-  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!supabase) return;
 
+  const stored = window.localStorage.getItem("ichigo-order-sound");
+  const enabled = stored === "1";
+
+  setOrderSoundEnabled(enabled);
+  orderSoundEnabledRef.current = enabled;
+
+  const timer = window.setInterval(() => {
+    // Ne jamais écraser les champs pendant la saisie du suivi.
+    if (!trackingEditOrderId) {
+      loadOrders();
+    }
+  }, 10000);
+
+  return () => window.clearInterval(timer);
+}, [supabase, trackingEditOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
   async function loadProducts() {
     if (!supabase) return;
     const [{ data: productRows }, { data: variantRows }] = await Promise.all([
@@ -382,6 +392,83 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       await loadOrders();
     } catch (error) {
       setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
+    }
+  }
+
+  function toggleTrackingEditor(order: OrderRow) {
+    if (trackingEditOrderId === order.id) {
+      setTrackingEditOrderId(null);
+      setTrackingDraft({ carrier: "", number: "", url: "" });
+      return;
+    }
+
+    setTrackingDraft({
+      carrier: order.tracking_carrier ?? "",
+      number: order.tracking_number ?? "",
+      url: order.tracking_url ?? "",
+    });
+    setTrackingEditOrderId(order.id);
+  }
+
+  async function saveTracking(orderId: string) {
+    if (!supabase) return;
+
+    const number = trackingDraft.number.trim();
+    if (!number) {
+      setOrderActionMessage("Ajoutez un numéro de suivi.");
+      return;
+    }
+
+    setOrderActionMessage("Enregistrement du suivi…");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setOrderActionMessage("Session admin expirée.");
+      return;
+    }
+
+    const carrier = trackingDraft.carrier.trim();
+    const url = trackingDraft.url.trim();
+
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          trackingCarrier: carrier,
+          trackingNumber: number,
+          trackingUrl: url,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Impossible d’enregistrer le suivi.");
+
+      // Met à jour immédiatement l'interface sans dépendre du rafraîchissement des commandes.
+      setOrders((current) =>
+        current.map((item) =>
+          item.id === orderId
+            ? {
+                ...item,
+                tracking_carrier: carrier || null,
+                tracking_number: number,
+                tracking_url: url || null,
+              }
+            : item
+        )
+      );
+
+      setOrderActionMessage("Suivi enregistré ✓");
+      setTrackingEditOrderId(null);
+      setTrackingDraft({ carrier: "", number: "", url: "" });
+
+      // Recharge ensuite depuis Supabase pour confirmer la persistance réelle.
+      await loadOrders();
+    } catch (error) {
+      setOrderActionMessage(error instanceof Error ? error.message : "Impossible d’enregistrer le suivi.");
     }
   }
   async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note") {
@@ -783,11 +870,7 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           <button
             type="button"
             className="button ghost small"
-            onClick={() =>
-              setTrackingEditOrderId((current) =>
-                current === order.id ? null : order.id
-              )
-            }
+            onClick={() => toggleTrackingEditor(order)}
           >
             {trackingEditOrderId === order.id
               ? "Fermer"
@@ -803,19 +886,13 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           <label>
             Transporteur
             <input
-              value={order.tracking_carrier || ""}
+              value={trackingDraft.carrier}
               placeholder="Colissimo"
               onChange={(e) =>
-                setOrders((current) =>
-                  current.map((item) =>
-                    item.id === order.id
-                      ? {
-                          ...item,
-                          tracking_carrier: e.target.value,
-                        }
-                      : item
-                  )
-                )
+                setTrackingDraft((current) => ({
+                  ...current,
+                  carrier: e.target.value,
+                }))
               }
             />
           </label>
@@ -823,19 +900,13 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           <label>
             N° de suivi
             <input
-              value={order.tracking_number || ""}
+              value={trackingDraft.number}
               placeholder="XXXXXXXXXXXXX"
               onChange={(e) =>
-                setOrders((current) =>
-                  current.map((item) =>
-                    item.id === order.id
-                      ? {
-                          ...item,
-                          tracking_number: e.target.value,
-                        }
-                      : item
-                  )
-                )
+                setTrackingDraft((current) => ({
+                  ...current,
+                  number: e.target.value,
+                }))
               }
             />
           </label>
@@ -843,19 +914,13 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           <label className="tracking-url-field-v227">
             Lien de suivi
             <input
-              value={order.tracking_url || ""}
+              value={trackingDraft.url}
               placeholder="https://…"
               onChange={(e) =>
-                setOrders((current) =>
-                  current.map((item) =>
-                    item.id === order.id
-                      ? {
-                          ...item,
-                          tracking_url: e.target.value,
-                        }
-                      : item
-                  )
-                )
+                setTrackingDraft((current) => ({
+                  ...current,
+                  url: e.target.value,
+                }))
               }
             />
           </label>
@@ -863,13 +928,10 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
           <button
             type="button"
             className="button primary small"
-            disabled={order.status === "refunded"}
-            onClick={async () => {
-              await updateOrder(order.id, order.status);
-              setTrackingEditOrderId(null);
-            }}
+            disabled={order.status === "refunded" || !trackingDraft.number.trim()}
+            onClick={() => saveTracking(order.id)}
           >
-            Enregistrer
+            Enregistrer le suivi
           </button>
         </div>
       )}
