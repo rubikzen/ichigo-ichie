@@ -293,6 +293,17 @@ async function updateOrder(id: string, status: string) {
     }
   }
 
+function orderAwaitingPayment(order: OrderRow) {
+    return (
+      order.payment_method === "online" &&
+      ["pending", "unpaid", "failed", "expired"].includes(order.payment_status)
+    );
+  }
+
+  function orderReadyForProduction(order: OrderRow) {
+    return order.payment_method !== "online" || order.payment_status === "paid";
+  }
+
 function selectOrderEnvironment(environment: "live" | "test" | "all") {
     setOrderEnvironmentFilter(environment);
     // Changing environment should immediately reveal all orders in that environment.
@@ -306,20 +317,26 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
       ? true
       : order.environment === orderEnvironmentFilter
   );
+  const productionStatsOrders = statsOrders.filter((order) => orderReadyForProduction(order));
   const orderStats = {
-    pending: statsOrders.filter((order) => order.status === "pending").length,
-    preparing: statsOrders.filter((order) => order.status === "preparing").length,
-    ready: statsOrders.filter((order) => order.status === "ready").length,
-    active: statsOrders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
+    payment: statsOrders.filter((order) => orderAwaitingPayment(order)).length,
+    pending: productionStatsOrders.filter((order) => order.status === "pending").length,
+    preparing: productionStatsOrders.filter((order) => order.status === "preparing").length,
+    ready: productionStatsOrders.filter((order) => order.status === "ready").length,
+    active: productionStatsOrders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
   };
   const search = orderSearch.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
   const matchesFilter =
     orderFilter === "all"
       ? true
-      : orderFilter === "active"
-        ? ["pending", "preparing", "ready"].includes(order.status)
-        : order.status === orderFilter;
+      : orderFilter === "payment"
+        ? orderAwaitingPayment(order)
+        : orderFilter === "active"
+          ? orderReadyForProduction(order) && ["pending", "preparing", "ready"].includes(order.status)
+          : ["pending", "preparing", "ready"].includes(orderFilter)
+            ? orderReadyForProduction(order) && order.status === orderFilter
+            : order.status === orderFilter;
 
   const matchesEnvironment =
     orderEnvironmentFilter === "all"
@@ -373,7 +390,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     />
   )}
 </div>
-      <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
+      <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Les paiements non confirmés restent hors production. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
       <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
       <div className="order-environment-switch order-environment-switch-v351">
   <button
@@ -406,7 +423,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     Toutes
   </button>
 </div>
-      <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["completed","Terminées / expédiées"],["cancelled","Annulées"],["refunded","Remboursées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone, ville…" /></div>
+      <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["payment",`Paiements (${orderStats.payment})`],["completed","Terminées / expédiées"],["cancelled","Annulées"],["refunded","Remboursées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone, ville…" /></div>
       {filteredOrders.length ? <div className="order-grid">{filteredOrders.map((order) => {
         const paymentBlocked = order.payment_method === "online" && order.payment_status !== "paid";
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";

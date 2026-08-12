@@ -48,7 +48,7 @@ type CustomerOrder = {
 };
 
 type Tab = "orders" | "profile" | "addresses";
-type OrderFilter = "all" | "active" | "completed" | "cancelled" | "refunded";
+type OrderFilter = "all" | "payment" | "active" | "completed" | "cancelled" | "refunded";
 
 const blankAddress = { label: "Maison", address1: "", address2: "", postal_code: "", city: "", country: "FR", is_default: false };
 
@@ -79,7 +79,7 @@ export function CustomerAccount() {
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
   const orderStats = useMemo(() => {
-    const stats = { active: 0, completed: 0, cancelled: 0, refunded: 0 };
+    const stats = { payment: 0, active: 0, completed: 0, cancelled: 0, refunded: 0 };
     for (const order of orders) stats[orderBucket(order)] += 1;
     return stats;
   }, [orders]);
@@ -91,8 +91,10 @@ export function CustomerAccount() {
 
   useEffect(() => {
     if (loading || !user || !orders.length) return;
-    if (orderFilter === "active" && orderStats.active === 0) setOrderFilter("all");
-  }, [loading, user, orders.length, orderFilter, orderStats.active]);
+    if (orderFilter === "active" && orderStats.active === 0) {
+      setOrderFilter(orderStats.payment > 0 ? "payment" : "all");
+    }
+  }, [loading, user, orders.length, orderFilter, orderStats.active, orderStats.payment]);
 
   const loadAccount = useCallback(async (authUser: User) => {
     if (!supabase) return;
@@ -659,6 +661,7 @@ export function CustomerAccount() {
 
         {!!orders.length && <>
           <div className="customer-order-summary-v244" aria-label={language === "fr" ? "Résumé des commandes" : "Order summary"}>
+            <button type="button" onClick={() => setOrderFilter("payment")} className={orderFilter === "payment" ? "active" : ""}><span>{orderStats.payment}</span><small>{language === "fr" ? "Paiement" : "Payment"}</small></button>
             <button type="button" onClick={() => setOrderFilter("active")} className={orderFilter === "active" ? "active" : ""}><span>{orderStats.active}</span><small>{language === "fr" ? "En cours" : "In progress"}</small></button>
             <button type="button" onClick={() => setOrderFilter("completed")} className={orderFilter === "completed" ? "active" : ""}><span>{orderStats.completed}</span><small>{language === "fr" ? "Terminées" : "Completed"}</small></button>
             <button type="button" onClick={() => setOrderFilter("cancelled")} className={orderFilter === "cancelled" ? "active" : ""}><span>{orderStats.cancelled}</span><small>{language === "fr" ? "Annulées" : "Cancelled"}</small></button>
@@ -668,6 +671,7 @@ export function CustomerAccount() {
           <div className="customer-order-filters-v244" role="tablist" aria-label={language === "fr" ? "Filtrer les commandes" : "Filter orders"}>
             {([
               ["all", language === "fr" ? "Toutes" : "All"],
+              ["payment", language === "fr" ? "Paiement" : "Payment"],
               ["active", language === "fr" ? "En cours" : "In progress"],
               ["completed", language === "fr" ? "Terminées" : "Completed"],
               ["cancelled", language === "fr" ? "Annulées" : "Cancelled"],
@@ -716,6 +720,7 @@ export function CustomerAccount() {
 function orderBucket(order: CustomerOrder): Exclude<OrderFilter, "all"> {
   if (order.status === "refunded" || order.payment_status === "refunded") return "refunded";
   if (order.status === "cancelled") return "cancelled";
+  if (["pending", "unpaid", "failed", "expired"].includes(order.payment_status)) return "payment";
   if (order.status === "completed") return "completed";
   return "active";
 }
