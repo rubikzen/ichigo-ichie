@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "smoke": "node scripts/smoke-production.mjs"
+    "smoke": "node scripts/smoke-production.mjs",
+    "e2e": "playwright test",
+    "e2e:local": "E2E_LOCAL=1 playwright test",
+    "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.0",
@@ -22,6 +25,7 @@
     "stripe": "^22.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "22.20.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",

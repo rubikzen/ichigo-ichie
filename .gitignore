@@ -9,3 +9,6 @@ node_modules
 *.backup-*
 *.backup-v*
 supabase/.temp/
+test-results/
+playwright-report/
+blob-report/
