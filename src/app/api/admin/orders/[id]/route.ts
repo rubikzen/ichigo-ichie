@@ -6,6 +6,7 @@ import { issueAndEmailCreditNote, issueAndEmailInvoice } from "@/lib/invoice";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ORDER_STATUSES = new Set(["pending", "preparing", "ready", "completed", "cancelled", "refunded"]);
+const EMAIL_KINDS = new Set(["confirmation", "shipping", "refund"]);
 
 function clean(value: unknown, max = 300) {
   return String(value ?? "").trim().slice(0, max);
@@ -18,10 +19,57 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { supabase } = await requireAdmin(request);
     const body = await request.json() as Record<string, unknown>;
     const status = clean(body.status, 30);
+    const emailKind = clean(body.emailKind, 30);
     if (status && !ORDER_STATUSES.has(status)) return NextResponse.json({ error: "Statut invalide." }, { status: 400 });
+    if (emailKind && !EMAIL_KINDS.has(emailKind)) return NextResponse.json({ error: "Type d’e-mail invalide." }, { status: 400 });
 
     const { data: order, error } = await supabase.from("orders").select("*").eq("id", id).single();
     if (error || !order) return NextResponse.json({ error: "Commande introuvable." }, { status: 404 });
+
+    if (emailKind) {
+      if (!order.customer_email) {
+        return NextResponse.json({ error: "Aucune adresse e-mail client n’est renseignée." }, { status: 409 });
+      }
+      if (emailKind === "confirmation" && !["paid", "refunded"].includes(order.payment_status)) {
+        return NextResponse.json({ error: "La confirmation ne peut être renvoyée qu’après paiement." }, { status: 409 });
+      }
+      if (
+        emailKind === "shipping" &&
+        (order.order_type !== "shipping" || order.status !== "completed" || !order.tracking_number)
+      ) {
+        return NextResponse.json({ error: "L’e-mail d’expédition nécessite une commande expédiée avec un numéro de suivi." }, { status: 409 });
+      }
+      if (emailKind === "refund" && order.payment_status !== "refunded") {
+        return NextResponse.json({ error: "L’e-mail de remboursement est disponible après confirmation du remboursement." }, { status: 409 });
+      }
+
+      try {
+        const result = await sendOrderEmail(
+          supabase,
+          id,
+          emailKind as "confirmation" | "shipping" | "refund",
+          {
+            force: true,
+            // Same-minute retries reuse the same key to protect against double-click duplicates.
+            idempotencySuffix: `admin-${Math.floor(Date.now() / 60_000)}`,
+          },
+        );
+
+        if (result.skipped) {
+          const responseStatus = result.reason === "email_not_configured" ? 503 : 409;
+          const message =
+            result.reason === "email_not_configured"
+              ? "Le service e-mail n’est pas configuré."
+              : "L’e-mail n’a pas pu être envoyé.";
+          return NextResponse.json({ error: message, emailStatus: result.reason }, { status: responseStatus });
+        }
+
+        return NextResponse.json({ ok: true, emailKind, emailStatus: "sent" });
+      } catch (emailError) {
+        console.error("Admin customer email resend error", emailError);
+        return NextResponse.json({ error: "Envoi de l’e-mail impossible. Réessayez dans un instant." }, { status: 502 });
+      }
+    }
 
     const trackingCarrier = clean(body.trackingCarrier ?? order.tracking_carrier, 120) || null;
     const trackingNumber = clean(body.trackingNumber ?? order.tracking_number, 160) || null;

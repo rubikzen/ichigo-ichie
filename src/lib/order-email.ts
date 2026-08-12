@@ -62,7 +62,12 @@ function shell(brand: string, title: string, intro: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f5f2e8;color:#26362d;font-family:Arial,sans-serif"><div style="max-width:640px;margin:0 auto;padding:28px 18px"><div style="background:#fffdf8;border:1px solid #e7e2d8;border-radius:22px;padding:28px"><div style="font-size:12px;letter-spacing:.18em;font-weight:700;color:#486a4b">${escapeHtml(brand)}</div><h1 style="font-family:Georgia,serif;font-size:30px;line-height:1.1;margin:10px 0 12px">${escapeHtml(title)}</h1><p style="line-height:1.6;color:#59665f">${escapeHtml(intro)}</p>${body}</div></div></body></html>`;
 }
 
-export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, kind: EmailKind) {
+export async function sendOrderEmail(
+  supabase: SupabaseClient,
+  orderId: string,
+  kind: EmailKind,
+  options: { force?: boolean; idempotencySuffix?: string } = {},
+) {
   const order = await loadOrder(supabase, orderId);
   if (!order.customer_email) return { skipped: true as const, reason: "missing_recipient" as const };
   const timestampField =
@@ -73,7 +78,7 @@ export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, 
         : kind === "refund"
           ? "refund_email_sent_at"
           : null;
-  if (timestampField && order[timestampField]) {
+  if (timestampField && order[timestampField] && !options.force) {
     return { skipped: true as const, reason: "already_sent" as const };
   }
 
@@ -131,13 +136,30 @@ export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, 
     );
   }
 
-  const sent = await sendResendEmail({ to: order.customer_email, subject, html, idempotencyKey: `${kind}-${order.id}` });
+  const idempotencySuffix = options.idempotencySuffix
+    ? `-${options.idempotencySuffix}`
+    : "";
+  const sent = await sendResendEmail({
+    to: order.customer_email,
+    subject,
+    html,
+    idempotencyKey: `${kind}-${order.id}${idempotencySuffix}`,
+  });
+
   if (!sent.skipped && timestampField) {
-    await supabase
-      .from("orders")
-      .update({ [timestampField]: new Date().toISOString() })
-      .eq("id", order.id)
-      .is(timestampField, null);
+    const sentAt = new Date().toISOString();
+    if (options.force) {
+      await supabase
+        .from("orders")
+        .update({ [timestampField]: sentAt })
+        .eq("id", order.id);
+    } else {
+      await supabase
+        .from("orders")
+        .update({ [timestampField]: sentAt })
+        .eq("id", order.id)
+        .is(timestampField, null);
+    }
   }
   return sent;
 }

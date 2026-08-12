@@ -497,12 +497,27 @@ function siteOrigin() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 }
 
-export async function sendInvoiceDocumentEmail(supabase: SupabaseClient, invoice: InvoiceRow, order: any) {
+export async function sendInvoiceDocumentEmail(
+  supabase: SupabaseClient,
+  invoice: InvoiceRow,
+  order: any,
+  options: { force?: boolean; idempotencySuffix?: string } = {},
+) {
   const config = await getInvoiceConfig(supabase);
-  if (!config.autoEmail || invoice.email_sent_at || !order.customer_email) return { skipped: true as const };
+  if (!order.customer_email) {
+    return { skipped: true as const, reason: "missing_recipient" as const };
+  }
+  if (!config.autoEmail && !options.force) {
+    return { skipped: true as const, reason: "auto_email_disabled" as const };
+  }
+  if (invoice.email_sent_at && !options.force) {
+    return { skipped: true as const, reason: "already_sent" as const };
+  }
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.EMAIL_FROM?.trim();
-  if (!key || !from) return { skipped: true as const };
+  if (!key || !from) {
+    return { skipped: true as const, reason: "email_not_configured" as const };
+  }
   const pdf = await generateInvoicePdf(invoice, order.order_number);
   const token = order.public_token ? `?token=${encodeURIComponent(order.public_token)}${invoice.document_type === "credit_note" ? "&type=credit_note" : ""}` : "";
   const downloadUrl = `${siteOrigin()}/api/invoices/${order.id}${token}`;
@@ -513,7 +528,7 @@ export async function sendInvoiceDocumentEmail(supabase: SupabaseClient, invoice
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `${invoice.document_type}-${invoice.id}`.slice(0, 256),
+      "Idempotency-Key": `${invoice.document_type}-${invoice.id}${options.idempotencySuffix ? `-${options.idempotencySuffix}` : ""}`.slice(0, 256),
     },
     body: JSON.stringify({
       from,
@@ -524,8 +539,20 @@ export async function sendInvoiceDocumentEmail(supabase: SupabaseClient, invoice
     }),
   });
   if (!response.ok) throw new Error(`RESEND_${response.status}: ${await response.text()}`);
-  await supabase.from("invoices").update({ email_sent_at: new Date().toISOString() }).eq("id", invoice.id).is("email_sent_at", null);
-  return { skipped: false as const };
+  const sentAt = new Date().toISOString();
+  if (options.force) {
+    await supabase
+      .from("invoices")
+      .update({ email_sent_at: sentAt })
+      .eq("id", invoice.id);
+  } else {
+    await supabase
+      .from("invoices")
+      .update({ email_sent_at: sentAt })
+      .eq("id", invoice.id)
+      .is("email_sent_at", null);
+  }
+  return { skipped: false as const, reason: "sent" as const };
 }
 
 export async function issueAndEmailInvoice(supabase: SupabaseClient, orderId: string, force = false) {

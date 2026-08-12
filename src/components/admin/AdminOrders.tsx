@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { OrderStatistics } from "../OrderStatistics";
 
-type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
+type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; confirmation_email_sent_at?: string | null; shipping_email_sent_at?: string | null; refund_email_sent_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string; email_sent_at?: string | null }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
 type TrackingDraft = { carrier: string; number: string; url: string };
 const TRACKING_CARRIERS = ["Colissimo", "Chronopost", "Mondial Relay", "DHL", "UPS", "Autre"] as const;
@@ -46,6 +46,7 @@ export function AdminOrders({
   });
   const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
+  const [emailActionKey, setEmailActionKey] = useState("");
   const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
   const orderSoundEnabledRef = useRef(false);
   const seenPendingOrders = useRef<Set<string> | null>(null);
@@ -88,7 +89,7 @@ function playNewOrderSound() {
   }
   async function loadOrders() {
     if (!supabase) return;
-    const { data } = await supabase.from("orders").select("*, order_items(*), invoices(id,document_type,document_number)").is("archived_at", null).order("created_at", { ascending: false }).limit(120);
+    const { data } = await supabase.from("orders").select("*, order_items(*), invoices(id,document_type,document_number,email_sent_at)").is("archived_at", null).order("created_at", { ascending: false }).limit(120);
     const rows = (data ?? []) as OrderRow[];
     const pendingIds = new Set(rows.filter((order) => (order.source_channel === "shop" || order.source_channel === "mixed" || (!order.source_channel && order.order_type === "shipping")) && order.status === "pending" && (order.payment_method !== "online" || order.payment_status === "paid")).map((order) => order.id));
     if (seenPendingOrders.current && orderSoundEnabledRef.current) {
@@ -124,6 +125,18 @@ function shippingEmailMessage(result: unknown) {
     if (result === "email_not_configured") return "Commande expédiée ✓ · e-mail non configuré";
     if (result === "failed") return "Commande expédiée ✓ · e-mail à vérifier";
     return "Commande expédiée ✓";
+  }
+
+function emailStatusText(sentAt?: string | null) {
+    if (!sentAt) return "Non envoyé";
+    return `Envoyé le ${new Date(sentAt).toLocaleString("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    })}`;
+  }
+
+function emailActionLabel(sentAt?: string | null) {
+    return sentAt ? "Renvoyer" : "Envoyer";
   }
 
 async function updateOrder(id: string, status: string) {
@@ -270,12 +283,25 @@ async function updateOrder(id: string, status: string) {
 
     await updateOrder(order.id, "completed");
   }
-  async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note") {
+  async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note" | "credit_note_email") {
     if (!supabase) return;
+    const actionKey = `${order.id}:${action}`;
+    setEmailActionKey(actionKey);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
-    if (!token) return setOrderActionMessage("Session admin expirée.");
-    setOrderActionMessage(action === "email" ? "Envoi de la facture…" : action === "credit_note" ? "Création de l’avoir…" : "Création de la facture…");
+    if (!token) {
+      setEmailActionKey("");
+      return setOrderActionMessage("Session admin expirée.");
+    }
+    setOrderActionMessage(
+      action === "email"
+        ? "Envoi de la facture…"
+        : action === "credit_note_email"
+          ? "Envoi de l’avoir…"
+          : action === "credit_note"
+            ? "Création de l’avoir…"
+            : "Création de la facture…"
+    );
     try {
       const response = await fetch(`/api/admin/invoices/${order.id}`, {
         method: "POST",
@@ -284,10 +310,58 @@ async function updateOrder(id: string, status: string) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Action facture impossible.");
-      setOrderActionMessage(action === "email" ? "Facture envoyée ✓" : action === "credit_note" ? "Avoir créé ✓" : "Facture créée ✓");
+      setOrderActionMessage(
+        action === "email"
+          ? "Facture envoyée ✓"
+          : action === "credit_note_email"
+            ? "Avoir envoyé ✓"
+            : action === "credit_note"
+              ? "Avoir créé ✓"
+              : "Facture créée ✓"
+      );
       await loadOrders();
     } catch (error) {
       setOrderActionMessage(error instanceof Error ? error.message : "Action facture impossible.");
+    } finally {
+      setEmailActionKey("");
+    }
+  }
+
+  async function orderEmailAction(order: OrderRow, kind: "confirmation" | "shipping" | "refund") {
+    if (!supabase) return;
+    const actionKey = `${order.id}:${kind}`;
+    setEmailActionKey(actionKey);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setEmailActionKey("");
+      return setOrderActionMessage("Session admin expirée.");
+    }
+
+    const labels = {
+      confirmation: "confirmation",
+      shipping: "expédition",
+      refund: "remboursement",
+    } as const;
+
+    setOrderActionMessage(`Envoi de l’e-mail de ${labels[kind]}…`);
+    try {
+      const response = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ emailKind: kind }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Envoi impossible.");
+      setOrderActionMessage(`E-mail de ${labels[kind]} envoyé ✓`);
+      await loadOrders();
+    } catch (error) {
+      setOrderActionMessage(error instanceof Error ? error.message : "Envoi impossible.");
+    } finally {
+      setEmailActionKey("");
     }
   }
 
@@ -451,6 +525,20 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           order.payment_status !== "paid";
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
         const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
+        const invoiceDoc = order.invoices?.find((doc) => doc.document_type === "invoice");
+        const creditNoteDoc = order.invoices?.find((doc) => doc.document_type === "credit_note");
+        const confirmationEmailEligible = ["paid", "refunded"].includes(order.payment_status);
+        const shippingEmailEligible =
+          order.order_type === "shipping" &&
+          order.status === "completed" &&
+          Boolean(order.tracking_number);
+        const refundEmailEligible = order.payment_status === "refunded";
+        const showEmailRecovery =
+          confirmationEmailEligible ||
+          Boolean(invoiceDoc) ||
+          shippingEmailEligible ||
+          refundEmailEligible ||
+          Boolean(creditNoteDoc);
         return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
   <div>
     <strong>
@@ -669,6 +757,116 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     </div>
   </>
 )}
+          {showEmailRecovery && (
+            <div className="order-email-recovery-v373">
+              <div className="order-email-recovery-head-v373">
+                <div>
+                  <span>E-MAILS CLIENT</span>
+                  <strong>Suivi & renvoi</strong>
+                </div>
+                <small>
+                  {order.customer_email || "Aucune adresse e-mail client"}
+                </small>
+              </div>
+
+              <div className="order-email-recovery-list-v373">
+                {confirmationEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Confirmation</strong>
+                      <small>{emailStatusText(order.confirmation_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "confirmation")}
+                    >
+                      {emailActionKey === `${order.id}:confirmation`
+                        ? "Envoi…"
+                        : emailActionLabel(order.confirmation_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {invoiceDoc && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Facture · {invoiceDoc.document_number}</strong>
+                      <small>{emailStatusText(invoiceDoc.email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => invoiceAction(order, "email")}
+                    >
+                      {emailActionKey === `${order.id}:email`
+                        ? "Envoi…"
+                        : emailActionLabel(invoiceDoc.email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {shippingEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Expédition</strong>
+                      <small>{emailStatusText(order.shipping_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "shipping")}
+                    >
+                      {emailActionKey === `${order.id}:shipping`
+                        ? "Envoi…"
+                        : emailActionLabel(order.shipping_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {refundEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Remboursement</strong>
+                      <small>{emailStatusText(order.refund_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "refund")}
+                    >
+                      {emailActionKey === `${order.id}:refund`
+                        ? "Envoi…"
+                        : emailActionLabel(order.refund_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {creditNoteDoc && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Avoir · {creditNoteDoc.document_number}</strong>
+                      <small>{emailStatusText(creditNoteDoc.email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => invoiceAction(order, "credit_note_email")}
+                    >
+                      {emailActionKey === `${order.id}:credit_note_email`
+                        ? "Envoi…"
+                        : emailActionLabel(creditNoteDoc.email_sent_at)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
           <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
             {order.status === "cancelled" && (

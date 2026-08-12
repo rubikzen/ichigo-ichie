@@ -49,7 +49,11 @@ test("shipping email remains idempotent", () => {
   assert.match(orderEmail, /shipping_email_sent_at/);
   assert.match(orderEmail, /reason: "already_sent"/);
   assert.match(orderEmail, /Idempotency-Key/);
-  assert.match(orderEmail, /idempotencyKey: `\$\{kind\}-\$\{order\.id\}`/);
+  assert.match(orderEmail, /const idempotencySuffix = options\.idempotencySuffix/);
+  assert.match(
+    orderEmail,
+    /idempotencyKey: `\$\{kind\}-\$\{order\.id\}\$\{idempotencySuffix\}`/,
+  );
 });
 
 test("admin exposes every shipping email delivery outcome", () => {
