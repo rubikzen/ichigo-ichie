@@ -240,8 +240,6 @@
 
 @media(max-width:900px){.cms-admin-hero{align-items:flex-start;flex-direction:column}.cms-save-zone{width:100%;justify-items:stretch}.cms-save-zone small{text-align:left}.theme-color-grid{grid-template-columns:1fr 1fr}.catalog-toolbar-v218{top:80px;position:static}.catalog-search-wrap-v218{min-width:100%}}
 @media(max-width:620px){.cms-admin-hero,.cms-section-head,.cms-section-body{padding-left:18px;padding-right:18px}.cms-admin-hero h2{font-size:31px}.theme-color-grid{grid-template-columns:1fr}.cms-toggle-grid{display:grid;grid-template-columns:1fr 1fr}.cms-numbered-block{grid-template-columns:1fr}.catalog-search-wrap-v218{min-width:0}.hero-v218 .hero-actions .button{width:100%}}
-/* Ichigo Ichie V2.19 — One Page Menu + Boutique */
-html { scroll-behavior: smooth; scroll-padding-top: 110px; }
 .onepage-main { overflow: clip; }
 .site-header-v219 { position: sticky; top: 0; z-index: 80; backdrop-filter: blur(18px); background: color-mix(in srgb, var(--surface, #fffdf8) 92%, transparent); }
 .announcement + .site-header-v219 { top: 32px; }
