@@ -97,7 +97,17 @@ function playNewOrderSound() {
     }
     seenPendingOrders.current = pendingIds;
     setOrders(rows);
-    onPendingCountChange(rows.filter((order) => order.status === "pending").length);
+    onPendingCountChange(
+      rows.filter(
+        (order) =>
+          order.environment === "live" &&
+          (order.source_channel === "shop" ||
+            order.source_channel === "mixed" ||
+            (!order.source_channel && order.order_type === "shipping")) &&
+          order.status === "pending" &&
+          (order.payment_method !== "online" || order.payment_status === "paid")
+      ).length
+    );
   }
   function toggleOrderSound() {
     const next = !orderSoundEnabled;
@@ -285,11 +295,16 @@ async function updateOrder(id: string, status: string) {
 
 const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" || order.source_channel === "mixed" || (!order.source_channel && order.order_type === "shipping");
   const zoneOrders = orders.filter((order) => orderMatchesZone(order));
+  const statsOrders = zoneOrders.filter((order) =>
+    orderEnvironmentFilter === "all"
+      ? true
+      : order.environment === orderEnvironmentFilter
+  );
   const orderStats = {
-    pending: zoneOrders.filter((order) => order.status === "pending").length,
-    preparing: zoneOrders.filter((order) => order.status === "preparing").length,
-    ready: zoneOrders.filter((order) => order.status === "ready").length,
-    active: zoneOrders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
+    pending: statsOrders.filter((order) => order.status === "pending").length,
+    preparing: statsOrders.filter((order) => order.status === "preparing").length,
+    ready: statsOrders.filter((order) => order.status === "ready").length,
+    active: statsOrders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
   };
   const search = orderSearch.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
