@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { resolveCart, type PayloadItem } from "@/lib/order-calculation";
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
+import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { code?: unknown; items?: PayloadItem[] };
+    const supabase = createServiceSupabase();
+    if (!supabase) return NextResponse.json({ error: "Supabase non configuré." }, { status: 503 });
+    const rateLimit = await consumeRateLimit(request, supabase, { scope: "promo:validate", limit: 30, windowSeconds: 600 });
+    if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+
+    const body = await readJsonBody<{ code?: unknown; items?: PayloadItem[] }>(request, 48_000);
     const items = body.items ?? [];
     if (!Array.isArray(items) || !items.length || items.length > 30) {
       return NextResponse.json({ error: "Panier invalide." }, { status: 400 });
     }
-
-    const supabase = createServiceSupabase();
-    if (!supabase) return NextResponse.json({ error: "Supabase non configuré." }, { status: 503 });
 
     const cart = await resolveCart(supabase, items);
     const promo = await resolvePromoCode(supabase, body.code, cart.subtotal);
@@ -30,7 +33,8 @@ export async function POST(request: Request) {
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error(error);
-    const status = error instanceof PromoCodeError ? error.status : 500;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Code promo invalide." }, { status });
+    const status = error instanceof PublicApiError ? error.status : error instanceof PromoCodeError ? error.status : 500;
+    const code = error instanceof PublicApiError ? error.code : undefined;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Code promo invalide.", ...(code ? { code } : {}) }, { status });
   }
 }

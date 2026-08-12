@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
+import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,9 @@ export async function POST(request: Request) {
   try {
     const supabase = createServiceSupabase();
     if (!supabase) return NextResponse.json({ error: "Service indisponible." }, { status: 503 });
-    const body = await request.json() as Record<string, unknown>;
+    const rateLimit = await consumeRateLimit(request, supabase, { scope: "contact:submit", limit: 5, windowSeconds: 600 });
+    if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+    const body = await readJsonBody<Record<string, unknown>>(request, 24_000);
 
     // Invisible honeypot: bots usually fill this field. Return success without storing it.
     if (clean(body.website, 200)) return NextResponse.json({ ok: true });
@@ -67,6 +70,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, id: inserted.id });
   } catch (error) {
     console.error("Contact form error", error);
+    if (error instanceof PublicApiError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json({ error: "Impossible d’envoyer le message pour le moment." }, { status: 500 });
   }
 }

@@ -7,6 +7,8 @@ import { sendOrderEmail, sendMerchantOrderNotification } from "@/lib/order-email
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
 import { assertInvoiceReadyForProducts, issueAndEmailInvoice } from "@/lib/invoice";
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
+import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
+import { getTermsVersion } from "@/lib/terms";
 
 
 function orderErrorReference() {
@@ -31,6 +33,9 @@ function textValue(value: unknown) {
 }
 
 function classifyOrderError(error: unknown) {
+  if (error instanceof PublicApiError) {
+    return { status: error.status, code: error.code, message: error.message };
+  }
   if (error instanceof OrderValidationError) {
     return {
       status: error.status || 400,
@@ -145,7 +150,13 @@ function validateShippingAddress(body: Record<string, any>) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as Record<string, any>;
+    const supabase = createServiceSupabase();
+    if (supabase) {
+      const rateLimit = await consumeRateLimit(request, supabase, { scope: "orders:create", limit: 12, windowSeconds: 600 });
+      if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+    }
+
+    const body = await readJsonBody<Record<string, any>>(request, 96_000);
     const items = (body.items ?? []) as PayloadItem[];
     if (!Array.isArray(items) || !items.length || items.length > 30) throw new OrderValidationError("Panier invalide.");
 
@@ -164,7 +175,6 @@ export async function POST(request: Request) {
     const clientReference = requiredText(body.clientReference, "Référence client", 50);
     if (!UUID_RE.test(clientReference)) throw new OrderValidationError("Référence de commande invalide.");
 
-    const supabase = createServiceSupabase();
     const number = orderNumber();
     if (!supabase) return NextResponse.json({ orderNumber: number, demo: true });
 
@@ -272,6 +282,7 @@ export async function POST(request: Request) {
     }
 
     const total = Math.round((discountedSubtotal + shippingFee) * 100) / 100;
+    const termsVersion = await getTermsVersion(supabase);
     const { data: order, error: orderError } = await supabase.from("orders").insert({
       order_number: number,
       client_reference: clientReference,
@@ -302,7 +313,7 @@ export async function POST(request: Request) {
       shipping_country: shippingAddress?.country ?? null,
       package_weight_g: packageWeightG,
       terms_accepted_at: new Date().toISOString(),
-      terms_version: "2026-08-09-v1",
+      terms_version: termsVersion,
     }).select("id,public_token").single();
     if (orderError || !order) throw orderError ?? new Error("Order insert failed");
 

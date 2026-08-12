@@ -219,6 +219,7 @@ export const siteSettingDefaults: SiteSettings = {
   support_email: "",
   shipping_packaging_weight_g: "120",
   free_shipping_threshold: "89",
+  terms_version: "2026-08-12-v1",
 
   seo_title: "Ichigo Ichie — Maison de Matcha à Nice",
   seo_description: "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.",
