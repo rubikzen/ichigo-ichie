@@ -37,6 +37,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Shipping lifecycle contract tests
+        run: npm run test:contracts
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
