@@ -4,11 +4,50 @@ import { useCallback, useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Check = { id: string; label: string; status: "ok" | "warning" | "error"; detail: string; blocker?: boolean };
+type CommerceHealth = {
+  summary: {
+    reservationIssueCount: number;
+    stockReservationLeaks: number;
+    promoReservationLeaks: number;
+    promoMismatchCount: number;
+    outOfStock: number;
+    lowStock: number;
+  };
+  reservationIssues: Array<{
+    id: string;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    stockReserved: boolean;
+    promoReserved: boolean;
+    stockLeak: boolean;
+    promoLeak: boolean;
+    ageMinutes: number;
+    reason: string;
+  }>;
+  promoMismatches: Array<{
+    id: string;
+    code: string;
+    reservedCount: number;
+    orderReservations: number;
+  }>;
+  stockAlerts: Array<{
+    id: string;
+    kind: "product" | "variant";
+    name: string;
+    productName: string | null;
+    sku: string | null;
+    stock: number;
+    severity: "out" | "low";
+  }>;
+  generatedAt: string;
+};
 type Health = {
   environment: "test" | "live";
   origin: string;
   checks: Check[];
   dataCounts: { test: number; live: number; legacy: number; archivedTest: number };
+  commerceHealth: CommerceHealth | null;
   readyForLiveSwitch: boolean;
   productionReady: boolean;
   generatedAt: string;
@@ -93,6 +132,120 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
           <div><strong>{check.label}</strong><p>{check.detail}</p>{check.blocker && check.status === "error" && <small>Bloquant avant production</small>}</div>
         </article>)}
       </div>
+
+      {health.commerceHealth && (
+        <section className="commerce-health-v375">
+          <div className="production-section-title-v246 commerce-health-head-v375">
+            <div>
+              <p className="eyebrow">COMMERCE</p>
+              <h3>Stock & réservations</h3>
+              <p className="muted">Diagnostic en lecture seule : aucune réservation ni quantité n’est modifiée depuis cette page.</p>
+            </div>
+            <span>
+              {health.commerceHealth.summary.reservationIssueCount ||
+              health.commerceHealth.summary.promoMismatchCount
+                ? "À vérifier"
+                : "Réservations saines"}
+            </span>
+          </div>
+
+          <div className="commerce-health-kpis-v375">
+            <div className={health.commerceHealth.summary.reservationIssueCount ? "danger" : ""}>
+              <strong>{health.commerceHealth.summary.reservationIssueCount}</strong>
+              <span>Réservations à vérifier</span>
+            </div>
+            <div className={health.commerceHealth.summary.stockReservationLeaks ? "danger" : ""}>
+              <strong>{health.commerceHealth.summary.stockReservationLeaks}</strong>
+              <span>Stock encore réservé</span>
+            </div>
+            <div className={health.commerceHealth.summary.promoMismatchCount ? "danger" : ""}>
+              <strong>{health.commerceHealth.summary.promoMismatchCount}</strong>
+              <span>Compteurs promo incohérents</span>
+            </div>
+            <div className={health.commerceHealth.summary.outOfStock ? "warning" : ""}>
+              <strong>{health.commerceHealth.summary.outOfStock}</strong>
+              <span>Ruptures</span>
+            </div>
+            <div className={health.commerceHealth.summary.lowStock ? "warning" : ""}>
+              <strong>{health.commerceHealth.summary.lowStock}</strong>
+              <span>Stocks faibles ≤ 3</span>
+            </div>
+          </div>
+
+          {!health.commerceHealth.summary.reservationIssueCount &&
+          !health.commerceHealth.summary.promoMismatchCount ? (
+            <div className="commerce-health-ok-v375">
+              <strong>Réservations cohérentes ✓</strong>
+              <span>Les commandes expirées/annulées ne conservent pas de réservation détectable et les compteurs promo correspondent aux commandes réservées.</span>
+            </div>
+          ) : null}
+
+          {health.commerceHealth.reservationIssues.length > 0 && (
+            <div className="commerce-health-block-v375">
+              <div className="commerce-health-block-title-v375">
+                <strong>Commandes à vérifier</strong>
+                <small>La page ne corrige rien automatiquement.</small>
+              </div>
+              <div className="commerce-health-rows-v375">
+                {health.commerceHealth.reservationIssues.map((issue) => (
+                  <article key={issue.id}>
+                    <div>
+                      <strong>{issue.orderNumber}</strong>
+                      <small>{issue.reason}</small>
+                    </div>
+                    <div className="commerce-health-tags-v375">
+                      {issue.stockLeak && <span className="danger">STOCK</span>}
+                      {issue.promoLeak && <span className="danger">PROMO</span>}
+                      <span>{issue.paymentStatus || issue.status}</span>
+                      <span>{issue.ageMinutes} min</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {health.commerceHealth.promoMismatches.length > 0 && (
+            <div className="commerce-health-block-v375">
+              <div className="commerce-health-block-title-v375">
+                <strong>Compteurs de codes promo</strong>
+                <small>Le compteur SQL doit correspondre aux commandes réellement réservées.</small>
+              </div>
+              <div className="commerce-health-rows-v375">
+                {health.commerceHealth.promoMismatches.map((promo) => (
+                  <article key={promo.id}>
+                    <div>
+                      <strong>{promo.code}</strong>
+                      <small>Compteur promo : {promo.reservedCount} · commandes réservées : {promo.orderReservations}</small>
+                    </div>
+                    <span className="commerce-health-mismatch-v375">Écart {promo.reservedCount - promo.orderReservations}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {health.commerceHealth.stockAlerts.length > 0 && (
+            <div className="commerce-health-block-v375">
+              <div className="commerce-health-block-title-v375">
+                <strong>Alertes stock Boutique</strong>
+                <small>Produits actifs sans variante + variantes actives.</small>
+              </div>
+              <div className="commerce-stock-grid-v375">
+                {health.commerceHealth.stockAlerts.map((alert) => (
+                  <article key={`${alert.kind}-${alert.id}`} className={alert.severity}>
+                    <div>
+                      <strong>{alert.productName ? `${alert.productName} · ${alert.name}` : alert.name}</strong>
+                      <small>{alert.sku ? `SKU ${alert.sku}` : alert.kind === "variant" ? "Variante" : "Produit"}</small>
+                    </div>
+                    <span>{alert.stock}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="production-launch-v246">
         <div className="production-section-title-v246"><div><p className="eyebrow">MISE EN LIGNE</p><h3>Checklist finale</h3></div><span>{health.readyForLiveSwitch ? "Technique prête" : `${blockers.length} blocage(s)`}</span></div>

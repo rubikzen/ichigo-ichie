@@ -2902,3 +2902,195 @@
   }
 }
 
+/* Ichigo Ichie V3.75 — Commerce health */
+.commerce-health-v375 {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid var(--line,#dfe3d8);
+  border-radius: 24px;
+  background: #fff;
+}
+.commerce-health-head-v375 {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.commerce-health-head-v375 .muted {
+  max-width: 720px;
+  margin: 5px 0 0;
+}
+.commerce-health-kpis-v375 {
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  gap: 10px;
+}
+.commerce-health-kpis-v375 > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line,#e1e5de);
+  border-radius: 16px;
+  background: #fafbf8;
+}
+.commerce-health-kpis-v375 > div.warning {
+  background: #fff8e8;
+  border-color: #ead7a9;
+}
+.commerce-health-kpis-v375 > div.danger {
+  background: #fff1ee;
+  border-color: #e6beb5;
+}
+.commerce-health-kpis-v375 strong {
+  display: block;
+  font-family: var(--serif,Georgia,serif);
+  font-size: 26px;
+  line-height: 1;
+}
+.commerce-health-kpis-v375 span {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted,#6d786f);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.commerce-health-ok-v375 {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border-radius: 15px;
+  background: #eef5ea;
+}
+.commerce-health-ok-v375 strong {
+  color: #315b43;
+}
+.commerce-health-ok-v375 span {
+  color: #5d6d62;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.commerce-health-block-v375 {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line,#e4e7e1);
+}
+.commerce-health-block-title-v375 {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 9px;
+}
+.commerce-health-block-title-v375 small {
+  color: var(--muted,#6d786f);
+}
+.commerce-health-rows-v375 {
+  display: grid;
+  gap: 7px;
+}
+.commerce-health-rows-v375 article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line,#e4e7e1);
+  border-radius: 14px;
+  background: #fbfcf9;
+}
+.commerce-health-rows-v375 article > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.commerce-health-rows-v375 article small {
+  color: var(--muted,#6d786f);
+  line-height: 1.4;
+}
+.commerce-health-tags-v375 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.commerce-health-tags-v375 span,
+.commerce-health-mismatch-v375 {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #edf0eb;
+  color: #58665d;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.commerce-health-tags-v375 span.danger,
+.commerce-health-mismatch-v375 {
+  background: #f8e7e3;
+  color: #994d42;
+}
+.commerce-stock-grid-v375 {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+}
+.commerce-stock-grid-v375 article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--line,#e4e7e1);
+  border-radius: 14px;
+  background: #fbfcf9;
+}
+.commerce-stock-grid-v375 article.out {
+  background: #fff1ee;
+  border-color: #e6beb5;
+}
+.commerce-stock-grid-v375 article.low {
+  background: #fff8e8;
+  border-color: #ead7a9;
+}
+.commerce-stock-grid-v375 article > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.commerce-stock-grid-v375 article small {
+  color: var(--muted,#6d786f);
+}
+.commerce-stock-grid-v375 article > span {
+  font-family: var(--serif,Georgia,serif);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .commerce-health-kpis-v375 {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+}
+@media (max-width: 700px) {
+  .commerce-health-v375 {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .commerce-health-kpis-v375 {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .commerce-health-block-title-v375,
+  .commerce-health-rows-v375 article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .commerce-health-tags-v375 {
+    justify-content: flex-start;
+  }
+  .commerce-stock-grid-v375 {
+    grid-template-columns: 1fr;
+  }
+}
+

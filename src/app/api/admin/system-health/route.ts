@@ -8,6 +8,10 @@ import {
   stripePublishableMode,
   stripeSecretMode,
 } from "@/lib/runtime-environment";
+import {
+  collectCommerceHealth,
+  type CommerceHealth,
+} from "@/lib/commerce-health";
 
 type CheckStatus = "ok" | "warning" | "error";
 type Check = { id: string; label: string; status: CheckStatus; detail: string; blocker?: boolean };
@@ -116,6 +120,60 @@ export async function GET(request: Request) {
       checks.push({ id: "legacy", label: "Données historiques", status: "warning", detail: error instanceof Error ? error.message : "Comptage indisponible." });
     }
 
+    let commerceHealth: CommerceHealth | null = null;
+    try {
+      commerceHealth = await collectCommerceHealth(supabase, environment);
+      const reservationProblems =
+        commerceHealth.summary.reservationIssueCount +
+        commerceHealth.summary.promoMismatchCount;
+
+      checks.push(
+        reservationProblems
+          ? {
+              id: "reservations",
+              label: "Réservations",
+              status: "error",
+              blocker: true,
+              detail: `${commerceHealth.summary.reservationIssueCount} commande(s) à vérifier · ${commerceHealth.summary.stockReservationLeaks} réservation(s) stock · ${commerceHealth.summary.promoReservationLeaks} réservation(s) promo · ${commerceHealth.summary.promoMismatchCount} compteur(s) promo incohérent(s).`,
+            }
+          : {
+              id: "reservations",
+              label: "Réservations",
+              status: "ok",
+              detail: "Aucune réservation stock/promo obsolète détectée.",
+            },
+      );
+
+      const stockWarnings =
+        commerceHealth.summary.outOfStock + commerceHealth.summary.lowStock;
+      checks.push(
+        stockWarnings
+          ? {
+              id: "inventory",
+              label: "Stock Boutique",
+              status: "warning",
+              detail: `${commerceHealth.summary.outOfStock} rupture(s) · ${commerceHealth.summary.lowStock} stock(s) faible(s) (≤ 3).`,
+            }
+          : {
+              id: "inventory",
+              label: "Stock Boutique",
+              status: "ok",
+              detail: "Aucune rupture ni stock faible sur les produits Boutique actifs.",
+            },
+      );
+    } catch (error) {
+      checks.push({
+        id: "reservations",
+        label: "Réservations",
+        status: "error",
+        blocker: true,
+        detail:
+          error instanceof Error
+            ? `Diagnostic stock/réservations indisponible : ${error.message}`
+            : "Diagnostic stock/réservations indisponible.",
+      });
+    }
+
     const blocking = checks.filter((check) => check.blocker && check.status !== "ok");
     const readyForLiveSwitch = blocking.length === 0;
     const productionReady = readyForLiveSwitch && environment === "live" && isHttps && !isLocal;
@@ -126,6 +184,7 @@ export async function GET(request: Request) {
       origin,
       checks,
       dataCounts,
+      commerceHealth,
       readyForLiveSwitch,
       productionReady,
       generatedAt: new Date().toISOString(),
