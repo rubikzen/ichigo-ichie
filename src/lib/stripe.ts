@@ -242,10 +242,12 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
   }).eq("id", orderId).neq("payment_status", "refunded").neq("payment_status", "refund_pending");
   const { error: promoCommitError } = await supabase.rpc("commit_order_promo", { p_order_id: orderId });
   if (promoCommitError) console.error("Promo commit error", promoCommitError);
-  try { await issueAndEmailInvoice(supabase, orderId); }
-  catch (invoiceError) { console.error("Automatic invoice error", invoiceError); }
+  // Customer lifecycle: confirmation first, accounting document second.
+  // Both sends are idempotent and neither failure blocks the paid order state.
   try { await sendOrderEmail(supabase, orderId, "confirmation"); }
   catch (emailError) { console.error("Order confirmation email error", emailError); }
+  try { await issueAndEmailInvoice(supabase, orderId); }
+  catch (invoiceError) { console.error("Automatic invoice error", invoiceError); }
   try { await sendMerchantOrderNotification(supabase, orderId); }
   catch (merchantEmailError) { console.error("Merchant order notification email error", merchantEmailError); }
 }

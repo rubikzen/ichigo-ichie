@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { getStripeServer, markStripeOrderPaid } from "@/lib/stripe";
 import { consumeRateLimit, tooManyRequests } from "@/lib/public-api";
+import { sendOrderEmail } from "@/lib/order-email";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -94,6 +95,11 @@ export async function POST(
       }
     }
 
+    // Keep track of whether THIS request performed the cancellation.
+    // Retry requests used only to finish reservation cleanup must not send
+    // duplicate cancellation messages.
+    let cancelledNow = false;
+
     // Final database transition is conditional. If Stripe/webhook marks the
     // order paid between our Stripe check and this update, zero rows are
     // updated and we MUST NOT release stock/promo.
@@ -115,6 +121,7 @@ export async function POST(
         .maybeSingle();
 
       if (cancelError) throw cancelError;
+      cancelledNow = Boolean(cancelledOrder);
 
       if (!cancelledOrder) {
         const { data: latest, error: latestError } = await supabase
@@ -186,6 +193,17 @@ export async function POST(
           { error: "Commande annulée, mais la libération du code promo doit être réessayée." },
           { status: 503 },
         );
+      }
+    }
+
+    // Only an explicit customer cancellation sends this email.
+    // Natural Stripe expiry/failed-payment events remain silent.
+    if (cancelledNow) {
+      try {
+        await sendOrderEmail(supabase, order.id, "cancellation");
+      } catch (emailError) {
+        // The order remains cancelled even if email delivery is temporarily unavailable.
+        console.error("Customer cancellation email error", emailError);
       }
     }
 

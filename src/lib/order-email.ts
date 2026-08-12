@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-type EmailKind = "confirmation" | "shipping" | "refund";
+type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation";
 
 function escapeHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
@@ -64,8 +64,15 @@ function shell(brand: string, title: string, intro: string, body: string) {
 export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, kind: EmailKind) {
   const order = await loadOrder(supabase, orderId);
   if (!order.customer_email) return { skipped: true };
-  const timestampField = kind === "confirmation" ? "confirmation_email_sent_at" : kind === "shipping" ? "shipping_email_sent_at" : "refund_email_sent_at";
-  if (order[timestampField]) return { skipped: true };
+  const timestampField =
+    kind === "confirmation"
+      ? "confirmation_email_sent_at"
+      : kind === "shipping"
+        ? "shipping_email_sent_at"
+        : kind === "refund"
+          ? "refund_email_sent_at"
+          : null;
+  if (timestampField && order[timestampField]) return { skipped: true };
 
   const settings = await loadSettings(supabase);
   const brand = settings.brand_name || "ICHIGO ICHIE";
@@ -91,13 +98,44 @@ export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, 
     html = shell(brand, "Votre colis est en route", `La commande ${order.order_number} a été remise au transporteur.`, `
       <div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:22px 0"><strong>${escapeHtml(carrier)}</strong>${tracking ? `<div style="margin-top:8px">N° de suivi : <strong>${escapeHtml(tracking)}</strong></div>` : ""}</div>
       <p><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Suivre mon colis</a></p>`);
+  } else if (kind === "cancellation") {
+    subject = `${brand} · Commande ${order.order_number} annulée`;
+    html = shell(
+      brand,
+      "Votre commande a été annulée",
+      `Bonjour ${order.customer_first_name || ""}, la commande ${order.order_number} a bien été annulée.`,
+      `
+      <div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:22px 0">
+        <strong>Aucun paiement n’a été encaissé.</strong>
+        <div style="margin-top:6px;color:#59665f;line-height:1.5">
+          Les articles réservés pour cette commande ont été libérés.
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin:22px 0">${orderLines(order)}</table>
+      <p style="margin-top:24px">
+        <a href="${escapeHtml(`${siteOrigin()}/#boutique`)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">
+          Retour à la boutique
+        </a>
+      </p>`
+    );
   } else {
     subject = `${brand} · Remboursement ${order.order_number}`;
-    html = shell(brand, "Remboursement confirmé", `Le remboursement de la commande ${order.order_number} a été demandé auprès du moyen de paiement utilisé.`, `<p style="font-size:22px"><strong>${money(order.total)}</strong></p><p>Le délai d’apparition sur votre compte dépend ensuite de votre banque et du moyen de paiement.</p>`);
+    html = shell(
+      brand,
+      "Remboursement confirmé",
+      `Le remboursement de la commande ${order.order_number} a été confirmé.`,
+      `<p style="font-size:22px"><strong>${money(order.total)}</strong></p><p>Le délai d’apparition sur votre compte dépend ensuite de votre banque et du moyen de paiement.</p>`
+    );
   }
 
   const sent = await sendResendEmail({ to: order.customer_email, subject, html, idempotencyKey: `${kind}-${order.id}` });
-  if (!sent.skipped) await supabase.from("orders").update({ [timestampField]: new Date().toISOString() }).eq("id", order.id).is(timestampField, null);
+  if (!sent.skipped && timestampField) {
+    await supabase
+      .from("orders")
+      .update({ [timestampField]: new Date().toISOString() })
+      .eq("id", order.id)
+      .is(timestampField, null);
+  }
   return sent;
 }
 
