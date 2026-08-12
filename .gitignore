@@ -5,3 +5,7 @@ node_modules
 .vercel
 .DS_Store
 *.log
+*.backup
+*.backup-*
+*.backup-v*
+supabase/.temp/
