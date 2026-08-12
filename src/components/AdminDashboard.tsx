@@ -1,18 +1,20 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { ProductGalleryAdmin } from "./ProductGalleryAdmin";
 import type { Category, ProductType, Variant } from "@/lib/types";
 import { siteSettingDefaults } from "@/lib/settings";
 import { PromotionsAdmin } from "./PromotionsAdmin";
-import { OrderStatistics } from "./OrderStatistics";
 import { InvoiceSettingsAdmin } from "./InvoiceSettingsAdmin";
 import { ProductionAdmin } from "./ProductionAdmin";
-import { AdminMessages } from "./admin/AdminMessages";
+import { AdminMessages, type AdminContactMessage } from "./admin/AdminMessages";
 import { CategoryAdmin, VariantEditor } from "./admin/AdminCatalogEditors";
 import { SettingsAdmin } from "./admin/AdminSettings";
+import { AdminOrders } from "./admin/AdminOrders";
+
+type Tab = "products" | "categories" | "orders" | "promos" | "messages" | "invoices" | "settings" | "system";
 
 type AdminProduct = {
   id: string; slug: string; category_id: string; type: ProductType; name_fr: string; name_en: string;
@@ -20,11 +22,7 @@ type AdminProduct = {
   base_price: number; stock: number; pickup_only: boolean; active: boolean; featured: boolean; sort_order: number;
   image_url: string | null; ideal_for: string[]; shipping_weight_g: number;
 };
-type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
-type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
-type TrackingDraft = { carrier: string; number: string; url: string };
-const TRACKING_CARRIERS = ["Colissimo", "Chronopost", "Mondial Relay", "DHL", "UPS", "Autre"] as const;
-type Tab = "products" | "categories" | "orders" | "promos" | "messages" | "invoices" | "settings" | "system";
+type Order= "products" | "categories" | "orders" | "promos" | "messages" | "invoices" | "settings" | "system";
 
 const blankProduct: AdminProduct = { id: "", slug: "", category_id: "", type: "drink", name_fr: "", name_en: "", description_fr: "", description_en: "", long_description_fr: "", long_description_en: "", origin: "", cultivar: "", badge: "", base_price: 0, stock: 99, pickup_only: true, active: true, featured: false, sort_order: 1, image_url: "", ideal_for: [], shipping_weight_g: 0 };
 
@@ -34,20 +32,6 @@ function slugify(value: string) {
 
 function normalizeCategoryName(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function buildTrackingUrl(carrier: string, trackingNumber: string) {
-  const number = trackingNumber.trim();
-  if (!number) return "";
-  const encoded = encodeURIComponent(number);
-
-  if (carrier === "Colissimo" || carrier === "Chronopost") {
-    return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encoded}`;
-  }
-  if (carrier === "Mondial Relay") return "https://www.mondialrelay.fr/suivi-de-colis/";
-  if (carrier === "DHL") return "https://www.dhl.com/fr-fr/home/suivi.html";
-  if (carrier === "UPS") return "https://www.ups.com/track?loc=fr_FR";
-  return "";
 }
 
 function inferProductPreset(category: Category | undefined, zone: "menu" | "shop") {
@@ -79,25 +63,14 @@ export function AdminDashboard() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<Tab>("orders");
+  const [orderPendingCount, setOrderPendingCount] = useState(0);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [contactMessages, setContactMessages] = useState<ContactMessageRow[]>([]);
+  const [contactMessages, setContactMessages] = useState<AdminContactMessage[]>([]);
   const [contactFilter, setContactFilter] = useState<"new" | "all" | "archived">("new");
   const [contactSearch, setContactSearch] = useState("");
- const [orderFilter, setOrderFilter] = useState("active");
-const [orderEnvironmentFilter, setOrderEnvironmentFilter] =
-  useState<"live" | "test" | "all">("live");
-const [orderSearch, setOrderSearch] = useState("");
-const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-const [trackingEditOrderId, setTrackingEditOrderId] = useState<string | null>(null);
-const [trackingDraft, setTrackingDraft] = useState<TrackingDraft>({ carrier: "", number: "", url: "" });
-const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
-  const [orderActionMessage, setOrderActionMessage] = useState("");
-  const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
-  const orderSoundEnabledRef = useRef(false);
-  const seenPendingOrders = useRef<Set<string> | null>(null);
   const [selectedId, setSelectedId] = useState<string>("");
   const [productDraft, setProductDraft] = useState<AdminProduct>(blankProduct);
   const [saving, setSaving] = useState(false);
@@ -108,7 +81,6 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
   const [quickSavingId, setQuickSavingId] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const [statsExpanded, setStatsExpanded] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -117,30 +89,12 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       if (!userResult.user) return router.replace("/admin/login");
       const { data: admin } = await supabase.from("admins").select("user_id").eq("user_id", userResult.user.id).maybeSingle();
       if (!admin) { await supabase.auth.signOut(); return router.replace("/admin/login"); }
-      await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadMessages(), loadSettings()]);
+      await Promise.all([loadProducts(), loadCategories(), loadMessages(), loadSettings()]);
       setReady(true);
     }
     init();
   }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-  if (!supabase) return;
-
-  const stored = window.localStorage.getItem("ichigo-order-sound");
-  const enabled = stored === "1";
-
-  setOrderSoundEnabled(enabled);
-  orderSoundEnabledRef.current = enabled;
-
-  const timer = window.setInterval(() => {
-    // Ne jamais écraser les champs pendant la saisie du suivi.
-    if (!trackingEditOrderId) {
-      loadOrders();
-    }
-  }, 10000);
-
-  return () => window.clearInterval(timer);
-}, [supabase, trackingEditOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
   async function loadProducts() {
     if (!supabase) return;
     const [{ data: productRows }, { data: variantRows }] = await Promise.all([
@@ -151,52 +105,13 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
     setVariants((variantRows ?? []) as Variant[]);
   }
   async function loadCategories() { if (!supabase) return; const { data } = await supabase.from("categories").select("*").order("kind").order("sort_order"); setCategories((data ?? []) as Category[]); }
-  function playNewOrderSound() {
-    try {
-      const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextCtor) return;
-      const context = new AudioContextCtor();
-      const now = context.currentTime;
-      [0, 0.16].forEach((delay, index) => {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(index === 0 ? 880 : 1040, now + delay);
-        gain.gain.setValueAtTime(0.0001, now + delay);
-        gain.gain.exponentialRampToValueAtTime(0.18, now + delay + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.13);
-        oscillator.connect(gain); gain.connect(context.destination);
-        oscillator.start(now + delay); oscillator.stop(now + delay + 0.14);
-      });
-      window.setTimeout(() => context.close().catch(() => undefined), 700);
-    } catch { /* browser may block audio until a user interaction */ }
-  }
-  async function loadOrders() {
-    if (!supabase) return;
-    const { data } = await supabase.from("orders").select("*, order_items(*), invoices(id,document_type,document_number)").is("archived_at", null).order("created_at", { ascending: false }).limit(120);
-    const rows = (data ?? []) as OrderRow[];
-    const pendingIds = new Set(rows.filter((order) => (order.source_channel === "shop" || order.source_channel === "mixed" || (!order.source_channel && order.order_type === "shipping")) && order.status === "pending" && (order.payment_method !== "online" || order.payment_status === "paid")).map((order) => order.id));
-    if (seenPendingOrders.current && orderSoundEnabledRef.current) {
-      const hasNew = [...pendingIds].some((id) => !seenPendingOrders.current!.has(id));
-      if (hasNew) playNewOrderSound();
-    }
-    seenPendingOrders.current = pendingIds;
-    setOrders(rows);
-  }
-  function toggleOrderSound() {
-    const next = !orderSoundEnabled;
-    setOrderSoundEnabled(next);
-    orderSoundEnabledRef.current = next;
-    window.localStorage.setItem("ichigo-order-sound", next ? "1" : "0");
-    if (next) playNewOrderSound();
-  }
   async function loadMessages() {
     if (!supabase) return;
     const { data, error } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(200);
     if (error) { console.warn("Contact messages unavailable", error.message); return setContactMessages([]); }
-    setContactMessages((data ?? []) as ContactMessageRow[]);
+    setContactMessages((data ?? []) as AdminContactMessage[]);
   }
-  async function updateContactStatus(id: string, status: ContactMessageRow["status"]) {
+  async function updateContactStatus(id: string, status: AdminContactMessage["status"]) {
     if (!supabase) return;
     const { error } = await supabase.from("contact_messages").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return window.alert(error.message);
@@ -383,182 +298,6 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
 
 
   async function deleteVariant(id: string) { if (!supabase || !window.confirm("Supprimer ce format ?")) return; await supabase.from("product_variants").delete().eq("id", id); await loadProducts(); }
-  async function updateOrder(id: string, status: string) {
-    if (!supabase) return;
-    const order = orders.find((item) => item.id === id);
-    if (!order) return;
-    setOrderActionMessage("Enregistrement…");
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) return setOrderActionMessage("Session admin expirée.");
-    try {
-      const response = await fetch(`/api/admin/orders/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          status,
-          trackingCarrier: order.tracking_carrier ?? "",
-          trackingNumber: order.tracking_number ?? "",
-          trackingUrl: order.tracking_url ?? "",
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Modification impossible.");
-      setOrderActionMessage(status === "refunded" ? "Remboursement transmis à Stripe ✓" : "Commande enregistrée ✓");
-      await loadOrders();
-    } catch (error) {
-      setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
-    }
-  }
-
-  function toggleTrackingEditor(order: OrderRow) {
-    if (trackingEditOrderId === order.id) {
-      setTrackingEditOrderId(null);
-      setTrackingDraft({ carrier: "", number: "", url: "" });
-      return;
-    }
-
-    const savedCarrier = String(order.tracking_carrier || "").trim();
-    const carrier = TRACKING_CARRIERS.includes(savedCarrier as (typeof TRACKING_CARRIERS)[number])
-      ? savedCarrier
-      : savedCarrier
-        ? "Autre"
-        : "Colissimo";
-    const number = String(order.tracking_number || "");
-    const generatedUrl = buildTrackingUrl(carrier, number);
-
-    setTrackingDraft({
-      carrier,
-      number,
-      url: order.tracking_url || generatedUrl,
-    });
-    setTrackingEditOrderId(order.id);
-  }
-
-  async function saveTracking(orderId: string, markShipped = false) {
-    if (!supabase) return false;
-
-    const order = orders.find((item) => item.id === orderId);
-    if (!order) return false;
-
-    const number = trackingDraft.number.trim();
-    if (!number) {
-      setOrderActionMessage("Ajoutez un numéro de suivi.");
-      return false;
-    }
-
-    setOrderActionMessage(markShipped ? "Enregistrement et expédition…" : "Enregistrement du suivi…");
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) {
-      setOrderActionMessage("Session admin expirée.");
-      return false;
-    }
-
-    const carrier = trackingDraft.carrier.trim() || "Colissimo";
-    const url = carrier === "Autre"
-      ? trackingDraft.url.trim()
-      : buildTrackingUrl(carrier, number);
-
-    try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...(markShipped ? { status: "completed" } : {}),
-          trackingCarrier: carrier,
-          trackingNumber: number,
-          trackingUrl: url,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || (markShipped ? "Impossible de marquer la commande comme expédiée." : "Impossible d’enregistrer le suivi."));
-
-      setOrders((current) =>
-        current.map((item) =>
-          item.id === orderId
-            ? {
-                ...item,
-                ...(markShipped ? { status: "completed", shipped_at: item.shipped_at || new Date().toISOString() } : {}),
-                tracking_carrier: carrier || null,
-                tracking_number: number,
-                tracking_url: url || null,
-              }
-            : item
-        )
-      );
-
-      setOrderActionMessage(markShipped ? "Commande expédiée ✓ · E-mail client déclenché" : "Suivi enregistré ✓");
-      setTrackingEditOrderId(null);
-      setTrackingDraft({ carrier: "", number: "", url: "" });
-      await loadOrders();
-      return true;
-    } catch (error) {
-      setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
-      return false;
-    }
-  }
-
-  async function markOrderCompleted(order: OrderRow) {
-    if (order.order_type !== "shipping") {
-      await updateOrder(order.id, "completed");
-      return;
-    }
-
-    if (!String(order.tracking_number || "").trim()) {
-      setOrderActionMessage("Ajoutez d’abord le numéro de suivi avant de marquer le colis comme expédié.");
-      if (trackingEditOrderId !== order.id) toggleTrackingEditor(order);
-      return;
-    }
-
-    await updateOrder(order.id, "completed");
-  }
-  async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note") {
-    if (!supabase) return;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) return setOrderActionMessage("Session admin expirée.");
-    setOrderActionMessage(action === "email" ? "Envoi de la facture…" : action === "credit_note" ? "Création de l’avoir…" : "Création de la facture…");
-    try {
-      const response = await fetch(`/api/admin/invoices/${order.id}`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Action facture impossible.");
-      setOrderActionMessage(action === "email" ? "Facture envoyée ✓" : action === "credit_note" ? "Avoir créé ✓" : "Facture créée ✓");
-      await loadOrders();
-    } catch (error) {
-      setOrderActionMessage(error instanceof Error ? error.message : "Action facture impossible.");
-    }
-  }
-
-  async function markPickupPaid(id: string) {
-    if (!supabase) return;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) return setOrderActionMessage("Session admin expirée.");
-    setOrderActionMessage("Enregistrement du paiement…");
-    try {
-      const response = await fetch(`/api/admin/orders/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-        body: JSON.stringify({ markPaid: true }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Modification impossible.");
-      setOrderActionMessage("Paiement au retrait enregistré ✓");
-      await loadOrders();
-    } catch (error) {
-      setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
-    }
-  }
-
   async function logout() { if (supabase) await supabase.auth.signOut(); router.replace("/admin/login"); }
 
   if (!ready) return <section className="admin-shell"><div className="loading-card">Chargement de l’administration…</div></section>;
@@ -566,38 +305,6 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
 
   const selectedVariants = variants.filter((variant) => variant.product_id === productDraft.id);
   const labels: Record<Tab, string> = { products: "Catalogue", categories: "Catégories", orders: "Commandes", promos: "Promotions", messages: "Messages", invoices: "Facturation", settings: "Réglages", system: "Système" };
-  const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" || order.source_channel === "mixed" || (!order.source_channel && order.order_type === "shipping");
-  const zoneOrders = orders.filter((order) => orderMatchesZone(order));
-  const orderStats = {
-    pending: zoneOrders.filter((order) => order.status === "pending").length,
-    preparing: zoneOrders.filter((order) => order.status === "preparing").length,
-    ready: zoneOrders.filter((order) => order.status === "ready").length,
-    active: zoneOrders.filter((order) => ["pending", "preparing", "ready"].includes(order.status)).length,
-  };
-  const search = orderSearch.trim().toLowerCase();
-  const filteredOrders = orders.filter((order) => {
-  const matchesFilter =
-    orderFilter === "all"
-      ? true
-      : orderFilter === "active"
-        ? ["pending", "preparing", "ready"].includes(order.status)
-        : order.status === orderFilter;
-
-  const matchesEnvironment =
-    orderEnvironmentFilter === "all"
-      ? true
-      : order.environment === orderEnvironmentFilter;
-
-  const haystack =
-    `${order.order_number} ${order.customer_first_name} ${order.customer_last_name} ${order.customer_phone} ${order.customer_email} ${order.shipping_city ?? ""}`.toLowerCase();
-
-  return (
-    orderMatchesZone(order) &&
-    matchesFilter &&
-    matchesEnvironment &&
-    (!search || haystack.includes(search))
-  );
-});
   const newContactCount = contactMessages.filter((item) => item.status === "new").length;
 
   const categoryById = new Map<string, Category>(categories.map((category) => [category.id, category]));
@@ -641,7 +348,7 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
       <div className="admin-nav-group-v241 admin-nav-operations-v241">
         <span className="admin-nav-group-label-v241">Opérations</span>
         <div className="admin-nav-buttons-v241">
-          {(["orders", "messages"] as Tab[]).map((name) => <button key={name} className={tab === name ? "active" : ""} onClick={() => setTab(name)}>{labels[name]}{name === "orders" && orders.filter((o) => o.status === "pending").length ? <span>{orders.filter((o) => o.status === "pending").length}</span> : name === "messages" && newContactCount ? <span>{newContactCount}</span> : null}</button>)}
+          {(["orders", "messages"] as Tab[]).map((name) => <button key={name} className={tab === name ? "active" : ""} onClick={() => setTab(name)}>{labels[name]}{name === "orders" && orderPendingCount ? <span>{orderPendingCount}</span> : name === "messages" && newContactCount ? <span>{newContactCount}</span> : null}</button>)}
         </div>
       </div>
       <div className="admin-nav-separator-v241" aria-hidden="true"></div>
@@ -730,402 +437,16 @@ const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null
     </div>}
 
     {tab === "categories" && <CategoryAdmin categories={categories} supabase={supabase} reload={loadCategories} />}
-    {tab === "orders" && <div className="orders-admin orders-v214 orders-v227">
-      <div className="section-inline orders-heading"><div><h2>Commandes</h2><p className="muted">Commandes de la Boutique en ligne : paiement, préparation, retrait ou expédition.</p></div><div className="orders-heading-actions"><button type="button" className={orderSoundEnabled ? "sound-toggle active" : "sound-toggle"} onClick={toggleOrderSound}>{orderSoundEnabled ? "🔔 Son activé" : "🔕 Activer le son"}</button><button onClick={loadOrders}>Actualiser</button></div></div>
-      {orderActionMessage && <p className={orderActionMessage.includes("✓") ? "save-message success" : "save-message"}>{orderActionMessage}</p>}
-      <div className="admin-stats-shell-v247">
-  <button
-    type="button"
-    className="admin-stats-toggle-v247"
-    onClick={() => setStatsExpanded((current) => !current)}
-  >
-    <span>
-      <strong>Pilotage Boutique</strong>
-      <small>
-        {statsExpanded
-          ? "Masquer les statistiques"
-          : "Afficher les statistiques détaillées"}
-      </small>
-    </span>
-
-    <span className="admin-stats-toggle-icon-v247">
-      {statsExpanded ? "−" : "+"}
-    </span>
-  </button>
-
-  {statsExpanded && (
-    <OrderStatistics
-      supabase={supabase}
-      refreshKey={orders
-        .map(
-          (order) =>
-            `${order.id}:${order.status}:${order.payment_status}:${order.total}`
-        )
-        .join("|")}
-    />
-  )}
-</div>
-      <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
-      <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
-      <div className="order-environment-switch">
-  <button
-    type="button"
-    className={orderEnvironmentFilter === "live" ? "active live" : ""}
-    onClick={() => setOrderEnvironmentFilter("live")}
-  >
-    LIVE
-    <strong>
-      {zoneOrders.filter((order) => order.environment === "live").length}
-    </strong>
-  </button>
-
-  <button
-    type="button"
-    className={orderEnvironmentFilter === "test" ? "active test" : ""}
-    onClick={() => setOrderEnvironmentFilter("test")}
-  >
-    TEST
-    <strong>
-      {zoneOrders.filter((order) => order.environment === "test").length}
-    </strong>
-  </button>
-
-  <button
-    type="button"
-    className={orderEnvironmentFilter === "all" ? "active" : ""}
-    onClick={() => setOrderEnvironmentFilter("all")}
-  >
-    Toutes
-  </button>
-</div>
-      <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["completed","Terminées / expédiées"],["cancelled","Annulées"],["refunded","Remboursées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone, ville…" /></div>
-      {filteredOrders.length ? <div className="order-grid">{filteredOrders.map((order) => {
-        const paymentBlocked = order.payment_method === "online" && order.payment_status !== "paid";
-        const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
-        const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
-        return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
-  <div>
-    <strong>
-      {order.customer_first_name} {order.customer_last_name}
-    </strong>
-
-    <span>
-      {order.order_type === "shipping"
-        ? `${order.shipping_city || "Livraison"} · ${
-            order.order_items?.reduce(
-              (sum, item) => sum + Number(item.quantity || 0),
-              0
-            ) || 0
-          } article(s) · ${order.package_weight_g || 0} g`
-        : order.pickup_time
-          ? `Retrait · ${new Date(order.pickup_time).toLocaleString("fr-FR", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}`
-          : "Retrait boutique"}
-    </span>
-  </div>
-
-  <button
-    type="button"
-    className="button ghost small order-details-toggle-v248"
-    onClick={() =>
-      setExpandedOrderId((current) =>
-        current === order.id ? null : order.id
-      )
-    }
-  >
-    {expandedOrderId === order.id ? "Fermer ↑" : "Détails ↓"}
-  </button>
-</div>
-          <div className="order-card-top"><div><span className={`order-status-dot ${order.status}`}></span><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><span className="channel-pill shop">Boutique</span>{order.environment && <span className={`order-env-pill-v246 ${order.environment}`}>{order.environment === "live" ? "LIVE" : order.environment === "test" ? "TEST" : "LEGACY"}</span>}</div><div><span className={`payment-pill ${order.payment_status}`}>{paymentLabel}</span><strong>{Number(order.total).toFixed(2)} €</strong></div></div>
-          {expandedOrderId === order.id && (
-  <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
-          {order.order_type === "shipping" && (
-  <>
-    <div className="order-shipping-box">
-      <strong>{order.shipping_method_name || "Livraison"}</strong>
-
-      <span>
-        {[
-          order.shipping_address1,
-          order.shipping_address2,
-          `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(),
-          order.shipping_country === "FR"
-            ? "France"
-            : order.shipping_country,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </span>
-
-      <small>
-        Frais : {Number(order.shipping_fee || 0).toFixed(2)} €
-        {" · "}
-        Poids colis : {Number(order.package_weight_g || 0)} g
-      </small>
-    </div>
-
-    <div className="tracking-compact-v249">
-      <div className="tracking-compact-head-v249">
-        <div>
-          <span className="tracking-label-v249">SUIVI</span>
-
-          {order.tracking_number ? (
-            <>
-              <strong>
-                {order.tracking_carrier || "Transporteur"} ·{" "}
-                {order.tracking_number}
-              </strong>
-
-              {order.shipped_at && (
-                <small>
-                  Expédiée le{" "}
-                  {new Date(order.shipped_at).toLocaleDateString("fr-FR")}
-                </small>
-              )}
-            </>
-          ) : (
-            <>
-              <strong>Aucun suivi enregistré</strong>
-              <small>
-                Ajoutez le numéro lorsque le colis est prêt à partir.
-              </small>
-            </>
-          )}
-        </div>
-
-        <div className="tracking-compact-actions-v249">
-          {order.tracking_url && order.tracking_number && (
-            <a
-              href={order.tracking_url}
-              target="_blank"
-              rel="noreferrer"
-              className="button ghost small"
-            >
-              Ouvrir ↗
-            </a>
-          )}
-
-          <button
-            type="button"
-            className="button ghost small"
-            onClick={() => toggleTrackingEditor(order)}
-          >
-            {trackingEditOrderId === order.id
-              ? "Fermer"
-              : order.tracking_number
-                ? "Modifier"
-                : "+ Ajouter"}
-          </button>
-        </div>
-      </div>
-
-      {trackingEditOrderId === order.id && (
-        <div className="tracking-admin-grid-v227 tracking-editor-v249">
-          <label>
-            Transporteur
-            <select
-              value={trackingDraft.carrier}
-              onChange={(e) => {
-                const carrier = e.target.value;
-                setTrackingDraft((current) => ({
-                  ...current,
-                  carrier,
-                  url: carrier === "Autre" ? current.url : buildTrackingUrl(carrier, current.number),
-                }));
-              }}
-            >
-              {TRACKING_CARRIERS.map((carrier) => (
-                <option key={carrier} value={carrier}>{carrier}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            N° de suivi
-            <input
-              value={trackingDraft.number}
-              placeholder="XXXXXXXXXXXXX"
-              autoComplete="off"
-              onChange={(e) => {
-                const number = e.target.value;
-                setTrackingDraft((current) => ({
-                  ...current,
-                  number,
-                  url: current.carrier === "Autre" ? current.url : buildTrackingUrl(current.carrier, number),
-                }));
-              }}
-            />
-          </label>
-
-          {trackingDraft.carrier === "Autre" ? (
-            <label className="tracking-url-field-v227">
-              Lien de suivi
-              <input
-                value={trackingDraft.url}
-                placeholder="https://…"
-                onChange={(e) =>
-                  setTrackingDraft((current) => ({
-                    ...current,
-                    url: e.target.value,
-                  }))
-                }
-              />
-            </label>
-          ) : (
-            <label className="tracking-url-field-v227">
-              Lien généré automatiquement
-              <input
-                value={trackingDraft.url}
-                placeholder="Saisissez le numéro de suivi"
-                readOnly
-              />
-            </label>
-          )}
-
-          {trackingDraft.url && (
-            <a
-              className="button ghost small"
-              href={trackingDraft.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Tester le lien ↗
-            </a>
-          )}
-
-          <div className="tracking-save-actions-v259">
-            <button
-              type="button"
-              className="button ghost small"
-              disabled={order.status === "refunded" || !trackingDraft.number.trim()}
-              onClick={() => saveTracking(order.id)}
-            >
-              Enregistrer le suivi
-            </button>
-
-            {order.status === "ready" && (
-              <button
-                type="button"
-                className="button primary small"
-                disabled={!trackingDraft.number.trim()}
-                onClick={() => saveTracking(order.id, true)}
-              >
-                Enregistrer et expédier
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  </>
-)}
-          <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
-          <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
-            {paymentBlocked ? <div className="payment-blocked-admin"><strong>{order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : "Paiement requis"}</strong><small>{order.payment_status === "refund_pending" ? "Stripe traite le remboursement." : order.payment_status === "refund_failed" ? "Vérifiez Stripe avant toute nouvelle action." : "La préparation est bloquée jusqu’à confirmation Stripe."}</small>{!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && <button type="button" className="button ghost small" onClick={() => updateOrder(order.id, "cancelled")}>Annuler la commande</button>}</div> : <>{order.status === "pending" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "preparing")}>Préparer</button>}{order.status === "preparing" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Prête"}</button>}{order.status === "ready" && <button className="button primary order-next-action" onClick={() => markOrderCompleted(order)}>{order.order_type === "shipping" ? (order.tracking_number ? "Marquer expédiée" : "Ajouter suivi & expédier") : "Remise"}</button>}</>}
-            
-            {order.payment_status === "paid" && !order.invoices?.some((doc) => doc.document_type === "invoice") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "issue")}>Créer la facture</button>}
-            {order.public_token && order.invoices?.some((doc) => doc.document_type === "invoice") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}>Facture PDF ↓</a>}
-            <div className="order-more-menu-v249">
-              <button
-                type="button"
-                className="button ghost small order-more-button-v249"
-                onClick={() =>
-                  setMoreActionsOrderId((current) =>
-                    current === order.id ? null : order.id
-                  )
-                }
-                aria-expanded={moreActionsOrderId === order.id}
-                aria-label="Plus d’actions"
-              >
-                •••
-              </button>
-
-              {moreActionsOrderId === order.id && (
-                <div className="order-more-popover-v249">
-                  {order.invoices?.some(
-                    (doc) => doc.document_type === "invoice"
-                  ) && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setMoreActionsOrderId(null);
-                        await invoiceAction(order, "email");
-                      }}
-                    >
-                      Renvoyer la facture
-                    </button>
-                  )}
-
-                  {order.public_token && (
-                    <a
-                      href={`/commande/${order.public_token}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Vue client ↗
-                    </a>
-                  )}
-
-                  {order.payment_status === "refunded" &&
-                    !order.invoices?.some(
-                      (doc) => doc.document_type === "credit_note"
-                    ) && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setMoreActionsOrderId(null);
-                          await invoiceAction(order, "credit_note");
-                        }}
-                      >
-                        Créer l’avoir
-                      </button>
-                    )}
-
-                  {order.public_token &&
-                    order.invoices?.some(
-                      (doc) => doc.document_type === "credit_note"
-                    ) && (
-                      <a
-                        href={`/api/invoices/${order.id}?token=${encodeURIComponent(
-                          order.public_token
-                        )}&type=credit_note`}
-                      >
-                        Avoir PDF ↓
-                      </a>
-                    )}
-
-                  {canRefund && (
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => {
-                        setMoreActionsOrderId(null);
-                        if (
-                          window.confirm(
-                            `Rembourser ${order.order_number} via Stripe ?`
-                          )
-                        ) {
-                          void updateOrder(order.id, "refunded");
-                        }
-                      }}
-                    >
-                      Rembourser via Stripe
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </aside>
-</div>
-)}
-</article>;
-      })}</div> : <div className="empty-state">Aucune commande Boutique dans cette vue.</div>}
-    </div>}
+    {tab === "orders" && (
+      <AdminOrders
+        supabase={supabase}
+        refreshKey={ordersRefreshKey}
+        onPendingCountChange={setOrderPendingCount}
+      />
+    )}
     {tab === "promos" && <PromotionsAdmin supabase={supabase} />}
     {tab === "invoices" && <InvoiceSettingsAdmin supabase={supabase} />}
-    {tab === "system" && <ProductionAdmin supabase={supabase} onOrdersChanged={loadOrders} />}
+    {tab === "system" && <ProductionAdmin supabase={supabase} onOrdersChanged={() => setOrdersRefreshKey((current) => current + 1)} />}
     {tab === "messages" && (
       <AdminMessages
         messages={contactMessages}
