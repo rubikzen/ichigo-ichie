@@ -57,18 +57,24 @@ export function OrderTracker({ token }: { token: string }) {
   const [retrying, setRetrying] = useState(false);
   const [retryPaymentSession, setRetryPaymentSession] = useState<{ clientSecret: string; orderNumber: string; total: number; trackingUrl?: string | null } | null>(null);
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancelled" | "">("");
+  const [canceling, setCanceling] = useState(false);
+  const [autoRetryRequested, setAutoRetryRequested] = useState(false);
+  const autoRetryStarted = useRef(false);
   const cartClearedAfterPayment = useRef(false);
 
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
   useEffect(() => {
     const state = new URLSearchParams(window.location.search).get("payment");
+
+    if (state === "retry") {
+      setAutoRetryRequested(true);
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+      return;
+    }
+
     if (state !== "success" && state !== "cancelled") return;
-
     setPaymentReturn(state);
-
-    // Remove the payment flag from the address bar once it has been consumed.
-    // This prevents Back/refresh from treating the same Stripe return twice.
     window.history.replaceState(window.history.state, "", window.location.pathname);
   }, []);
 
@@ -126,6 +132,64 @@ export function OrderTracker({ token }: { token: string }) {
     }
   }
 
+  useEffect(() => {
+    if (
+      !autoRetryRequested ||
+      autoRetryStarted.current ||
+      !order ||
+      order.status === "cancelled" ||
+      order.status === "refunded" ||
+      !["pending", "unpaid", "failed", "expired"].includes(order.payment_status)
+    ) {
+      return;
+    }
+
+    autoRetryStarted.current = true;
+    void retryPayment();
+  }, [autoRetryRequested, order]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function cancelUnpaidOrder() {
+    if (!order || !canCancelUnpaid) return;
+
+    const confirmed = window.confirm(
+      language === "fr"
+        ? `Annuler la commande ${order.order_number} ?\n\nLe paiement sera fermé et les articles réservés seront libérés.`
+        : `Cancel order ${order.order_number}?\n\nThe payment will be closed and reserved items will be released.`
+    );
+    if (!confirmed) return;
+
+    setCanceling(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/orders/${encodeURIComponent(token)}/cancel`,
+        { method: "POST" }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Annulation impossible.");
+
+      setRetryPaymentSession(null);
+      setOrder((current) =>
+        current
+          ? {
+              ...current,
+              status: "cancelled",
+              payment_status: (data.paymentStatus || "expired") as PublicOrder["payment_status"],
+              payment_expires_at: null,
+            }
+          : current
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : (language === "fr" ? "Annulation impossible." : "Unable to cancel order.")
+      );
+    } finally {
+      setCanceling(false);
+    }
+  }
+
   if (loading) return <section className="tracking-page"><div className="tracking-card"><p>{language === "fr" ? "Chargement de la commande…" : "Loading order…"}</p></div></section>;
   if (error && !order) return <section className="tracking-page"><div className="tracking-card"><h1>{language === "fr" ? "Commande introuvable" : "Order not found"}</h1><p>{error}</p><Link className="button primary" href="/#boutique">Boutique</Link></div></section>;
   if (!order) return null;
@@ -134,7 +198,8 @@ export function OrderTracker({ token }: { token: string }) {
   const isStopped = order.status === "cancelled" || order.status === "refunded";
   const onlinePayment = order.payment_method === "online";
   const paymentPaid = paymentConfirmed;
-  const paymentNeedsAction = onlinePayment && ["failed", "expired"].includes(order.payment_status);
+  const paymentNeedsAction = onlinePayment && ["pending", "unpaid", "failed", "expired"].includes(order.payment_status);
+  const canCancelUnpaid = paymentNeedsAction && !isStopped && order.status === "pending";
   const invoice = order.invoices?.find((doc) => doc.document_type === "invoice");
 const creditNote = order.invoices?.find((doc) => doc.document_type === "credit_note");
 
@@ -165,7 +230,34 @@ const canDownloadInvoice =
         <strong>{paymentTitle(order, language)}</strong>
         <small>{paymentDescription(order, language, paymentReturn)}</small>
       </div>
-      {paymentNeedsAction && !isStopped && !retryPaymentSession && <button type="button" className="button primary small" disabled={retrying} onClick={retryPayment}>{retrying ? (language === "fr" ? "Préparation…" : "Preparing…") : (language === "fr" ? "Réessayer le paiement" : "Retry payment")}</button>}
+      {paymentNeedsAction && !isStopped && !retryPaymentSession && (
+        <div className="payment-tracking-actions-v361">
+          <button
+            type="button"
+            className="button primary small"
+            disabled={retrying || canceling}
+            onClick={retryPayment}
+          >
+            {retrying
+              ? (language === "fr" ? "Préparation…" : "Preparing…")
+              : ["pending", "unpaid"].includes(order.payment_status)
+                ? (language === "fr" ? "Payer maintenant" : "Pay now")
+                : (language === "fr" ? "Réessayer le paiement" : "Retry payment")}
+          </button>
+          {canCancelUnpaid && (
+            <button
+              type="button"
+              className="button ghost small payment-cancel-button-v361"
+              disabled={retrying || canceling}
+              onClick={() => void cancelUnpaidOrder()}
+            >
+              {canceling
+                ? (language === "fr" ? "Annulation…" : "Cancelling…")
+                : (language === "fr" ? "Annuler la commande" : "Cancel order")}
+            </button>
+          )}
+        </div>
+      )}
     </div>
     {error && <p className="form-error">{error}</p>}
     {retryPaymentSession && !paymentPaid && !isStopped && <div id="tracking-payment-v242" className="tracking-embedded-payment-v242">

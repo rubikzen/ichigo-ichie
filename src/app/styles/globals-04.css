@@ -2788,3 +2788,33 @@
     padding-inline:10px;
   }
 }
+
+
+/* Ichigo Ichie V3.61 — unpaid order customer actions */
+.payment-tracking-actions-v361{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+}
+.customer-cancel-order-v361,
+.payment-cancel-button-v361{
+  border-color:#d6b8b1 !important;
+  color:#8a3f32 !important;
+}
+.customer-cancel-order-v361:hover,
+.payment-cancel-button-v361:hover{
+  background:#fff3f0 !important;
+  border-color:#c98f84 !important;
+}
+@media(max-width:560px){
+  .payment-tracking-actions-v361{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .payment-tracking-actions-v361 .button{
+    width:100%;
+  }
+}

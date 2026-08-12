@@ -383,6 +383,59 @@ export function CustomerAccount() {
     await loadAccount(user);
   }
 
+  function canPayOrder(order: CustomerOrder) {
+    return (
+      Boolean(order.public_token) &&
+      !["cancelled", "refunded"].includes(order.status) &&
+      ["pending", "unpaid", "failed", "expired"].includes(order.payment_status)
+    );
+  }
+
+  function canCancelUnpaidOrder(order: CustomerOrder) {
+    return (
+      Boolean(order.public_token) &&
+      !["cancelled", "refunded", "preparing", "ready", "completed"].includes(order.status) &&
+      !["paid", "refunded", "refund_pending"].includes(order.payment_status)
+    );
+  }
+
+  async function cancelUnpaidOrder(order: CustomerOrder) {
+    if (!order.public_token || !canCancelUnpaidOrder(order)) return;
+
+    const confirmed = window.confirm(
+      language === "fr"
+        ? `Annuler la commande ${order.order_number} ?\n\nLe paiement sera fermé et les articles réservés seront libérés.`
+        : `Cancel order ${order.order_number}?\n\nThe payment will be closed and reserved items will be released.`
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/orders/${encodeURIComponent(order.public_token)}/cancel`,
+        { method: "POST" }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Annulation impossible.");
+
+      setNotice(
+        language === "fr"
+          ? `Commande ${order.order_number} annulée.`
+          : `Order ${order.order_number} cancelled.`
+      );
+      if (user) await loadAccount(user);
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : (language === "fr" ? "Annulation impossible." : "Unable to cancel order.")
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function logout() {
     if (!supabase) return;
     await supabase.auth.signOut();
@@ -695,7 +748,30 @@ export function CustomerAccount() {
 
             <div className="customer-order-actions-v243 customer-order-actions-v244">
               <button type="button" className="button ghost" aria-expanded={expanded} onClick={() => setExpandedOrderId(expanded ? null : order.id)}>{expanded ? (language === "fr" ? "Réduire" : "Collapse") : (language === "fr" ? "Voir le détail" : "View details")}</button>
-              {order.public_token && <Link className="button primary" href={`/commande/${order.public_token}`}>{isActiveOrder(order) ? (language === "fr" ? "Suivre ma commande" : "Track order") : (language === "fr" ? "Voir la commande" : "View order")}</Link>}
+              {canPayOrder(order) && order.public_token ? (
+                <Link
+                  className="button primary"
+                  href={`/commande/${order.public_token}?payment=retry`}
+                >
+                  {language === "fr" ? "Payer maintenant" : "Pay now"}
+                </Link>
+              ) : order.public_token ? (
+                <Link className="button primary" href={`/commande/${order.public_token}`}>
+                  {isActiveOrder(order)
+                    ? (language === "fr" ? "Suivre ma commande" : "Track order")
+                    : (language === "fr" ? "Voir la commande" : "View order")}
+                </Link>
+              ) : null}
+              {canCancelUnpaidOrder(order) && (
+                <button
+                  type="button"
+                  className="button ghost customer-cancel-order-v361"
+                  disabled={saving}
+                  onClick={() => void cancelUnpaidOrder(order)}
+                >
+                  {language === "fr" ? "Annuler" : "Cancel"}
+                </button>
+              )}
               {order.public_token && order.invoices?.some((doc) => doc.document_type === "invoice") && <a className="button ghost invoice-download-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}>{language === "fr" ? "Facture PDF ↓" : "Invoice PDF ↓"}</a>}
               {order.public_token && order.invoices?.some((doc) => doc.document_type === "credit_note") && <a className="button ghost invoice-download-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}&type=credit_note`}>{language === "fr" ? "Avoir PDF ↓" : "Credit note PDF ↓"}</a>}
               {order.tracking_url && order.tracking_number && <a className="button ghost" href={order.tracking_url} target="_blank" rel="noreferrer">{language === "fr" ? "Suivre le colis ↗" : "Track parcel ↗"}</a>}
