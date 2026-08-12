@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { getStripeServer } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
 import { issueAndEmailCreditNote, issueAndEmailInvoice } from "@/lib/invoice";
+import { cancelUnpaidOrder } from "@/lib/order-cancellation";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ORDER_STATUSES = new Set(["pending", "preparing", "ready", "completed", "cancelled", "refunded"]);
@@ -117,9 +118,28 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       return NextResponse.json({ ok: true, refundStatus: refund.status });
     }
 
-    if (status === "cancelled" && order.payment_method === "online" && ["paid", "refund_pending", "refund_failed"].includes(order.payment_status)) {
-      return NextResponse.json({ error: order.payment_status === "refund_pending" ? "Un remboursement Stripe est déjà en cours." : "Le paiement reste encaissé : utilisez « Rembourser via Stripe » au lieu d’annuler." }, { status: 409 });
+    if (status === "cancelled" && order.payment_method === "online") {
+      const cancellation = await cancelUnpaidOrder(supabase, id, {
+        actor: "admin",
+      });
+
+      if (!cancellation.ok) {
+        return NextResponse.json(
+          {
+            error: cancellation.error,
+            cancelled: cancellation.cancelled,
+          },
+          { status: cancellation.httpStatus },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        status: cancellation.status,
+        paymentStatus: cancellation.paymentStatus,
+      });
     }
+
     if (status && ["pending", "preparing", "ready", "completed"].includes(status) && order.payment_method === "online" && order.payment_status !== "paid") {
       return NextResponse.json({ error: "Le paiement Stripe doit être confirmé avant de préparer la commande." }, { status: 409 });
     }

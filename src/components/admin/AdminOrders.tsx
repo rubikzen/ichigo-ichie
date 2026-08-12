@@ -159,9 +159,16 @@ async function updateOrder(id: string, status: string) {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Modification impossible.");
+      if (!response.ok) {
+        if (status === "cancelled" && data.cancelled === true) {
+          await loadOrders();
+        }
+        throw new Error(data.error || "Modification impossible.");
+      }
       if (status === "refunded") {
         setOrderActionMessage("Remboursement transmis à Stripe ✓");
+      } else if (status === "cancelled") {
+        setOrderActionMessage("Commande annulée ✓ · réservations libérées");
       } else if (status === "completed" && order.order_type === "shipping") {
         setOrderActionMessage(shippingEmailMessage(data.shippingEmail));
       } else {
