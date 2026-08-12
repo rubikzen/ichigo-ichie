@@ -17,7 +17,8 @@ function siteOrigin() {
 async function sendResendEmail(input: { to: string; subject: string; html: string; idempotencyKey: string }) {
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.EMAIL_FROM?.trim();
-  if (!key || !from || !input.to) return { skipped: true as const };
+  if (!input.to) return { skipped: true as const, reason: "missing_recipient" as const };
+  if (!key || !from) return { skipped: true as const, reason: "email_not_configured" as const };
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -28,7 +29,7 @@ async function sendResendEmail(input: { to: string; subject: string; html: strin
     body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html }),
   });
   if (!response.ok) throw new Error(`RESEND_${response.status}: ${await response.text()}`);
-  return { skipped: false as const };
+  return { skipped: false as const, reason: "sent" as const };
 }
 
 async function loadOrder(supabase: SupabaseClient, orderId: string) {
@@ -63,7 +64,7 @@ function shell(brand: string, title: string, intro: string, body: string) {
 
 export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, kind: EmailKind) {
   const order = await loadOrder(supabase, orderId);
-  if (!order.customer_email) return { skipped: true };
+  if (!order.customer_email) return { skipped: true as const, reason: "missing_recipient" as const };
   const timestampField =
     kind === "confirmation"
       ? "confirmation_email_sent_at"
@@ -72,7 +73,9 @@ export async function sendOrderEmail(supabase: SupabaseClient, orderId: string, 
         : kind === "refund"
           ? "refund_email_sent_at"
           : null;
-  if (timestampField && order[timestampField]) return { skipped: true };
+  if (timestampField && order[timestampField]) {
+    return { skipped: true as const, reason: "already_sent" as const };
+  }
 
   const settings = await loadSettings(supabase);
   const brand = settings.brand_name || "ICHIGO ICHIE";

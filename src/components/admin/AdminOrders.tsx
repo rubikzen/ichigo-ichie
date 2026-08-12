@@ -117,6 +117,15 @@ function playNewOrderSound() {
     if (next) playNewOrderSound();
   }
 
+function shippingEmailMessage(result: unknown) {
+    if (result === "sent") return "E-mail d’expédition envoyé ✓";
+    if (result === "already_sent") return "E-mail d’expédition déjà envoyé ✓";
+    if (result === "missing_recipient") return "Commande expédiée ✓ · aucun e-mail client renseigné";
+    if (result === "email_not_configured") return "Commande expédiée ✓ · e-mail non configuré";
+    if (result === "failed") return "Commande expédiée ✓ · e-mail à vérifier";
+    return "Commande expédiée ✓";
+  }
+
 async function updateOrder(id: string, status: string) {
     if (!supabase) return;
     const order = orders.find((item) => item.id === id);
@@ -138,7 +147,13 @@ async function updateOrder(id: string, status: string) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Modification impossible.");
-      setOrderActionMessage(status === "refunded" ? "Remboursement transmis à Stripe ✓" : "Commande enregistrée ✓");
+      if (status === "refunded") {
+        setOrderActionMessage("Remboursement transmis à Stripe ✓");
+      } else if (status === "completed" && order.order_type === "shipping") {
+        setOrderActionMessage(shippingEmailMessage(data.shippingEmail));
+      } else {
+        setOrderActionMessage("Commande enregistrée ✓");
+      }
       await loadOrders();
     } catch (error) {
       setOrderActionMessage(error instanceof Error ? error.message : "Modification impossible.");
@@ -226,7 +241,11 @@ async function updateOrder(id: string, status: string) {
         )
       );
 
-      setOrderActionMessage(markShipped ? "Commande expédiée ✓ · E-mail client déclenché" : "Suivi enregistré ✓");
+      setOrderActionMessage(
+        markShipped
+          ? shippingEmailMessage(data.shippingEmail)
+          : "Suivi enregistré ✓"
+      );
       setTrackingEditOrderId(null);
       setTrackingDraft({ carrier: "", number: "", url: "" });
       await loadOrders();

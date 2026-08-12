@@ -90,11 +90,25 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { error: updateError } = await supabase.from("orders").update(patch).eq("id", id);
     if (updateError) throw updateError;
 
+    let shippingEmail:
+      | "sent"
+      | "already_sent"
+      | "missing_recipient"
+      | "email_not_configured"
+      | "failed"
+      | null = null;
+
     if (order.order_type === "shipping" && status === "completed") {
-      try { await sendOrderEmail(supabase, id, "shipping"); } catch (emailError) { console.error("Shipping email error", emailError); }
+      try {
+        const emailResult = await sendOrderEmail(supabase, id, "shipping");
+        shippingEmail = emailResult.skipped ? emailResult.reason : "sent";
+      } catch (emailError) {
+        shippingEmail = "failed";
+        console.error("Shipping email error", emailError);
+      }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, shippingEmail });
   } catch (error) {
     const status = typeof (error as any)?.status === "number" ? (error as any).status : 500;
     console.error("Admin order update error", error);
