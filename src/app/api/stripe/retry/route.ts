@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { createOrReuseStripeCheckout } from "@/lib/stripe";
-import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
+import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -36,8 +36,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(error);
-    if (error instanceof PublicApiError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    const publicError = publicApiErrorInfo(error);
+    if (publicError) {
+      return NextResponse.json(
+        { error: publicError.message, code: publicError.code },
+        { status: publicError.status, headers: { "Cache-Control": "no-store" } },
+      );
     }
     return NextResponse.json({ error: error instanceof Error ? error.message : "Impossible de relancer le paiement." }, { status: 500 });
   }

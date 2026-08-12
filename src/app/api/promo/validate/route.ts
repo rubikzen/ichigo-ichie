@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { resolveCart, type PayloadItem } from "@/lib/order-calculation";
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
-import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
+import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 export async function POST(request: Request) {
   try {
@@ -33,8 +33,9 @@ export async function POST(request: Request) {
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error(error);
-    const status = error instanceof PublicApiError ? error.status : error instanceof PromoCodeError ? error.status : 500;
-    const code = error instanceof PublicApiError ? error.code : undefined;
+    const publicError = publicApiErrorInfo(error);
+    const status = publicError?.status ?? (error instanceof PromoCodeError ? error.status : 500);
+    const code = publicError?.code;
     return NextResponse.json({ error: error instanceof Error ? error.message : "Code promo invalide.", ...(code ? { code } : {}) }, { status });
   }
 }

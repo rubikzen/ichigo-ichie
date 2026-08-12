@@ -7,7 +7,7 @@ import { sendOrderEmail, sendMerchantOrderNotification } from "@/lib/order-email
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
 import { assertInvoiceReadyForProducts, issueAndEmailInvoice } from "@/lib/invoice";
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
-import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
+import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 import { getTermsVersion } from "@/lib/terms";
 
 
@@ -33,9 +33,9 @@ function textValue(value: unknown) {
 }
 
 function classifyOrderError(error: unknown) {
-  if (error instanceof PublicApiError) {
-    return { status: error.status, code: error.code, message: error.message };
-  }
+  const publicError = publicApiErrorInfo(error);
+  if (publicError) return publicError;
+
   if (error instanceof OrderValidationError) {
     return {
       status: error.status || 400,

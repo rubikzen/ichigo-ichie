@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
-import { consumeRateLimit, PublicApiError, readJsonBody, tooManyRequests } from "@/lib/public-api";
+import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 export const runtime = "nodejs";
 
@@ -70,8 +70,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, id: inserted.id });
   } catch (error) {
     console.error("Contact form error", error);
-    if (error instanceof PublicApiError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    const publicError = publicApiErrorInfo(error);
+    if (publicError) {
+      return NextResponse.json(
+        { error: publicError.message, code: publicError.code },
+        { status: publicError.status, headers: { "Cache-Control": "no-store" } },
+      );
     }
     return NextResponse.json({ error: "Impossible d’envoyer le message pour le moment." }, { status: 500 });
   }

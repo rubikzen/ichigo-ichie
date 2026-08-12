@@ -14,6 +14,34 @@ export class PublicApiError extends Error {
   }
 }
 
+export function publicApiErrorInfo(error: unknown) {
+  if (error instanceof PublicApiError) {
+    return { status: error.status, code: error.code, message: error.message };
+  }
+
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      name?: unknown;
+      status?: unknown;
+      code?: unknown;
+      message?: unknown;
+    };
+    const status = Number(candidate.status);
+    if (
+      candidate.name === "PublicApiError"
+      && Number.isInteger(status)
+      && status >= 400
+      && status <= 599
+      && typeof candidate.code === "string"
+      && typeof candidate.message === "string"
+    ) {
+      return { status, code: candidate.code, message: candidate.message };
+    }
+  }
+
+  return null;
+}
+
 export async function readJsonBody<T>(request: Request, maxBytes = 64_000): Promise<T> {
   const contentType = request.headers.get("content-type") || "";
   if (!contentType.toLowerCase().includes("application/json")) {
