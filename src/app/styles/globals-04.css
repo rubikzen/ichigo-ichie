@@ -2720,3 +2720,71 @@
     width: 100%;
   }
 }
+
+/* Ichigo Ichie V3.51 — Admin order environment switch clarity */
+.order-environment-switch-v351{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+}
+.order-environment-switch-v351 button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:44px;
+  padding:0 16px;
+  border:1px solid var(--line,#dfe2d8);
+  border-radius:14px;
+  background:#fff;
+  color:var(--ink,#26362d);
+  font-weight:750;
+  cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease;
+}
+.order-environment-switch-v351 button strong{
+  min-width:24px;
+  height:24px;
+  display:inline-grid;
+  place-items:center;
+  padding:0 6px;
+  border-radius:999px;
+  background:rgba(38,54,45,.08);
+  font-size:12px;
+  line-height:1;
+}
+.order-environment-switch-v351 button.active{
+  box-shadow:0 0 0 2px rgba(41,66,55,.10);
+}
+.order-environment-switch-v351 button.active.live{
+  border-color:var(--moss-dark,#294237);
+  background:var(--moss-dark,#294237);
+  color:#fff;
+}
+.order-environment-switch-v351 button.active.live strong{
+  background:rgba(255,255,255,.18);
+}
+.order-environment-switch-v351 button.active.test{
+  border-color:#c9ae5f;
+  background:#f6edcf;
+  color:#5f4b17;
+}
+.order-environment-switch-v351 button.active.test strong{
+  background:rgba(95,75,23,.11);
+}
+.order-environment-switch-v351 button.active.all{
+  border-color:#768379;
+  background:#eef1ec;
+  color:#314038;
+}
+@media(max-width:560px){
+  .order-environment-switch-v351{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .order-environment-switch-v351 button{
+    min-width:0;
+    padding-inline:10px;
+  }
+}

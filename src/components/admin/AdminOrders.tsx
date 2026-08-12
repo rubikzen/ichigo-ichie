@@ -293,6 +293,12 @@ async function updateOrder(id: string, status: string) {
     }
   }
 
+function selectOrderEnvironment(environment: "live" | "test" | "all") {
+    setOrderEnvironmentFilter(environment);
+    // Changing environment should immediately reveal all orders in that environment.
+    setOrderFilter("all");
+  }
+
 const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" || order.source_channel === "mixed" || (!order.source_channel && order.order_type === "shipping");
   const zoneOrders = orders.filter((order) => orderMatchesZone(order));
   const statsOrders = zoneOrders.filter((order) =>
@@ -369,11 +375,11 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
 </div>
       <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
       <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
-      <div className="order-environment-switch">
+      <div className="order-environment-switch order-environment-switch-v351">
   <button
     type="button"
     className={orderEnvironmentFilter === "live" ? "active live" : ""}
-    onClick={() => setOrderEnvironmentFilter("live")}
+    onClick={() => selectOrderEnvironment("live")}
   >
     LIVE
     <strong>
@@ -384,7 +390,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
   <button
     type="button"
     className={orderEnvironmentFilter === "test" ? "active test" : ""}
-    onClick={() => setOrderEnvironmentFilter("test")}
+    onClick={() => selectOrderEnvironment("test")}
   >
     TEST
     <strong>
@@ -394,8 +400,8 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
 
   <button
     type="button"
-    className={orderEnvironmentFilter === "all" ? "active" : ""}
-    onClick={() => setOrderEnvironmentFilter("all")}
+    className={orderEnvironmentFilter === "all" ? "active all" : ""}
+    onClick={() => selectOrderEnvironment("all")}
   >
     Toutes
   </button>
