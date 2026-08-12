@@ -137,8 +137,16 @@ export function ProductCard({ product }: { product: Product }) {
   const totalStock = selectableVariants.length ? selectableVariants.reduce((sum, item) => sum + Math.max(0, Number(item.stock)), 0) : Number(product.stock);
   const hasStock = currentStock > 0;
   const showStock = product.type === "product" || product.type === "accessory";
+  const quantityInCartForStock = showStock
+    ? items.reduce((sum, item) => {
+        if (item.productId !== product.id) return sum;
+        if (variant?.id) return item.variantId === variant.id ? sum + item.quantity : sum;
+        return item.variantId ? sum : sum + item.quantity;
+      }, 0)
+    : 0;
+  const stockLimitReached = showStock && quantityInCartForStock >= currentStock;
 
-  const canAdd = hasStock && product.option_groups.every((group) => {
+  const canAdd = hasStock && !stockLimitReached && product.option_groups.every((group) => {
     const count = selected[group.id]?.length ?? 0;
     const minimum = group.required ? Math.max(1, group.min_select) : Math.max(0, group.min_select);
     return count >= minimum && count <= group.max_select;
@@ -186,7 +194,7 @@ export function ProductCard({ product }: { product: Product }) {
   };
 
   const increaseCartQuantity = () => {
-    if (showStock && cartQuantity >= currentStock) return;
+    if (showStock && quantityInCartForStock >= currentStock) return;
     if (cartItem) setQuantity(cartKey, cartItem.quantity + 1);
     else handleAdd();
   };
@@ -291,7 +299,7 @@ export function ProductCard({ product }: { product: Product }) {
                     <button
                       type="button"
                       onClick={increaseCartQuantity}
-                      disabled={showStock && cartQuantity >= currentStock}
+                      disabled={showStock && quantityInCartForStock >= currentStock}
                       aria-label={language === "fr" ? "Augmenter la quantité" : "Increase quantity"}
                     >+</button>
                   </div>
@@ -322,6 +330,10 @@ export function ProductCard({ product }: { product: Product }) {
     ? language === "fr"
       ? "Indisponible"
       : "Unavailable"
+    : stockLimitReached
+      ? language === "fr"
+        ? "Maximum dans le panier"
+        : "Maximum in cart"
     : language === "fr"
       ? `Ajouter au panier · ${money(price, language)}`
       : `Add to cart · ${money(price, language)}`}
@@ -372,9 +384,9 @@ const requiresChoice = selectableVariants.length > 1;
   className={`button full product-card-cta ${
     isSoldOut ? "product-card-cta-soldout" : "primary"
   }`}
-  disabled={isSoldOut}
+  disabled={isSoldOut || (!requiresChoice && stockLimitReached)}
   onClick={() => {
-    if (isSoldOut) return;
+    if (isSoldOut || (!requiresChoice && stockLimitReached)) return;
 
     if (requiresChoice) {
       setOpen(true);
@@ -388,6 +400,10 @@ const requiresChoice = selectableVariants.length > 1;
     ? language === "fr"
       ? "Indisponible"
       : "Unavailable"
+    : !requiresChoice && stockLimitReached
+      ? language === "fr"
+        ? "Maximum dans le panier"
+        : "Maximum in cart"
     : requiresChoice
       ? language === "fr"
         ? "Choisir"

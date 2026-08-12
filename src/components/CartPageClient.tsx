@@ -37,6 +37,21 @@ function getItemStock(item: CartItem, product?: Product) {
   return Number(product.stock);
 }
 
+function stockUnitKey(item: Pick<CartItem, "productId" | "variantId">) {
+  return `${item.productId}|${item.variantId ?? "base"}`;
+}
+
+function quantityUsedByOtherLines(items: CartItem[], item: CartItem) {
+  const key = stockUnitKey(item);
+  return items.reduce(
+    (sum, candidate) =>
+      candidate.key !== item.key && stockUnitKey(candidate) === key
+        ? sum + candidate.quantity
+        : sum,
+    0,
+  );
+}
+
 export function CartPageClient({ products }: { products: Product[] }) {
   const { items, count, subtotal, setQuantity, removeItem, replaceItem, clear } = useCart();
   const { language } = useLanguage();
@@ -67,9 +82,23 @@ export function CartPageClient({ products }: { products: Product[] }) {
       return;
     }
     const stock = getItemStock(item, productMap.get(item.productId));
-    if (stock !== null && next > stock) return;
+    const usedElsewhere = quantityUsedByOtherLines(items, item);
+    if (stock !== null && usedElsewhere + next > stock) return;
     setQuantity(item.key, next);
   };
+
+  const hasStockConflict = items.some((item) => {
+    const stock = getItemStock(item, productMap.get(item.productId));
+    if (stock === null) return false;
+    const totalForStockUnit = items.reduce(
+      (sum, candidate) =>
+        stockUnitKey(candidate) === stockUnitKey(item)
+          ? sum + candidate.quantity
+          : sum,
+      0,
+    );
+    return totalForStockUnit > stock;
+  });
 
   const closeEditor = () => setEditingKey(null);
 
@@ -97,6 +126,9 @@ export function CartPageClient({ products }: { products: Product[] }) {
           {items.map((item) => {
             const product = productMap.get(item.productId);
             const stock = getItemStock(item, product);
+            const usedElsewhere = quantityUsedByOtherLines(items, item);
+            const maxForThisLine = stock === null ? null : Math.max(0, stock - usedElsewhere);
+            const lineStockConflict = maxForThisLine !== null && item.quantity > maxForThisLine;
             const canEdit = Boolean(product && (product.variants.length > 0 || product.option_groups.length > 0));
             return <article className={`cart-item cart-item-v216 ${savedKey === item.key ? "is-updated" : ""}`} key={item.key}>
               <img className="cart-item-image-v216" src={item.imageUrl || product?.image_url || "/product-placeholder.svg"} alt="" />
@@ -123,9 +155,17 @@ export function CartPageClient({ products }: { products: Product[] }) {
                   <div className="qty qty-v216" aria-label={language === "fr" ? "Quantité" : "Quantity"}>
                     <button type="button" onClick={() => updateQuantity(item, item.quantity - 1)}>−</button>
                     <span>{item.quantity}</span>
-                    <button type="button" onClick={() => updateQuantity(item, item.quantity + 1)} disabled={stock !== null && item.quantity >= stock}>+</button>
+                    <button type="button" onClick={() => updateQuantity(item, item.quantity + 1)} disabled={maxForThisLine !== null && item.quantity >= maxForThisLine}>+</button>
                   </div>
-                  {stock !== null && <small className="cart-stock-v216">{language === "fr" ? `${stock} en stock` : `${stock} in stock`}</small>}
+                  {stock !== null && <small className={`cart-stock-v216 ${lineStockConflict ? "danger" : ""}`}>
+                    {lineStockConflict
+                      ? language === "fr"
+                        ? `Quantité totale supérieure au stock (${stock})`
+                        : `Total quantity exceeds stock (${stock})`
+                      : language === "fr"
+                        ? `${stock} en stock`
+                        : `${stock} in stock`}
+                  </small>}
                   <div className="cart-line-actions-v216">
                     {canEdit && <button type="button" onClick={() => setEditingKey(item.key)}>{language === "fr" ? "Modifier" : "Edit"}</button>}
                     <button type="button" className="danger" onClick={() => removeItem(item.key)}>{language === "fr" ? "Supprimer" : "Remove"}</button>
@@ -158,8 +198,21 @@ export function CartPageClient({ products }: { products: Product[] }) {
           {!hasPickupOnly && hasShippingItems && <p><b>●</b>{language === "fr" ? " Livraison ou retrait à choisir à l’étape suivante." : " Choose shipping or pickup at the next step."}</p>}
         </div>
 
-        <Link className="button primary full cart-checkout-v216" href="/checkout">
-          <span>{language === "fr" ? "Passer à la commande" : "Proceed to checkout"}</span>
+        <Link
+          className={`button primary full cart-checkout-v216 ${hasStockConflict ? "is-disabled" : ""}`}
+          href="/checkout"
+          aria-disabled={hasStockConflict}
+          onClick={(event) => {
+            if (hasStockConflict) event.preventDefault();
+          }}
+        >
+          <span>{hasStockConflict
+            ? language === "fr"
+              ? "Corriger les quantités"
+              : "Fix quantities"
+            : language === "fr"
+              ? "Passer à la commande"
+              : "Proceed to checkout"}</span>
           <strong>{money(subtotal, language)}</strong>
         </Link>
         <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>
@@ -225,8 +278,18 @@ function CartItemEditor({ item, product, allItems, language, onClose, onSave }: 
   const nextKey = [product.id, variant?.id ?? "base", ...choices.map((choice) => `${choice.groupId}:${choice.valueId}`).sort()].join("|");
   const nextUnitPrice = Number(variant?.price ?? product.base_price) + choices.reduce((sum, choice) => sum + choice.priceDelta, 0);
   const maxStock = (product.type === "product" || product.type === "accessory") ? Number(variant?.stock ?? product.stock) : null;
-  const existingTarget = allItems.find((row) => row.key === nextKey && row.key !== item.key);
-  const mergedQuantity = item.quantity + (existingTarget?.quantity ?? 0);
+  const existingTarget = allItems.find(
+    (row) => row.key === nextKey && row.key !== item.key,
+  );
+  const nextStockUnitKey = `${product.id}|${variant?.id ?? "base"}`;
+  const quantityOnOtherLines = allItems.reduce(
+    (sum, row) =>
+      row.key !== item.key && stockUnitKey(row) === nextStockUnitKey
+        ? sum + row.quantity
+        : sum,
+    0,
+  );
+  const mergedQuantity = item.quantity + quantityOnOtherLines;
   const stockConflict = maxStock !== null && mergedQuantity > maxStock;
   const requirementsOk = product.option_groups.every((group) => {
     const count = selected[group.id]?.length ?? 0;
