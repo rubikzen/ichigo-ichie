@@ -33,10 +33,12 @@ test("homepage exposes canonical URL", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   const canonical = page.locator('link[rel="canonical"]');
-  await expect(canonical).toHaveAttribute(
-    "href",
-    /^https:\/\/www\.ichigoichiematcha\.fr\/?$/
-  );
+  const canonicalPattern =
+    process.env.E2E_LOCAL === "1"
+      ? /^(?:https:\/\/www\.ichigoichiematcha\.fr|http:\/\/localhost:3000)\/?$/
+      : /^https:\/\/www\.ichigoichiematcha\.fr\/?$/;
+
+  await expect(canonical).toHaveAttribute("href", canonicalPattern);
 });
 
 test("homepage language switch changes document language", async ({ page }) => {

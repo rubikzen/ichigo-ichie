@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const local = process.env.E2E_LOCAL === "1";
 const baseURL = local
-  ? "http://127.0.0.1:3000"
+  ? "http://localhost:3000"
   : process.env.E2E_BASE_URL || "https://www.ichigoichiematcha.fr";
 
 export default defineConfig({
@@ -10,7 +10,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 2 : 4,
   reporter: [["list"]],
   use: {
     baseURL,
@@ -20,10 +20,14 @@ export default defineConfig({
   },
   webServer: local
     ? {
-        command: "npm run dev",
-        url: "http://127.0.0.1:3000",
-        reuseExistingServer: true,
-        timeout: 120_000,
+        // Test the production build, not Turbopack dev mode.
+        // CI already runs `npm run build` in the previous workflow step.
+        command: process.env.CI
+          ? "npm run start -- --hostname localhost"
+          : "npm run build && npm run start -- --hostname localhost",
+        url: "http://localhost:3000",
+        reuseExistingServer: false,
+        timeout: 180_000,
       }
     : undefined,
   projects: [
