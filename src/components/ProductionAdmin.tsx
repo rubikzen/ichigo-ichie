@@ -24,6 +24,8 @@ type CommerceHealth = {
     promoLeak: boolean;
     ageMinutes: number;
     reason: string;
+    recoveryAction: "release_order_reservations" | "commit_paid_promo" | null;
+    recoveryLabel: string | null;
   }>;
   promoMismatches: Array<{
     id: string;
@@ -59,6 +61,7 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
   const [message, setMessage] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [working, setWorking] = useState(false);
+  const [recoveryKey, setRecoveryKey] = useState("");
 
   const authHeaders = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -110,6 +113,65 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
     }
   }
 
+  async function commerceRecovery(
+    action: "release_order_reservations" | "commit_paid_promo" | "sync_promo_counter",
+    targetId: string,
+    label: string,
+  ) {
+    const confirmation =
+      action === "release_order_reservations"
+        ? "LIBERER"
+        : action === "commit_paid_promo"
+          ? "FINALISER PROMO"
+          : "SYNC PROMO";
+    const question =
+      action === "release_order_reservations"
+        ? `Libérer les réservations de ${label} ? Cette action ne sera acceptée que si le paiement est réellement expiré/échoué.`
+        : action === "commit_paid_promo"
+          ? `Finaliser le code promo de ${label} comme utilisé ? Cette action est réservée aux paiements déjà traités.`
+          : `Synchroniser le compteur de réservations du code ${label} avec les commandes réellement réservées ?`;
+
+    if (!window.confirm(question)) return;
+
+    const key = `${action}:${targetId}`;
+    setRecoveryKey(key);
+    setMessage("");
+
+    try {
+      const headers = await authHeaders();
+      const response = await fetch("/api/admin/commerce-recovery", {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({
+          action,
+          ...(action === "sync_promo_counter"
+            ? { promoId: targetId }
+            : { orderId: targetId }),
+          confirmation,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.changed === true) {
+          await refresh();
+          await onOrdersChanged?.();
+        }
+        throw new Error(data.error || "Récupération impossible.");
+      }
+
+      setMessage(data.message || "Récupération terminée ✓");
+      await refresh();
+      await onOrdersChanged?.();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Récupération impossible.",
+      );
+    } finally {
+      setRecoveryKey("");
+    }
+  }
+
   const blockers = health?.checks.filter((check) => check.blocker && check.status === "error") ?? [];
 
   return <div className="production-admin-v246">
@@ -139,7 +201,7 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
             <div>
               <p className="eyebrow">COMMERCE</p>
               <h3>Stock & réservations</h3>
-              <p className="muted">Diagnostic en lecture seule : aucune réservation ni quantité n’est modifiée depuis cette page.</p>
+              <p className="muted">Diagnostic en lecture seule ; les actions de récupération ci-dessous exigent une confirmation explicite et sont revalidées côté serveur avant toute modification.</p>
             </div>
             <span>
               {health.commerceHealth.summary.reservationIssueCount ||
@@ -193,11 +255,31 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
                       <strong>{issue.orderNumber}</strong>
                       <small>{issue.reason}</small>
                     </div>
-                    <div className="commerce-health-tags-v375">
-                      {issue.stockLeak && <span className="danger">STOCK</span>}
-                      {issue.promoLeak && <span className="danger">PROMO</span>}
-                      <span>{issue.paymentStatus || issue.status}</span>
-                      <span>{issue.ageMinutes} min</span>
+                    <div className="commerce-health-actions-v376">
+                      <div className="commerce-health-tags-v375">
+                        {issue.stockLeak && <span className="danger">STOCK</span>}
+                        {issue.promoLeak && <span className="danger">PROMO</span>}
+                        <span>{issue.paymentStatus || issue.status}</span>
+                        <span>{issue.ageMinutes} min</span>
+                      </div>
+                      {issue.recoveryAction && issue.recoveryLabel && (
+                        <button
+                          type="button"
+                          className="button ghost small commerce-recovery-button-v376"
+                          disabled={Boolean(recoveryKey)}
+                          onClick={() =>
+                            commerceRecovery(
+                              issue.recoveryAction!,
+                              issue.id,
+                              issue.orderNumber,
+                            )
+                          }
+                        >
+                          {recoveryKey === `${issue.recoveryAction}:${issue.id}`
+                            ? "Vérification…"
+                            : issue.recoveryLabel}
+                        </button>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -218,7 +300,21 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
                       <strong>{promo.code}</strong>
                       <small>Compteur promo : {promo.reservedCount} · commandes réservées : {promo.orderReservations}</small>
                     </div>
-                    <span className="commerce-health-mismatch-v375">Écart {promo.reservedCount - promo.orderReservations}</span>
+                    <div className="commerce-health-actions-v376">
+                      <span className="commerce-health-mismatch-v375">Écart {promo.reservedCount - promo.orderReservations}</span>
+                      <button
+                        type="button"
+                        className="button ghost small commerce-recovery-button-v376"
+                        disabled={Boolean(recoveryKey)}
+                        onClick={() =>
+                          commerceRecovery("sync_promo_counter", promo.id, promo.code)
+                        }
+                      >
+                        {recoveryKey === `sync_promo_counter:${promo.id}`
+                          ? "Vérification…"
+                          : "Synchroniser"}
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>

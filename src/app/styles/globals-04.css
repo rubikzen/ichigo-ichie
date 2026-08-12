@@ -3094,3 +3094,31 @@
   }
 }
 
+/* Ichigo Ichie V3.76 — Guarded commerce recovery */
+.commerce-health-actions-v376 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.commerce-recovery-button-v376 {
+  min-height: 30px;
+  padding-inline: 11px;
+  white-space: nowrap;
+}
+.commerce-health-rows-v375 article:has(.commerce-recovery-button-v376) {
+  border-color: #d8ddd5;
+}
+@media (max-width: 700px) {
+  .commerce-health-actions-v376 {
+    width: 100%;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .commerce-recovery-button-v376 {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

@@ -13,6 +13,8 @@ export type ReservationIssue = {
   promoLeak: boolean;
   ageMinutes: number;
   reason: string;
+  recoveryAction: "release_order_reservations" | "commit_paid_promo" | null;
+  recoveryLabel: string | null;
 };
 
 export type PromoReservationMismatch = {
@@ -140,6 +142,23 @@ export async function collectCommerceHealth(
     const stockLeak = Boolean(order.stock_reserved) && !moneyAlreadyProcessed;
     const promoLeak = Boolean(order.promo_reserved);
     const createdAtMs = timestamp(order.created_at) ?? now;
+    const protectedFulfilment = ["preparing", "ready", "completed"].includes(
+      String(order.status || ""),
+    );
+    const recoveryAction =
+      promoLeak && moneyAlreadyProcessed
+        ? "commit_paid_promo"
+        : !moneyAlreadyProcessed &&
+            !protectedFulfilment &&
+            (stockLeak || promoLeak)
+          ? "release_order_reservations"
+          : null;
+    const recoveryLabel =
+      recoveryAction === "commit_paid_promo"
+        ? "Finaliser promo"
+        : recoveryAction === "release_order_reservations"
+          ? "Libérer"
+          : null;
 
     reservationIssues.push({
       id: String(order.id),
@@ -156,6 +175,8 @@ export async function collectCommerceHealth(
       promoLeak,
       ageMinutes: Math.max(0, Math.floor((now - createdAtMs) / 60_000)),
       reason,
+      recoveryAction,
+      recoveryLabel,
     });
   }
 
