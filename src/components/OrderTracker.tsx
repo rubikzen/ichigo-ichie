@@ -225,7 +225,7 @@ const canDownloadInvoice =
     <div className="tracking-head"><div><p className="eyebrow">ICHIGO ICHIE</p><h1>{title}</h1><p>{language === "fr" ? "Commande" : "Order"} <strong>{order.order_number}</strong></p></div><div className={`tracking-status ${order.status}`}>{statusLabel(order.status, language, order.order_type)}</div></div>
 
     <div className={`payment-tracking-banner ${order.payment_status}`}>
-      <div className="payment-tracking-icon">{paymentPaid ? "✓" : order.payment_method === "pickup" ? "€" : paymentNeedsAction ? "!" : "…"}</div>
+      <div className="payment-tracking-icon">{order.status === "cancelled" ? "×" : paymentPaid ? "✓" : order.payment_method === "pickup" ? "€" : paymentNeedsAction ? "!" : "…"}</div>
       <div>
         <strong>{paymentTitle(order, language)}</strong>
         <small>{paymentDescription(order, language, paymentReturn)}</small>
@@ -361,6 +361,9 @@ const canDownloadInvoice =
 }
 
 function paymentTitle(order: PublicOrder, language: "fr" | "en") {
+  if (order.status === "cancelled" && order.payment_status !== "paid") {
+    return language === "fr" ? "Aucun paiement effectué" : "No payment was taken";
+  }
   if (order.payment_status === "paid") return language === "fr" ? "Paiement confirmé" : "Payment confirmed";
   if (order.payment_status === "refunded") return language === "fr" ? "Paiement remboursé" : "Payment refunded";
   if (order.payment_status === "refund_pending") return language === "fr" ? "Remboursement en cours" : "Refund pending";
@@ -372,6 +375,11 @@ function paymentTitle(order: PublicOrder, language: "fr" | "en") {
 }
 
 function paymentDescription(order: PublicOrder, language: "fr" | "en", paymentReturn: "success" | "cancelled" | "") {
+  if (order.status === "cancelled" && order.payment_status !== "paid") {
+    return language === "fr"
+      ? "Cette commande a été annulée. Aucun paiement n’a été encaissé."
+      : "This order was cancelled. No payment was taken.";
+  }
   if (order.payment_status === "paid") return paymentReturn === "success"
   ? (
       language === "fr"

@@ -121,4 +121,16 @@ test("cancel unpaid order updates the customer view", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: /payer maintenant|pay now/i })
   ).toHaveCount(0);
+
+  await expect(
+    page.getByText(/aucun paiement effectué|no payment was taken/i)
+  ).toBeVisible();
+
+  await expect(
+    page.getByText(/cette commande a été annulée.*aucun paiement n’a été encaissé|this order was cancelled.*no payment was taken/i)
+  ).toBeVisible();
+
+  await expect(
+    page.getByText(/cliquez sur réessayer|retry to create a new session/i)
+  ).toHaveCount(0);
 });
