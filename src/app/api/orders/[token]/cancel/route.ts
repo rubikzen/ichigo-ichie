@@ -94,34 +94,98 @@ export async function POST(
       }
     }
 
-    const { error: cancelError } = await supabase
-      .from("orders")
-      .update({
-        status: "cancelled",
-        payment_status:
-          order.payment_method === "online" ? "expired" : order.payment_status,
-        payment_expires_at: null,
-      })
-      .eq("id", order.id)
-      .neq("payment_status", "paid");
+    // Final database transition is conditional. If Stripe/webhook marks the
+    // order paid between our Stripe check and this update, zero rows are
+    // updated and we MUST NOT release stock/promo.
+    if (order.status !== "cancelled") {
+      const nextPaymentStatus =
+        order.payment_method === "online" ? "expired" : order.payment_status;
 
-    if (cancelError) throw cancelError;
+      const { data: cancelledOrder, error: cancelError } = await supabase
+        .from("orders")
+        .update({
+          status: "cancelled",
+          payment_status: nextPaymentStatus,
+          payment_expires_at: null,
+        })
+        .eq("id", order.id)
+        .eq("status", "pending")
+        .in("payment_status", ["pending", "unpaid", "failed", "expired"])
+        .select("id,status,payment_status")
+        .maybeSingle();
 
-    if (order.stock_reserved) {
+      if (cancelError) throw cancelError;
+
+      if (!cancelledOrder) {
+        const { data: latest, error: latestError } = await supabase
+          .from("orders")
+          .select("status,payment_status")
+          .eq("id", order.id)
+          .maybeSingle();
+
+        if (latestError) throw latestError;
+
+        if (
+          latest?.payment_status === "paid" ||
+          latest?.payment_status === "refunded" ||
+          latest?.payment_status === "refund_pending"
+        ) {
+          return NextResponse.json(
+            { error: "Le paiement vient d’être confirmé. La commande ne peut plus être annulée." },
+            { status: 409 },
+          );
+        }
+
+        if (latest?.status !== "cancelled") {
+          return NextResponse.json(
+            { error: "La commande a changé d’état. Actualisez la page avant de réessayer." },
+            { status: 409 },
+          );
+        }
+      }
+    }
+
+    // Reservation cleanup is retryable. If one RPC fails, return an error
+    // instead of pretending cancellation cleanup succeeded.
+    const { data: latestReservationState, error: reservationStateError } =
+      await supabase
+        .from("orders")
+        .select("stock_reserved,promo_reserved,payment_status")
+        .eq("id", order.id)
+        .single();
+
+    if (reservationStateError) throw reservationStateError;
+
+    if (latestReservationState.payment_status === "paid") {
+      return NextResponse.json(
+        { error: "Le paiement vient d’être confirmé. Vérification manuelle requise." },
+        { status: 409 },
+      );
+    }
+
+    if (latestReservationState.stock_reserved) {
       const { error: stockError } = await supabase.rpc("release_shop_order_stock", {
         p_order_id: order.id,
       });
       if (stockError) {
         console.error("Customer order cancel stock release error", stockError);
+        return NextResponse.json(
+          { error: "Commande annulée, mais la libération du stock doit être réessayée." },
+          { status: 503 },
+        );
       }
     }
 
-    if (order.promo_reserved) {
+    if (latestReservationState.promo_reserved) {
       const { error: promoError } = await supabase.rpc("release_order_promo", {
         p_order_id: order.id,
       });
       if (promoError) {
         console.error("Customer order cancel promo release error", promoError);
+        return NextResponse.json(
+          { error: "Commande annulée, mais la libération du code promo doit être réessayée." },
+          { status: 503 },
+        );
       }
     }
 
