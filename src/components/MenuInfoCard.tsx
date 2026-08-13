@@ -8,6 +8,14 @@ const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
   { style: "currency", currency: "EUR" },
 ).format(value);
 
+function badgeLengthClass(value: string) {
+  const length = value.trim().length;
+  if (length <= 8) return "badge-short-v385";
+  if (length <= 12) return "badge-medium-v385";
+  if (length <= 16) return "badge-long-v385";
+  return "badge-xlong-v385";
+}
+
 export function MenuInfoCard({ product }: { product: Product }) {
   const { language } = useLanguage();
   const name = (language === "fr" ? product.name_fr : product.name_en) || product.name_fr;
@@ -19,7 +27,7 @@ export function MenuInfoCard({ product }: { product: Product }) {
     <article className="menu-info-card">
       <div className="menu-info-media">
         <img src={image} alt={name} loading="lazy" />
-        {product.badge && <span className="menu-info-badge">{product.badge}</span>}
+        {product.badge && <span className={`menu-info-badge ${badgeLengthClass(product.badge)}`}>{product.badge}</span>}
       </div>
       <div className="menu-info-body">
         <div className="menu-info-title-row">

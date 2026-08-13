@@ -3516,3 +3516,47 @@
     letter-spacing: 0.08em;
   }
 }
+
+
+/* Ichigo Ichie V3.85 — Dynamic menu badge typography */
+.menu-info-badge.badge-short-v385 {
+  font-size: 10px;
+  letter-spacing: 0.10em;
+}
+
+.menu-info-badge.badge-medium-v385 {
+  font-size: 9.2px;
+  letter-spacing: 0.085em;
+}
+
+.menu-info-badge.badge-long-v385 {
+  font-size: 8.4px;
+  letter-spacing: 0.065em;
+}
+
+.menu-info-badge.badge-xlong-v385 {
+  font-size: 7.7px;
+  letter-spacing: 0.045em;
+}
+
+@media (max-width: 720px) {
+  .menu-info-badge.badge-short-v385 {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .menu-info-badge.badge-medium-v385 {
+    font-size: 8.3px;
+    letter-spacing: 0.07em;
+  }
+
+  .menu-info-badge.badge-long-v385 {
+    font-size: 7.6px;
+    letter-spacing: 0.055em;
+  }
+
+  .menu-info-badge.badge-xlong-v385 {
+    font-size: 7px;
+    letter-spacing: 0.04em;
+  }
+}
