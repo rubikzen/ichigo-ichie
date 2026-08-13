@@ -3122,3 +3122,29 @@
   }
 }
 
+/* Ichigo Ichie V3.79 — Align storefront product CTAs */
+.product-card-compact {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card-compact .product-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.product-card-compact .product-card-cta {
+  margin-top: auto;
+}
+
+/*
+ * Keep the final gap above the CTA consistent even when title,
+ * description, chips and stock labels have different heights.
+ */
+.product-card-compact .product-card-meta {
+  margin-bottom: 14px;
+}
+
