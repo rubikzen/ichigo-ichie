@@ -1,12 +1,48 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { useEffect, useState } from "react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { settingEnabled } from "@/lib/settings";
+
+function CartLinkStatus({
+  label,
+  count,
+  language,
+}: {
+  label: string;
+  count: number;
+  language: "fr" | "en";
+}) {
+  const { pending } = useLinkStatus();
+
+  return (
+    <>
+      {pending
+        ? language === "fr"
+          ? "Ouverture…"
+          : "Opening…"
+        : label}
+      <span
+        className={pending ? "cart-count-v378 is-loading" : "cart-count-v378"}
+        role="status"
+        aria-live="polite"
+        aria-label={
+          pending
+            ? language === "fr"
+              ? "Ouverture du panier"
+              : "Opening cart"
+            : `${count}`
+        }
+      >
+        {pending ? <i className="cart-spinner-v378" aria-hidden="true" /> : count}
+      </span>
+    </>
+  );
+}
 
 export function SiteHeader() {
   const { count } = useCart();
@@ -101,9 +137,16 @@ export function SiteHeader() {
             <span>{language === "fr" ? "Mon compte" : "Account"}</span>
           </Link>
 
-          <Link className="cart-link cart-link-v225" href="/panier">
-            {t("nav_cart_fr", "nav_cart_en")}
-            <span>{count}</span>
+          <Link
+            className="cart-link cart-link-v225 cart-link-v378"
+            href="/panier"
+            aria-label={language === "fr" ? "Ouvrir le panier" : "Open cart"}
+          >
+            <CartLinkStatus
+              label={t("nav_cart_fr", "nav_cart_en")}
+              count={count}
+              language={language}
+            />
           </Link>
         </div>
       </header>
@@ -111,6 +154,54 @@ export function SiteHeader() {
       <MobileBottomNav />
 
       <style jsx global>{`
+        .cart-link-v378 {
+          transition:
+            transform 120ms ease,
+            background-color 120ms ease,
+            border-color 120ms ease,
+            opacity 120ms ease;
+        }
+
+        .cart-link-v378:active {
+          transform: scale(0.96);
+        }
+
+        .cart-link-v378:has(.cart-count-v378.is-loading) {
+          cursor: progress;
+          background: rgba(35, 67, 52, 0.08);
+          border-color: rgba(35, 67, 52, 0.22);
+        }
+
+        .cart-link-v378 .cart-count-v378.is-loading {
+          display: inline-grid;
+          place-items: center;
+        }
+
+        .cart-spinner-v378 {
+          width: 11px;
+          height: 11px;
+          border: 2px solid currentColor;
+          border-right-color: transparent;
+          border-radius: 999px;
+          animation: cart-spin-v378 650ms linear infinite;
+        }
+
+        @keyframes cart-spin-v378 {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .cart-link-v378 {
+            transition: none;
+          }
+
+          .cart-spinner-v378 {
+            animation-duration: 1.4s;
+          }
+        }
+
         @media (max-width: 560px) {
           /*
            * globals.css masquait historiquement .language-switch sur les
