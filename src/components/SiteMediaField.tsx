@@ -183,6 +183,9 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<"recent" | "oldest" | "name">("recent");
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
   const inputId = useMemo(() => `media-upload-${Math.random().toString(36).slice(2)}`, []);
 
   async function refresh() {
@@ -190,6 +193,30 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
     catch (error) { setMessage(error instanceof Error ? error.message : "Impossible de charger les médias."); }
   }
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleItems = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase("fr");
+    const filtered = query
+      ? items.filter((item) => item.name.toLocaleLowerCase("fr").includes(query))
+      : items;
+
+    return [...filtered].sort((a, b) => {
+      if (sortMode === "name") return a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return sortMode === "oldest" ? timeA - timeB : timeB - timeA;
+    });
+  }, [items, searchQuery, sortMode]);
+
+  useEffect(() => {
+    if (!previewItem) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewItem(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewItem]);
 
   async function uploadMany(files?: FileList | null) {
     const selected = files ? Array.from(files) : [];
@@ -278,7 +305,102 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
         }}
       />
     </div>
+
     {message && <p className={message.includes("✓") ? "success" : message.includes("ajoutée") ? "media-upload-warning-v383" : "error"}>{message}</p>}
-    {items.length === 0 ? <div className="site-media-manager-empty">Aucune image UI. Ajoutez votre logo ou une photo hero.</div> : <div className="site-media-manager-grid">{items.map((item) => <article key={item.path}><img src={item.url} alt="" /><div><span title={item.name}>{item.name.replace(/^\d+-[^-]+-/, "")}</span><div><button type="button" onClick={() => copy(item.url)}>Copier URL</button><button type="button" className="text-danger" onClick={() => remove(item)}>Supprimer</button></div></div></article>)}</div>}
+
+    {items.length > 0 && (
+      <div className="media-library-toolbar-v384">
+        <label className="media-library-search-v384">
+          <span className="sr-only">Rechercher un média</span>
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Rechercher un média…"
+            aria-label="Rechercher un média"
+          />
+          {searchQuery && (
+            <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche">×</button>
+          )}
+        </label>
+
+        <label className="media-library-sort-v384">
+          <span>Trier</span>
+          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as "recent" | "oldest" | "name")}>
+            <option value="recent">Plus récent</option>
+            <option value="oldest">Plus ancien</option>
+            <option value="name">Nom</option>
+          </select>
+        </label>
+
+        <small className="media-library-count-v384" role="status" aria-live="polite">
+          {visibleItems.length} / {items.length}
+        </small>
+      </div>
+    )}
+
+    {items.length === 0 ? (
+      <div className="site-media-manager-empty">Aucune image UI. Ajoutez votre logo ou une photo hero.</div>
+    ) : visibleItems.length === 0 ? (
+      <div className="site-media-manager-empty media-library-empty-v384">
+        <strong>Aucun média trouvé</strong>
+        <span>Essayez un autre nom de fichier.</span>
+        <button type="button" className="button ghost small" onClick={() => setSearchQuery("")}>Effacer la recherche</button>
+      </div>
+    ) : (
+      <div className="site-media-manager-grid media-library-grid-v384">
+        {visibleItems.map((item) => (
+          <article key={item.path}>
+            <button
+              type="button"
+              className="media-library-preview-button-v384"
+              onClick={() => setPreviewItem(item)}
+              aria-label={`Aperçu de ${item.name}`}
+            >
+              <img src={item.url} alt="" />
+              <span>Aperçu</span>
+            </button>
+            <div>
+              <span title={item.name}>{item.name.replace(/^\d+-[^-]+-/, "")}</span>
+              <div>
+                <button type="button" onClick={() => setPreviewItem(item)}>Aperçu</button>
+                <button type="button" onClick={() => copy(item.url)}>Copier URL</button>
+                <button type="button" className="text-danger" onClick={() => remove(item)}>Supprimer</button>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
+
+    {previewItem && (
+      <div
+        className="media-preview-modal-v384"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Aperçu de ${previewItem.name}`}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setPreviewItem(null);
+        }}
+      >
+        <div className="media-preview-dialog-v384">
+          <div className="media-preview-head-v384">
+            <div>
+              <strong>{previewItem.name.replace(/^\d+-[^-]+-/, "")}</strong>
+              <small>{previewItem.created_at ? new Date(previewItem.created_at).toLocaleString("fr-FR") : "Date inconnue"}</small>
+            </div>
+            <button type="button" onClick={() => setPreviewItem(null)} aria-label="Fermer l’aperçu">×</button>
+          </div>
+          <div className="media-preview-stage-v384">
+            <img src={previewItem.url} alt="" />
+          </div>
+          <div className="media-preview-actions-v384">
+            <button type="button" className="button ghost small" onClick={() => copy(previewItem.url)}>Copier URL</button>
+            <a className="button ghost small" href={previewItem.url} target="_blank" rel="noreferrer">Ouvrir l’image ↗</a>
+          </div>
+        </div>
+      </div>
+    )}
   </div>;
 }
