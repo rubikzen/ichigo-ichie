@@ -3578,3 +3578,43 @@
     padding-inline: 7px;
   }
 }
+/* V3.85b — Smaller menu badges on mobile */
+@media (max-width: 720px) {
+  .menu-info-badge {
+    top: 7px;
+    left: 7px;
+
+    width: 76px;
+    max-width: 76px;
+    height: 22px;
+
+    padding: 0 5px;
+    border-radius: 999px;
+
+    font-size: 8px;
+    line-height: 1;
+    letter-spacing: 0.055em;
+
+    box-sizing: border-box;
+  }
+
+  .menu-info-badge.badge-short-v385 {
+    font-size: 8px;
+    letter-spacing: 0.055em;
+  }
+
+  .menu-info-badge.badge-medium-v385 {
+    font-size: 7.4px;
+    letter-spacing: 0.045em;
+  }
+
+  .menu-info-badge.badge-long-v385 {
+    font-size: 6.9px;
+    letter-spacing: 0.035em;
+  }
+
+  .menu-info-badge.badge-xlong-v385 {
+    font-size: 6.4px;
+    letter-spacing: 0.025em;
+  }
+}
