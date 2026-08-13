@@ -23,7 +23,7 @@ test("direct and modal add actions stop when cart already consumes available sto
   assert.match(productCard, /const canAdd = hasStock && !stockLimitReached/);
   assert.match(productCard, /showStock && quantityInCartForStock >= currentStock/);
   assert.match(productCard, /disabled=\{isSoldOut \|\| \(!requiresChoice && stockLimitReached\)\}/);
-  assert.match(productCard, /Maximum dans le panier/);
+  assert.match(productCard, /Quantité maximale atteinte/);
 });
 
 test("cart quantity controls include sibling configurations in the stock limit", () => {

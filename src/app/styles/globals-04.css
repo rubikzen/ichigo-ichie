@@ -3148,3 +3148,17 @@
   margin-bottom: 14px;
 }
 
+/* Ichigo Ichie V3.80 — Clear storefront stock feedback */
+.product-card-compact .product-cart-stock-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.product-card-compact .product-cart-stock-note.is-max {
+  font-weight: 700;
+  opacity: 1;
+}
+

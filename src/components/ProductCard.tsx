@@ -332,8 +332,8 @@ export function ProductCard({ product }: { product: Product }) {
       : "Unavailable"
     : stockLimitReached
       ? language === "fr"
-        ? "Maximum dans le panier"
-        : "Maximum in cart"
+        ? "Quantité maximale atteinte"
+        : "Maximum quantity reached"
     : language === "fr"
       ? `Ajouter au panier · ${money(price, language)}`
       : `Add to cart · ${money(price, language)}`}
@@ -377,6 +377,13 @@ const requiresChoice = selectableVariants.length > 1;
             {formatLabels.length > 3 && <span>+{formatLabels.length - 3}</span>}
           </div>}
           {showStock && <p className={`product-stock-card ${totalStock <= 0 ? "sold" : totalStock <= 5 ? "low" : "available"}`}><span className="stock-dot" aria-hidden="true"></span>{stockCopy(totalStock, language)}</p>}
+          {showStock && !requiresChoice && hasStock && quantityInCartForStock > 0 && (
+            <p className={`product-cart-stock-note ${stockLimitReached ? "is-max" : ""}`} aria-live="polite">
+              {language === "fr"
+                ? `Dans votre panier : ${quantityInCartForStock} / ${currentStock}`
+                : `In your cart: ${quantityInCartForStock} / ${currentStock}`}
+            </p>
+          )}
         </div>
 
         <button
@@ -402,8 +409,8 @@ const requiresChoice = selectableVariants.length > 1;
       : "Unavailable"
     : !requiresChoice && stockLimitReached
       ? language === "fr"
-        ? "Maximum dans le panier"
-        : "Maximum in cart"
+        ? "Quantité maximale atteinte"
+        : "Maximum quantity reached"
     : requiresChoice
       ? language === "fr"
         ? "Choisir"
