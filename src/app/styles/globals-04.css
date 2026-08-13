@@ -3162,3 +3162,56 @@
   opacity: 1;
 }
 
+/* Ichigo Ichie V3.81 — Immediate interaction feedback */
+.product-card-compact .product-card-cta.is-added-v381 {
+  transform: translateY(-1px);
+}
+
+.mobile-cart-link-v381 {
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+.mobile-cart-link-v381:active {
+  transform: scale(0.94);
+}
+
+.mobile-cart-link-v381:has(.mobile-cart-icon-v381.is-loading) {
+  cursor: progress;
+}
+
+.mobile-cart-icon-v381.is-loading {
+  display: inline-grid;
+  place-items: center;
+}
+
+.mobile-cart-spinner-v381 {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: mobile-cart-spin-v381 650ms linear infinite;
+}
+
+@keyframes mobile-cart-spin-v381 {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card-compact .product-card-cta.is-added-v381 {
+    transform: none;
+  }
+
+  .mobile-cart-link-v381 {
+    transition: none;
+  }
+
+  .mobile-cart-spinner-v381 {
+    animation-duration: 1.4s;
+  }
+}
+

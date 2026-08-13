@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "./CartProvider";
@@ -25,6 +25,36 @@ function IconAccount() {
 }
 function IconCart() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2" /></svg>;
+}
+
+function MobileCartLinkStatus({
+  count,
+  label,
+  language,
+}: {
+  count: number;
+  label: string;
+  language: "fr" | "en";
+}) {
+  const { pending } = useLinkStatus();
+
+  return (
+    <>
+      <span className={`mobile-nav-icon-wrap-v225 mobile-cart-icon-v381${pending ? " is-loading" : ""}`}>
+        {pending
+          ? <i className="mobile-cart-spinner-v381" aria-hidden="true" />
+          : <IconCart />}
+        {!pending && count > 0 && <b>{count > 99 ? "99+" : count}</b>}
+      </span>
+      <span role="status" aria-live="polite">
+        {pending
+          ? language === "fr"
+            ? "Ouverture…"
+            : "Opening…"
+          : label}
+      </span>
+    </>
+  );
 }
 
 export function MobileBottomNav() {
@@ -83,12 +113,16 @@ export function MobileBottomNav() {
         <IconAccount />
         <span>{language === "fr" ? "Compte" : "Account"}</span>
       </Link>
-      <Link href="/panier" className="mobile-cart-item-v225">
-        <span className="mobile-nav-icon-wrap-v225">
-          <IconCart />
-          {count > 0 && <b>{count > 99 ? "99+" : count}</b>}
-        </span>
-        <span>{t("nav_cart_fr", "nav_cart_en", language === "fr" ? "Panier" : "Cart")}</span>
+      <Link
+        href="/panier"
+        className={`mobile-cart-item-v225 mobile-cart-link-v381${pathname.startsWith("/panier") ? " active" : ""}`}
+        aria-label={language === "fr" ? "Ouvrir le panier" : "Open cart"}
+      >
+        <MobileCartLinkStatus
+          count={count}
+          label={t("nav_cart_fr", "nav_cart_en", language === "fr" ? "Panier" : "Cart")}
+          language={language}
+        />
       </Link>
     </nav>
   );

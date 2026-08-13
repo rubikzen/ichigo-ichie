@@ -390,8 +390,9 @@ const requiresChoice = selectableVariants.length > 1;
   type="button"
   className={`button full product-card-cta ${
     isSoldOut ? "product-card-cta-soldout" : "primary"
-  }`}
+  } ${!requiresChoice && justAdded ? "is-added-v381" : ""}`}
   disabled={isSoldOut || (!requiresChoice && stockLimitReached)}
+  aria-live="polite"
   onClick={() => {
     if (isSoldOut || (!requiresChoice && stockLimitReached)) return;
 
@@ -407,6 +408,10 @@ const requiresChoice = selectableVariants.length > 1;
     ? language === "fr"
       ? "Indisponible"
       : "Unavailable"
+    : !requiresChoice && justAdded
+      ? language === "fr"
+        ? "✓ Ajouté au panier"
+        : "✓ Added to cart"
     : !requiresChoice && stockLimitReached
       ? language === "fr"
         ? "Quantité maximale atteinte"
