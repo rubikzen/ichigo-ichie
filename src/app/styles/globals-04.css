@@ -3478,3 +3478,41 @@
     transition: none;
   }
 }
+/* Compact menu badges */
+.menu-info-badge {
+  top: 14px;
+  left: 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 32px;
+  max-width: 128px;
+  padding: 0 11px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .menu-info-badge {
+    top: 10px;
+    left: 10px;
+    height: 28px;
+    max-width: 112px;
+    padding-inline: 9px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+}
