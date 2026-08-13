@@ -22,6 +22,28 @@ function instagramUrl(value: string | undefined) {
   return `https://www.instagram.com/${raw.replace(/^@/, "").replace(/\/$/, "")}`;
 }
 
+function normalizeFrenchPhone(value: string | undefined) {
+  const raw = String(value || "").trim() || "04 23 13 05 27";
+  const compact = raw.replace(/[^\d+]/g, "");
+  if (/^0\d{9}$/.test(compact)) return `+33${compact.slice(1)}`;
+  if (/^33\d{9}$/.test(compact)) return `+${compact}`;
+  return raw;
+}
+
+function openingHoursSpecification(value: string | undefined) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/(\d{1,2})\s*h(?:\s*(\d{2}))?.*?(\d{1,2})\s*h(?:\s*(\d{2}))?/i);
+  if (!match) return undefined;
+  const opens = `${match[1].padStart(2, "0")}:${(match[2] || "00").padStart(2, "0")}`;
+  const closes = `${match[3].padStart(2, "0")}:${(match[4] || "00").padStart(2, "0")}`;
+  return [{
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    opens,
+    closes,
+  }];
+}
+
 function schemaStreetAddress(value: string | undefined) {
   const raw = String(value || "").trim();
   return (raw.split("·")[0] || raw || "14 rue Centrale").trim();
@@ -97,22 +119,31 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   const brand = settings.brand_name || "ICHIGO ICHIE";
   const description = settings.seo_description || "Maison de matcha japonais dans le Vieux Nice : matcha latte, boissons japonaises, matcha cérémonie et accessoires. Découvrez notre carte et notre boutique en ligne.";
-  const sameAs = [instagramUrl(settings.instagram)].filter(Boolean) as string[];
+  const sameAs = [
+    instagramUrl(settings.instagram),
+    "https://www.facebook.com/IchigoIchie06",
+  ].filter(Boolean) as string[];
   const openingHours = schemaOpeningHours(settings.opening_hours);
+  const openingSpecs = openingHoursSpecification(settings.opening_hours);
+  const publicPhone = normalizeFrenchPhone(settings.phone);
+  const menuUrl = `${siteUrl()}/#menu`;
   const storeSchema = {
-    "@context": "https://schema.org",
     "@type": ["CafeOrCoffeeShop", "Store"],
     "@id": `${siteUrl()}/#store`,
     name: brand,
+    alternateName: "Ichigo Ichie Nice",
     url: siteUrl(),
+    menu: menuUrl,
     description,
     image: absoluteUrl(settings.home_hero_image_url, "/brand-mark.svg"),
     logo: absoluteUrl(settings.brand_logo_url, "/brand-mark.svg"),
+    telephone: publicPhone,
+    priceRange: "€",
     servesCuisine: ["Japanese", "Matcha", "Tea"],
     areaServed: { "@type": "City", name: "Nice" },
-    ...(settings.phone ? { telephone: settings.phone } : {}),
     ...(settings.support_email ? { email: settings.support_email } : {}),
     ...(openingHours ? { openingHours } : {}),
+    ...(openingSpecs ? { openingHoursSpecification: openingSpecs } : {}),
     address: {
       "@type": "PostalAddress",
       streetAddress: schemaStreetAddress(settings.store_address),
@@ -121,13 +152,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       addressRegion: "Provence-Alpes-Côte d’Azur",
       addressCountry: "FR",
     },
-    ...(sameAs.length ? { sameAs } : {}),
+    sameAs,
   };
   const websiteSchema = {
     "@type": "WebSite",
     "@id": `${siteUrl()}/#website`,
     url: siteUrl(),
     name: brand,
+    alternateName: "Ichigo Ichie Matcha Nice",
     publisher: { "@id": `${siteUrl()}/#store` },
     inLanguage: ["fr-FR", "en"],
   };
