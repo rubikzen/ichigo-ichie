@@ -5,7 +5,14 @@ import { HomePageContent } from "@/components/HomePageContent";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
+  title: "Matcha japonais à Nice",
+  description: "Découvrez Ichigo Ichie, maison de matcha japonais dans le Vieux Nice : matcha latte, boissons japonaises, matcha cérémonie et accessoires.",
   alternates: { canonical: "/" },
+  openGraph: {
+    title: "Ichigo Ichie | Matcha japonais à Nice",
+    description: "Matcha latte, boissons japonaises, matcha cérémonie et accessoires au cœur du Vieux Nice.",
+    url: "/",
+  },
 };
 
 export default async function Home() {
