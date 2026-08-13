@@ -3560,3 +3560,21 @@
     letter-spacing: 0.04em;
   }
 }
+
+
+/* Ichigo Ichie V3.85a — Fixed badge footprint
+   Long labels shrink instead of making the pill wider. */
+.menu-info-badge {
+  width: 108px;
+  max-width: 108px;
+  padding-inline: 8px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .menu-info-badge {
+    width: 96px;
+    max-width: 96px;
+    padding-inline: 7px;
+  }
+}

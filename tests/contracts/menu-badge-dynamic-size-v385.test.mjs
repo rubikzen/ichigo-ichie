@@ -58,3 +58,10 @@ test("dynamic badge typography also scales down on mobile", () => {
   assert.ok(css.includes("font-size: 7.6px"));
   assert.ok(css.includes("font-size: 7px"));
 });
+
+
+test("menu badges keep one fixed footprint so long labels cannot widen the pill", () => {
+  assert.match(css, /Ichigo Ichie V3\.85a — Fixed badge footprint/);
+  assert.match(css, /\.menu-info-badge\s*\{[\s\S]*?width:\s*108px;[\s\S]*?max-width:\s*108px;/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*?\.menu-info-badge\s*\{[\s\S]*?width:\s*96px;[\s\S]*?max-width:\s*96px;/);
+});
