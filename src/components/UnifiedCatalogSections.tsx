@@ -24,12 +24,37 @@ function productPrice(product: Product) {
   return Math.min(...activeVariants.map((variant) => Number(variant.price) || 0));
 }
 
+function normalizeCatalogSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function productSearchText(product: Product) {
+  return normalizeCatalogSearch([
+    product.name_fr,
+    product.name_en,
+    product.description_fr,
+    product.description_en,
+    product.long_description_fr,
+    product.long_description_en,
+    product.origin,
+    product.cultivar,
+    product.badge,
+    ...(product.ideal_for ?? []),
+    ...(product.variants ?? []).flatMap((variant) => [variant.name, variant.weight]),
+  ].filter(Boolean).join(" "));
+}
+
 function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recommended");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => subscribeCatalogUpdate(() => router.refresh()), [router]);
 
@@ -44,11 +69,23 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     priceDesc: label("catalog_sort_price_desc", "Prix : décroissant", "Price: high to low"),
     nameAsc: label("catalog_sort_name_asc", "Nom : A → Z", "Name: A → Z"),
     nameDesc: label("catalog_sort_name_desc", "Nom : Z → A", "Name: Z → A"),
+    search: language === "fr" ? "Rechercher dans la Boutique" : "Search the Shop",
+    searchPlaceholder: language === "fr" ? "Matcha, cultivar, origine, format…" : "Matcha, cultivar, origin, format…",
+    clearSearch: language === "fr" ? "Effacer la recherche" : "Clear search",
+    resetFilters: language === "fr" ? "Réinitialiser les filtres" : "Reset filters",
+    noResultTitle: language === "fr" ? "Aucun produit trouvé" : "No products found",
+    noResultText: language === "fr"
+      ? "Essayez un autre mot-clé ou réinitialisez les filtres."
+      : "Try another keyword or reset the filters.",
   };
 
-  const filtered = useMemo(() => products.filter((product) => (
-    activeCategory === "all" || product.category_id === activeCategory
-  )), [products, activeCategory]);
+  const normalizedQuery = normalizeCatalogSearch(searchQuery);
+  const filtered = useMemo(() => products.filter((product) => {
+    const categoryMatches = activeCategory === "all" || product.category_id === activeCategory;
+    if (!categoryMatches) return false;
+    if (kind !== "shop" || !normalizedQuery) return true;
+    return productSearchText(product).includes(normalizedQuery);
+  }), [products, activeCategory, kind, normalizedQuery]);
 
   const sortProducts = (items: Product[]) => [...items].sort((a, b) => {
     if (sortMode === "price-asc") return productPrice(a) - productPrice(b);
@@ -87,11 +124,41 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
         <a className="onepage-backtop" href="#top" aria-label={language === "fr" ? "Retour en haut" : "Back to top"}>↑</a>
       </div>
 
-      <div className="onepage-catalog-toolbar onepage-catalog-toolbar-v221 onepage-catalog-toolbar-v225">
+      {kind === "shop" && (
+        <div className="catalog-search-row-v382">
+          <label className="catalog-search-v382">
+            <span className="sr-only">{labels.search}</span>
+            <span className="catalog-search-icon-v382" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setSearchQuery("");
+                  event.currentTarget.blur();
+                }
+              }}
+              placeholder={labels.searchPlaceholder}
+              autoComplete="off"
+              aria-label={labels.search}
+            />
+            {searchQuery && (
+              <button type="button" className="catalog-search-clear-v382" onClick={() => setSearchQuery("")} aria-label={labels.clearSearch}>×</button>
+            )}
+          </label>
+          <p className="catalog-result-count-v382" role="status" aria-live="polite">
+            <strong>{filtered.length}</strong>
+            <span>{language === "fr" ? ` produit${filtered.length > 1 ? "s" : ""}` : ` product${filtered.length === 1 ? "" : "s"}`}</span>
+          </p>
+        </div>
+      )}
+
+      <div className={`onepage-catalog-toolbar onepage-catalog-toolbar-v221 onepage-catalog-toolbar-v225${kind === "shop" ? " boutique-toolbar-v382" : ""}`}>
         <div className="category-tabs onepage-category-tabs onepage-category-tabs-v225">
-          <button className={activeCategory === "all" ? "active" : ""} onClick={() => setActiveCategory("all")}>{val("all")}</button>
+          <button className={activeCategory === "all" ? "active" : ""} aria-pressed={activeCategory === "all"} onClick={() => setActiveCategory("all")}>{val("all")}</button>
           {categories.map((category) => (
-            <button key={category.id} className={activeCategory === category.id ? "active" : ""} onClick={() => setActiveCategory(category.id)}>
+            <button key={category.id} className={activeCategory === category.id ? "active" : ""} aria-pressed={activeCategory === category.id} onClick={() => setActiveCategory(category.id)}>
               {language === "fr" ? category.name_fr : category.name_en || category.name_fr}
             </button>
           ))}
@@ -99,7 +166,7 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
 
         <label className="catalog-sort-v221">
           <span>{labels.sort}</span>
-          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
+          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label={labels.sort}>
             <option value="recommended">{labels.recommended}</option>
             <option value="price-asc">{labels.priceAsc}</option>
             <option value="price-desc">{labels.priceDesc}</option>
@@ -110,7 +177,17 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
         </label>
       </div>
 
-      {filtered.length === 0 ? <div className="empty-state">{val("empty")}</div> : (
+      {filtered.length === 0 ? (
+        <div className="empty-state catalog-empty-v382">
+          <strong>{kind === "shop" ? labels.noResultTitle : val("empty")}</strong>
+          {kind === "shop" && <p>{labels.noResultText}</p>}
+          {kind === "shop" && (
+            <button type="button" className="button ghost" onClick={() => { setSearchQuery(""); setActiveCategory("all"); setSortMode("recommended"); }}>
+              {labels.resetFilters}
+            </button>
+          )}
+        </div>
+      ) : (
         <div className="onepage-category-groups">
           {groups.map(({ category, products: categoryProducts }) => (
             <section className="onepage-category-group" key={category.id}>
