@@ -182,6 +182,7 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const inputId = useMemo(() => `media-upload-${Math.random().toString(36).slice(2)}`, []);
 
   async function refresh() {
@@ -190,18 +191,56 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
   }
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function upload(file?: File) {
-    if (!file) return;
-    setBusy(true); setMessage("");
-    try {
-      const uploaded = await uploadMedia(supabase, file, "library");
-      setMessage(uploaded.uploadedBytes < uploaded.originalBytes
-        ? `Média ajouté ✓ · optimisé ${formatBytes(uploaded.originalBytes)} → ${formatBytes(uploaded.uploadedBytes)}`
-        : "Média ajouté ✓");
-      await refresh();
+  async function uploadMany(files?: FileList | null) {
+    const selected = files ? Array.from(files) : [];
+    if (!selected.length) return;
+
+    setBusy(true);
+    setMessage("");
+    setUploadProgress({ current: 0, total: selected.length });
+
+    let successCount = 0;
+    let optimizedCount = 0;
+    let originalBytes = 0;
+    let uploadedBytes = 0;
+    const errors: string[] = [];
+
+    for (let index = 0; index < selected.length; index += 1) {
+      const file = selected[index];
+      setUploadProgress({ current: index + 1, total: selected.length });
+
+      try {
+        const uploaded = await uploadMedia(supabase, file, "library");
+        successCount += 1;
+        originalBytes += uploaded.originalBytes;
+        uploadedBytes += uploaded.uploadedBytes;
+        if (uploaded.uploadedBytes < uploaded.originalBytes) optimizedCount += 1;
+      } catch (error) {
+        errors.push(`${file.name}: ${error instanceof Error ? error.message : "Erreur pendant l’envoi."}`);
+      }
     }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Erreur pendant l’envoi."); }
-    finally { setBusy(false); }
+
+    try {
+      await refresh();
+    } finally {
+      setBusy(false);
+      setUploadProgress(null);
+    }
+
+    if (errors.length === 0) {
+      const optimizationNote = optimizedCount > 0
+        ? ` · ${optimizedCount} optimisée${optimizedCount > 1 ? "s" : ""} · ${formatBytes(originalBytes)} → ${formatBytes(uploadedBytes)}`
+        : "";
+      setMessage(`${successCount} image${successCount > 1 ? "s" : ""} ajoutée${successCount > 1 ? "s" : ""} ✓${optimizationNote}`);
+      return;
+    }
+
+    if (successCount > 0) {
+      setMessage(`${successCount} image${successCount > 1 ? "s" : ""} ajoutée${successCount > 1 ? "s" : ""} · ${errors.length} erreur${errors.length > 1 ? "s" : ""} — ${errors.slice(0, 2).join(" · ")}`);
+      return;
+    }
+
+    setMessage(`Échec de l’envoi — ${errors.slice(0, 2).join(" · ")}`);
   }
 
   async function remove(item: MediaItem) {
@@ -220,10 +259,26 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
   return <div className="site-media-manager">
     <div className="site-media-manager-head">
       <div><h3>Bibliothèque médias UI</h3><p>Logo, hero, présentation et images générales du site. Les photos produits restent dans leur propre galerie.</p></div>
-      <label htmlFor={inputId} className="button primary small">{busy ? "Envoi…" : "+ Ajouter une image"}</label>
-      <input id={inputId} hidden disabled={busy} type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => upload(event.target.files?.[0])} />
+      <label htmlFor={inputId} className="button primary small">
+        {busy && uploadProgress
+          ? `Envoi ${uploadProgress.current} / ${uploadProgress.total}…`
+          : "+ Ajouter des images"}
+      </label>
+      <input
+        id={inputId}
+        hidden
+        multiple
+        disabled={busy}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        onChange={(event) => {
+          const files = event.target.files;
+          void uploadMany(files);
+          event.currentTarget.value = "";
+        }}
+      />
     </div>
-    {message && <p className={message.includes("✓") ? "success" : "error"}>{message}</p>}
+    {message && <p className={message.includes("✓") ? "success" : message.includes("ajoutée") ? "media-upload-warning-v383" : "error"}>{message}</p>}
     {items.length === 0 ? <div className="site-media-manager-empty">Aucune image UI. Ajoutez votre logo ou une photo hero.</div> : <div className="site-media-manager-grid">{items.map((item) => <article key={item.path}><img src={item.url} alt="" /><div><span title={item.name}>{item.name.replace(/^\d+-[^-]+-/, "")}</span><div><button type="button" onClick={() => copy(item.url)}>Copier URL</button><button type="button" className="text-danger" onClick={() => remove(item)}>Supprimer</button></div></div></article>)}</div>}
   </div>;
 }

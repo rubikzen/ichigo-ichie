@@ -3214,3 +3214,15 @@
     animation-duration: 1.4s;
   }
 }
+
+
+/* Ichigo Ichie V3.83 — Bulk media upload feedback */
+.media-upload-warning-v383 {
+  margin: 12px 0 0;
+  font-weight: 650;
+  color: #8a5a12;
+}
+
+.site-media-manager-head .button[aria-disabled="true"] {
+  pointer-events: none;
+}
