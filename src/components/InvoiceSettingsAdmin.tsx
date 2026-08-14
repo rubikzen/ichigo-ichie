@@ -62,7 +62,13 @@ export function InvoiceSettingsAdmin({ supabase }: { supabase: SupabaseClient })
     setProducts((productRows ?? []).map((row: any) => ({ ...row, vat_rate: row.vat_rate == null ? null : Number(row.vat_rate) })) as ProductVat[]);
   }
 
-  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const missingLegal = useMemo(() => [
     ["invoice_legal_name", "Raison sociale"],

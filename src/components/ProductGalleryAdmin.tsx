@@ -45,7 +45,13 @@ export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, 
     setImages((data ?? []) as ProductImage[]);
   }
 
-  useEffect(() => { load(); }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => { cancelled = true; };
+  }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function syncOrder(next: ProductImage[]) {
     if (!supabase) return;

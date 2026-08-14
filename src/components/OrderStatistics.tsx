@@ -120,7 +120,13 @@ export function OrderStatistics({ supabase, refreshKey }: { supabase: SupabaseCl
     }
   }, [activeDates.from, activeDates.to, supabase]);
 
-  useEffect(() => { load(); }, [load, refreshKey]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => { cancelled = true; };
+  }, [load, refreshKey]);
 
   const exportStats = useCallback(async (format: "csv" | "xlsx") => {
     setExporting(format);
