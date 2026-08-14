@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatBytes, optimizeImageFile } from "@/lib/image-optimize";
+import { SafeImage } from "./SafeImage";
 
 type MediaItem = { name: string; path: string; url: string; created_at?: string | null };
 
@@ -169,8 +170,15 @@ export function SiteMediaField({ supabase, label, value, onChange, slot, help, c
       <div><span>Format idéal</span><strong>{guide.size}</strong><em>{guide.ratio}</em></div>
       <p>{guide.safe}</p>
     </div>}
-    <div className="site-media-preview">
-      {value ? <img src={value} alt="" /> : <div className="site-media-empty">Aucune image</div>}
+    <div className="site-media-preview" style={{ position: "relative" }}>
+      {value ? (
+        <SafeImage
+          src={value}
+          alt=""
+          fill
+          sizes={slot === "logo" ? "260px" : "(max-width: 700px) calc(100vw - 48px), 520px"}
+        />
+      ) : <div className="site-media-empty">Aucune image</div>}
     </div>
     <div className="site-media-actions">
       <label className="button ghost small media-upload-button">{busy ? "Envoi…" : "Téléverser"}<input hidden disabled={busy} type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => handleUpload(event.target.files?.[0])} /></label>
@@ -180,7 +188,7 @@ export function SiteMediaField({ supabase, label, value, onChange, slot, help, c
     <label className="site-media-url-label">URL / chemin<input value={value || ""} onChange={(event) => onChange(event.target.value)} placeholder="https://… ou /image.webp" /></label>
     {message && <small className={message.includes("✓") ? "success" : "error"}>{message}</small>}
     {libraryOpen && <div className="site-media-library-inline">
-      {items.length === 0 ? <p>Aucun média UI pour le moment.</p> : <div className="site-media-grid">{items.map((item) => <button type="button" key={item.path} className={value === item.url ? "selected" : ""} onClick={() => { onChange(item.url); setLibraryOpen(false); setMessage("Média sélectionné ✓ — enregistrez le site."); }}><img src={item.url} alt="" /><span>{item.name.replace(/^\d+-[^-]+-/, "")}</span></button>)}</div>}
+      {items.length === 0 ? <p>Aucun média UI pour le moment.</p> : <div className="site-media-grid">{items.map((item) => <button type="button" key={item.path} className={value === item.url ? "selected" : ""} onClick={() => { onChange(item.url); setLibraryOpen(false); setMessage("Média sélectionné ✓ — enregistrez le site."); }}><SafeImage src={item.url} alt="" width={500} height={400} sizes="(max-width: 560px) 45vw, (max-width: 900px) 42vw, 180px" /><span>{item.name.replace(/^\d+-[^-]+-/, "")}</span></button>)}</div>}
     </div>}
   </div>;
 }
@@ -372,7 +380,14 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
               onClick={() => setPreviewItem(item)}
               aria-label={`Aperçu de ${item.name}`}
             >
-              <img src={item.url} alt="" />
+              <SafeImage
+                src={item.url}
+                alt=""
+                width={1200}
+                height={900}
+                sizes="(max-width: 560px) 45vw, (max-width: 900px) 42vw, 240px"
+                style={{ width: "100%", height: "auto" }}
+              />
               <span>Aperçu</span>
             </button>
             <div>
@@ -407,7 +422,20 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
             <button type="button" onClick={() => setPreviewItem(null)} aria-label="Fermer l’aperçu">×</button>
           </div>
           <div className="media-preview-stage-v384">
-            <img src={previewItem.url} alt="" />
+            <SafeImage
+              src={previewItem.url}
+              alt=""
+              width={2000}
+              height={2000}
+              sizes="92vw"
+              style={{
+                width: "auto",
+                height: "auto",
+                maxWidth: "100%",
+                maxHeight: "calc(92vh - 170px)",
+                objectFit: "contain",
+              }}
+            />
           </div>
           <div className="media-preview-actions-v384">
             <button type="button" className="button ghost small" onClick={() => copy(previewItem.url)}>Copier URL</button>
