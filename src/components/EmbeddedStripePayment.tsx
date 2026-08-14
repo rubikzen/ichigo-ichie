@@ -79,7 +79,7 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
     }
   }
 
-  return <div className="embedded-payment-v242">
+  return <div className={`embedded-payment-v242 ${submitting ? "is-processing-v406" : ""}`} aria-busy={submitting}>
     <div className="embedded-payment-heading-v242">
       <div>
         <p className="checkout-step-kicker">04 · {language === "fr" ? "PAIEMENT" : "PAYMENT"}</p>
@@ -105,12 +105,23 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
       <PaymentElement options={{ layout: "accordion" }} />
     </div>
 
+    {submitting && <div id="payment-processing-v406" className="payment-processing-v406" role="status" aria-live="polite">
+      <span className="payment-processing-spinner-v406" aria-hidden="true" />
+      <div>
+        <strong>{language === "fr" ? "Validation sécurisée en cours" : "Secure payment confirmation in progress"}</strong>
+        <small>{language === "fr"
+          ? "Gardez cette page ouverte et suivez les éventuelles instructions Stripe. Vous serez redirigé dès que la confirmation est terminée."
+          : "Keep this page open and follow any Stripe instructions. You will be redirected as soon as confirmation is complete."}</small>
+      </div>
+    </div>}
+
     {paymentError && <div className="embedded-payment-error-v242" role="alert">{paymentError}</div>}
 
     <button
       type="button"
       className="button primary full embedded-pay-button-v242"
       disabled={submitting}
+      aria-describedby={submitting ? "payment-processing-v406" : undefined}
       onClick={confirmStandardPayment}
     >
       {submitting
@@ -124,10 +135,19 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
       <span>{language === "fr" ? "Données bancaires chiffrées" : "Encrypted payment details"}</span>
     </div>
 
-    <div className="mobile-embedded-paybar-v242">
-      <div><small>Total</small><strong>{formatMoney(total, language)}</strong></div>
-      <button type="button" className="button primary" disabled={submitting} onClick={confirmStandardPayment}>
-        {submitting ? "…" : (language === "fr" ? "Payer" : "Pay")}
+    <div className={`mobile-embedded-paybar-v242 ${submitting ? "is-processing-v406" : ""}`}>
+      <div>
+        <small>{submitting ? (language === "fr" ? "Paiement en cours" : "Payment processing") : "Total"}</small>
+        <strong>{formatMoney(total, language)}</strong>
+      </div>
+      <button
+        type="button"
+        className="button primary"
+        disabled={submitting}
+        aria-describedby={submitting ? "payment-processing-v406" : undefined}
+        onClick={confirmStandardPayment}
+      >
+        {submitting ? (language === "fr" ? "Validation…" : "Processing…") : (language === "fr" ? "Payer" : "Pay")}
       </button>
     </div>
   </div>;
