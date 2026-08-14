@@ -14,9 +14,11 @@ test("catalog sorting callback is stable and memo dependencies are complete", ()
   assert.match(catalog, /\[categories, filtered, sortProducts\]/);
 });
 
-test("ProductCard option synchronization depends on the data it reads", () => {
-  assert.match(product, /\[product\.id, product\.option_groups\]/);
-  assert.doesNotMatch(product, /optionSignature/);
+test("ProductCard option changes reset through keyed state instead of effect synchronization", () => {
+  assert.match(product, /function productCardStateKey/);
+  assert.match(product, /JSON\.stringify\(product\.option_groups\)/);
+  assert.match(product, /<ProductCardStateful key=\{productCardStateKey\(product\)\}/);
+  assert.doesNotMatch(product, /\[product\.id, product\.option_groups\]/);
 });
 
 test("checkout city lookup declares city and verification dependencies", () => {

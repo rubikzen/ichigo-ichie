@@ -35,7 +35,15 @@ function stockCopy(stock: number, language: "fr" | "en") {
   return language === "fr" ? `${stock} en stock` : `${stock} in stock`;
 }
 
+function productCardStateKey(product: Product) {
+  return `${product.id}:${JSON.stringify(product.option_groups)}`;
+}
+
 export function ProductCard({ product }: { product: Product }) {
+  return <ProductCardStateful key={productCardStateKey(product)} product={product} />;
+}
+
+function ProductCardStateful({ product }: { product: Product }) {
   const { language } = useLanguage();
   const { items, count, addItem, setQuantity, removeItem } = useCart();
   const selectableVariants = useMemo(() => product.variants.filter((item) => item.active), [product.variants]);
@@ -56,23 +64,6 @@ export function ProductCard({ product }: { product: Product }) {
     return [group.id, group.values.slice(0, minimum).map((value) => value.id)];
   })));
   const [justAdded, setJustAdded] = useState(false);
-
-  useEffect(() => {
-    setSelected(Object.fromEntries(product.option_groups.map((group) => {
-      const minimum = group.required ? Math.max(1, group.min_select) : Math.max(0, group.min_select);
-      return [group.id, group.values.slice(0, minimum).map((value) => value.id)];
-    })));
-  }, [product.id, product.option_groups]); // keep storefront options in sync with Admin
-
-
-  useEffect(() => {
-    const next = selectableVariants.find((item) => item.id === variantId) ?? firstAvailable;
-    if (next) {
-      if (next.id !== variantId) setVariantId(next.id);
-      setSelectedPackaging(packagingKey(next));
-    }
-    setImageIndex(0);
-  }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!open) return;
