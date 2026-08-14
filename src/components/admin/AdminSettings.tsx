@@ -2,6 +2,7 @@
 
 import {
   FormEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -225,7 +226,7 @@ function ShippingRatesAdmin({ supabase }: { supabase: NonNullable<ReturnType<typ
   const [rates, setRates] = useState<ShippingRateRow[]>([]);
   const [note, setNote] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     const [{ data: methodRows, error: methodError }, { data: rateRows, error: rateError }] = await Promise.all([
       supabase.from("shipping_methods").select("*").order("sort_order"),
       supabase.from("shipping_rate_bands").select("*").order("method_id").order("max_weight_g"),
@@ -233,9 +234,15 @@ function ShippingRatesAdmin({ supabase }: { supabase: NonNullable<ReturnType<typ
     if (methodError || rateError) return setNote((methodError || rateError)?.message ?? "Chargement impossible.");
     setMethods((methodRows ?? []) as ShippingMethodRow[]);
     setRates((rateRows ?? []) as ShippingRateRow[]);
-  }
+  }, [supabase]);
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => { cancelled = true; };
+  }, [load]);
 
   async function saveMethod(method: ShippingMethodRow) {
     const { error } = await supabase.from("shipping_methods").update({

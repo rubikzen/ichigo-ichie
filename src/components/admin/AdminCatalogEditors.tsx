@@ -42,7 +42,13 @@ export function CategoryAdmin({ categories, supabase, reload }: { categories: Ca
   const [rows, setRows] = useState<Category[]>(categories);
   const [draft, setDraft] = useState({ name_fr: "", name_en: "", slug: "", kind: "menu" as "menu" | "shop", sort_order: 1 });
   const [note, setNote] = useState("");
-  useEffect(() => setRows(categories), [categories]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setRows(categories);
+    });
+    return () => { cancelled = true; };
+  }, [categories]);
   async function add(event: FormEvent) { event.preventDefault(); const { error } = await supabase.from("categories").insert({ ...draft, kind: zone, name_en: draft.name_en || draft.name_fr, slug: draft.slug || slugify(draft.name_fr), active: true, sort_order: categories.filter((category) => category.kind === zone).length + 1 }); if (error) return setNote(error.message); setDraft({ name_fr: "", name_en: "", slug: "", kind: zone, sort_order: 1 }); setNote("Catégorie ajoutée ✓"); await reload(); }
   async function save(category: Category) { const { error } = await supabase.from("categories").update({ name_fr: category.name_fr, name_en: category.name_en || category.name_fr, sort_order: Number(category.sort_order), active: category.active }).eq("id", category.id); setNote(error ? error.message : "Catégorie enregistrée ✓"); if (!error) await reload(); }
   async function toggle(category: Category) { await supabase.from("categories").update({ active: !category.active }).eq("id", category.id); await reload(); }

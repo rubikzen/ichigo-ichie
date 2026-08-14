@@ -53,18 +53,25 @@ export function AdminOrders({
   const [statsExpanded, setStatsExpanded] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("ichigo-order-sound");
-    const enabled = stored === "1";
-    setOrderSoundEnabled(enabled);
-    orderSoundEnabledRef.current = enabled;
+    let cancelled = false;
 
-    void loadOrders();
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const stored = window.localStorage.getItem("ichigo-order-sound");
+      const enabled = stored === "1";
+      setOrderSoundEnabled(enabled);
+      orderSoundEnabledRef.current = enabled;
+      void loadOrders();
+    });
 
     const timer = window.setInterval(() => {
       if (!trackingEditOrderId) void loadOrders();
     }, 10000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [supabase, trackingEditOrderId, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
 function playNewOrderSound() {
