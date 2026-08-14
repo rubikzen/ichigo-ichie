@@ -1689,3 +1689,33 @@
     border-color: #315b49;
   }
 }
+
+
+/* Ichigo Ichie V4.07 — Stripe return synchronization */
+.payment-tracking-banner.payment-sync-pending-v407 {
+  border-color: #c8d8ca;
+  background: #f1f7ef;
+}
+.payment-tracking-banner.payment-sync-pending-v407 .payment-tracking-icon {
+  background: #e1eee0;
+  color: #315b49;
+}
+.payment-sync-spinner-v407 {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #b9ccbc;
+  border-top-color: #315b49;
+  border-radius: 50%;
+  animation: payment-sync-spin-v407 .8s linear infinite;
+}
+@keyframes payment-sync-spin-v407 {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payment-sync-spinner-v407 {
+    animation: none;
+    border-color: #315b49;
+  }
+}

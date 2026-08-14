@@ -59,6 +59,7 @@ export function OrderTracker({ token }: { token: string }) {
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancelled" | "">("");
   const [canceling, setCanceling] = useState(false);
   const [autoRetryRequested, setAutoRetryRequested] = useState(false);
+  const [paymentSyncGraceExpired, setPaymentSyncGraceExpired] = useState(false);
   const autoRetryStarted = useRef(false);
   const cartClearedAfterPayment = useRef(false);
 
@@ -84,6 +85,14 @@ export function OrderTracker({ token }: { token: string }) {
   }, []);
 
   const paymentConfirmed = order?.payment_status === "paid" || order?.payment_status === "refunded";
+  const paymentSyncRefreshing = paymentReturn === "success" && !paymentConfirmed && !paymentSyncGraceExpired;
+  const orderRefreshIntervalMs = paymentSyncRefreshing ? 2000 : 5000;
+
+  useEffect(() => {
+    if (paymentReturn !== "success" || paymentConfirmed) return;
+    const timer = window.setTimeout(() => setPaymentSyncGraceExpired(true), 20_000);
+    return () => window.clearTimeout(timer);
+  }, [paymentReturn, paymentConfirmed]);
 
   useEffect(() => {
   if (paymentReturn !== "success" || !paymentConfirmed) return;
@@ -107,9 +116,9 @@ export function OrderTracker({ token }: { token: string }) {
       }
     }
     load();
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(load, orderRefreshIntervalMs);
     return () => { active = false; window.clearInterval(timer); };
-  }, [token]);
+  }, [token, orderRefreshIntervalMs]);
 
   async function retryPayment() {
     setRetrying(true); setError("");
@@ -203,6 +212,10 @@ export function OrderTracker({ token }: { token: string }) {
   const isStopped = order.status === "cancelled" || order.status === "refunded";
   const onlinePayment = order.payment_method === "online";
   const paymentPaid = paymentConfirmed;
+  const paymentSyncPending = paymentSyncRefreshing
+    && onlinePayment
+    && !isStopped
+    && ["pending", "unpaid"].includes(order.payment_status);
   const paymentNeedsAction = onlinePayment && ["pending", "unpaid", "failed", "expired"].includes(order.payment_status);
   const canCancelUnpaid = paymentNeedsAction && !isStopped && order.status === "pending";
   const invoice = order.invoices?.find((doc) => doc.document_type === "invoice");
@@ -229,13 +242,19 @@ const canDownloadInvoice =
   return <section className="tracking-page"><div className="tracking-card">
     <div className="tracking-head"><div><p className="eyebrow">ICHIGO ICHIE</p><h1>{title}</h1><p>{language === "fr" ? "Commande" : "Order"} <strong>{order.order_number}</strong></p></div><div className={`tracking-status ${order.status}`}>{statusLabel(order.status, language, order.order_type)}</div></div>
 
-    <div className={`payment-tracking-banner ${order.payment_status}`}>
-      <div className="payment-tracking-icon">{order.status === "cancelled" ? "×" : paymentPaid ? "✓" : order.payment_method === "pickup" ? "€" : paymentNeedsAction ? "!" : "…"}</div>
+    <div className={`payment-tracking-banner ${order.payment_status} ${paymentSyncPending ? "payment-sync-pending-v407" : ""}`}>
+      <div className="payment-tracking-icon">{order.status === "cancelled" ? "×" : paymentPaid ? "✓" : paymentSyncPending ? <span className="payment-sync-spinner-v407" aria-hidden="true" /> : order.payment_method === "pickup" ? "€" : paymentNeedsAction ? "!" : "…"}</div>
       <div>
-        <strong>{paymentTitle(order, language)}</strong>
-        <small>{paymentDescription(order, language, paymentReturn)}</small>
+        <strong>{paymentSyncPending
+          ? (language === "fr" ? "Confirmation Stripe en cours" : "Stripe confirmation in progress")
+          : paymentTitle(order, language)}</strong>
+        <small>{paymentSyncPending
+          ? (language === "fr"
+              ? "Vous revenez du paiement sécurisé. Nous vérifions la confirmation Stripe ; ne relancez pas le paiement pendant quelques secondes."
+              : "You have returned from secure payment. We are checking Stripe confirmation; please do not retry payment for a few seconds.")
+          : paymentDescription(order, language, paymentReturn)}</small>
       </div>
-      {paymentNeedsAction && !isStopped && !retryPaymentSession && (
+      {paymentNeedsAction && !paymentSyncPending && !isStopped && !retryPaymentSession && (
         <div className="payment-tracking-actions-v361">
           <button
             type="button"
