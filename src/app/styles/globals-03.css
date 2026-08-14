@@ -1586,3 +1586,43 @@
 .customer-section-heading-v243 h2,.customer-account-panel-v243 h2 { margin:3px 0 0; font-family:var(--serif,Georgia,serif); font-size:clamp(32px,3.3vw,48px); font-weight:500; }
 .customer-orders-v243 { max-width:1120px; }
 .customer-order-card-v243 { margin-bottom:16px; padding:22px; border:1px solid var(--line,#dfe3d8); border-radius:24px; background:#fff; box-shadow:0 18px 50px rgba(35,55,44,.04); }
+
+
+/* Ichigo Ichie V4.05 — Checkout readiness feedback */
+.checkout-blocker-v405 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 clamp(4px, 1vw, 12px) 10px;
+  padding: 10px 13px;
+  border: 1px solid #e3d7b7;
+  border-radius: 13px;
+  background: #fffaf0;
+  color: #765e2c;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: center;
+}
+.checkout-blocker-v405 > span { flex: 0 0 auto; font-size: 14px; }
+.mobile-checkout-blocker-v405 { display: none; }
+
+@media (max-width: 720px) {
+  .checkout-blocker-v405 { display: none; }
+  .mobile-checkout-paybar-v236.has-blocker-v405 { row-gap: 6px; }
+  .mobile-checkout-blocker-v405 {
+    display: block;
+    grid-column: 1 / -1;
+    margin: 0 2px;
+    color: #765e2c;
+    font-size: 10px;
+    font-weight: 750;
+    line-height: 1.3;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .checkout-page:has(.mobile-checkout-paybar-v236.has-blocker-v405) {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

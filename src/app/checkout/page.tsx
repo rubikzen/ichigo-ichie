@@ -320,6 +320,19 @@ export default function CheckoutPage() {
   const promoFieldVisible = settings.promo_field_visible !== "false";
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
   const submitDisabled = loading || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
+  const checkoutBlocker = loading || paymentSession
+    ? ""
+    : orderType === "shipping" && quoteLoading
+      ? (language === "fr" ? "Calcul de la livraison en cours…" : "Calculating delivery…")
+      : orderType === "shipping" && quoteError
+        ? (language === "fr" ? "Le tarif de livraison doit être disponible avant de continuer." : "A delivery rate must be available before you can continue.")
+        : orderType === "shipping" && !shippingAddressReady
+          ? (language === "fr" ? "Complétez l’adresse de livraison pour continuer." : "Complete the delivery address to continue.")
+          : orderType === "shipping" && !selectedShipping
+            ? (language === "fr" ? "Choisissez un mode de livraison pour continuer." : "Choose a delivery method to continue.")
+            : !acceptedTerms
+              ? (language === "fr" ? "Acceptez les CGV et les informations Livraison & retours pour continuer." : "Accept the Terms and Shipping & returns information to continue.")
+              : "";
 
   useEffect(() => {
     let cancelled = false;
@@ -625,18 +638,20 @@ export default function CheckoutPage() {
         </div> : <p className="form-error">{error}</p>)}
 
         {!paymentSession ? <>
-          <button className="button primary full checkout-submit" disabled={submitDisabled}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
-          <p className="checkout-disclaimer">{language === "fr" ? "Aucun débit à cette étape. Le formulaire Stripe sécurisé s’ouvrira juste ici." : "No charge at this step. The secure Stripe payment form will open here."}</p>
+          {checkoutBlocker && <p id="checkout-blocker-v405" className="checkout-blocker-v405" role="status" aria-live="polite"><span aria-hidden="true">→</span>{checkoutBlocker}</p>}
+          <button className="button primary full checkout-submit" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "checkout-blocker-v405 checkout-disclaimer-v405" : "checkout-disclaimer-v405"}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
+          <p id="checkout-disclaimer-v405" className="checkout-disclaimer">{language === "fr" ? "Aucun débit à cette étape. Le formulaire Stripe sécurisé s’ouvrira juste ici." : "No charge at this step. The secure Stripe payment form will open here."}</p>
 
-          <div className="mobile-checkout-paybar-v236" aria-label={language === "fr" ? "Paiement" : "Payment"}>
+          <div className={`mobile-checkout-paybar-v236 ${checkoutBlocker ? "has-blocker-v405" : ""}`} aria-label={language === "fr" ? "Paiement" : "Payment"}>
             <div><small>Total</small><strong>{money.format(checkoutTotal)}</strong></div>
-            <button type="submit" className="button primary" disabled={submitDisabled}>
+            <button type="submit" className="button primary" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "mobile-checkout-blocker-v405" : undefined}>
               {loading
   ? "…"
   : language === "fr"
     ? "Continuer vers le paiement"
     : "Continue to payment"}
             </button>
+            {checkoutBlocker && <small id="mobile-checkout-blocker-v405" className="mobile-checkout-blocker-v405" role="status" aria-live="polite">{checkoutBlocker}</small>}
           </div>
         </> : <div id="embedded-payment-v242" className="embedded-payment-host-v242">
           <div className="payment-session-ready-v242">
