@@ -1,6 +1,7 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
+import { SafeImage } from "./SafeImage";
 import { useEffect, useState } from "react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
@@ -77,14 +78,13 @@ export function SiteHeader() {
           href="/#top"
           aria-label={settings.brand_name || "Ichigo Ichie"}
         >
-          <img
+          <SafeImage
             src={settings.brand_logo_url || "/brand-mark.svg"}
             alt=""
-            width="42"
-            height="42"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
+            width={42}
+            height={42}
+            sizes="42px"
+            priority
           />
           <span>
             <strong>{settings.brand_name || "ICHIGO ICHIE"}</strong>

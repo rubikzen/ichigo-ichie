@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SafeImage } from "./SafeImage";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
@@ -196,7 +197,12 @@ function ProductCardStateful({ product }: { product: Product }) {
 
         <div className="modal-media product-gallery-media product-gallery-v28">
           <div className="gallery-stage">
-            <img src={image} alt={`${name} ${imageIndex + 1}`} />
+            <SafeImage
+              src={image}
+              alt={`${name} ${imageIndex + 1}`}
+              fill
+              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 45vw, 540px"
+            />
             {gallery.length > 1 && <>
               <button type="button" className="gallery-arrow previous" aria-label={language === "fr" ? "Image précédente" : "Previous image"} onClick={() => setImageIndex((current) => (current - 1 + gallery.length) % gallery.length)}>‹</button>
               <button type="button" className="gallery-arrow next" aria-label={language === "fr" ? "Image suivante" : "Next image"} onClick={() => setImageIndex((current) => (current + 1) % gallery.length)}>›</button>
@@ -204,7 +210,7 @@ function ProductCardStateful({ product }: { product: Product }) {
             {gallery.length > 1 && <span className="gallery-counter">{imageIndex + 1} / {gallery.length}</span>}
           </div>
           {gallery.length > 1 && <div className="gallery-thumbnails gallery-thumbnails-v28" aria-label={language === "fr" ? "Photos du produit" : "Product photos"}>
-            {gallery.slice(0, 3).map((url, index) => <button type="button" key={`${url}-${index}`} className={imageIndex === index ? "active" : ""} onClick={() => setImageIndex(index)}><img src={url} alt="" /></button>)}
+            {gallery.slice(0, 3).map((url, index) => <button type="button" key={`${url}-${index}`} className={imageIndex === index ? "active" : ""} onClick={() => setImageIndex(index)}><SafeImage src={url} alt="" width={240} height={180} sizes="(max-width: 720px) 30vw, 160px" /></button>)}
           </div>}
         </div>
 
@@ -343,7 +349,14 @@ const requiresChoice = selectableVariants.length > 1;
   return <>
     <article className="product-card product-card-compact">
       <button className="product-image-button" onClick={() => setOpen(true)} aria-label={name}>
-        <img className="product-image" src={coverImage} alt={name} loading="lazy" decoding="async" />
+        <SafeImage
+          className="product-image"
+          src={coverImage}
+          alt={name}
+          width={800}
+          height={656}
+          sizes="(max-width: 720px) calc(100vw - 24px), (max-width: 1100px) 50vw, 33vw"
+        />
         {product.badge && <span className="badge">{product.badge}</span>}
         {gallery.length > 1 && <span className="photo-count">{gallery.length} photos</span>}
       </button>

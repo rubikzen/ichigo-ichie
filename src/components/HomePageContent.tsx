@@ -10,6 +10,7 @@ import { ProductCard } from "./ProductCard";
 import { UnifiedCatalogSections } from "./UnifiedCatalogSections";
 import { settingEnabled } from "@/lib/settings";
 import { ContactSection } from "./ContactSection";
+import { SafeImage } from "./SafeImage";
 
 export function HomePageContent({
   featured,
@@ -234,20 +235,21 @@ export function HomePageContent({
             }`}
           >
             {settings.story_image_url ? (
-              <img
+              <SafeImage
                 src={settings.story_image_url}
                 alt={t("story_title_fr", "story_title_en")}
-                loading="lazy"
-                decoding="async"
+                fill
+                sizes="(max-width: 980px) calc(100vw - 36px), 50vw"
               />
             ) : (
               <div className="house-media-fallback-v226">
                 {settings.brand_logo_url && (
-                  <img
+                  <SafeImage
                     src={settings.brand_logo_url}
                     alt=""
-                    loading="lazy"
-                    decoding="async"
+                    width={86}
+                    height={86}
+                    sizes="86px"
                   />
                 )}
                 <span>
