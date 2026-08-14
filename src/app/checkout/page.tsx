@@ -515,7 +515,7 @@ export default function CheckoutPage() {
                 {addressEntryMode === "search" && addressLoading && <span className="smart-field-loading-v235" aria-hidden="true">…</span>}
               </div>
               {addressEntryMode === "search" && addressSuggestions.length > 0 && <div className="smart-address-suggestions-v235" role="listbox">
-                {addressSuggestions.map((suggestion) => <button key={suggestion.id} type="button" role="option" onClick={() => chooseAddress(suggestion)}>
+                {addressSuggestions.map((suggestion) => <button key={suggestion.id} type="button" role="option" aria-selected={false} onClick={() => chooseAddress(suggestion)}>
                   <strong>{suggestion.address1 || suggestion.label}</strong>
                   <small>{[suggestion.postalCode, suggestion.city].filter(Boolean).join(" · ")}</small>
                 </button>)}

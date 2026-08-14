@@ -9,7 +9,7 @@ export default defineConfig([
       // keep these visible in CI without blocking production while legacy
       // effects are refactored incrementally in later versions.
       "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/purity": "warn",
+      "react-hooks/purity": "error",
     },
   },
   globalIgnores([".next/**", "node_modules/**"]),

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
@@ -47,7 +47,7 @@ export function ProductCard({ product }: { product: Product }) {
   }, [product.images, product.image_url]);
 
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
   const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
   const [imageIndex, setImageIndex] = useState(0);
@@ -58,8 +58,6 @@ export function ProductCard({ product }: { product: Product }) {
   const [justAdded, setJustAdded] = useState(false);
 
   const optionSignature = useMemo(() => product.option_groups.map((group) => `${group.id}:${group.required ? 1 : 0}:${group.min_select}:${group.max_select}:${group.values.map((value) => value.id).join(",")}`).join("|"), [product.option_groups]);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setSelected(Object.fromEntries(product.option_groups.map((group) => {

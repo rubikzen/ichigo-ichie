@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatBytes, optimizeImageFile } from "@/lib/image-optimize";
 
@@ -186,7 +186,8 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<"recent" | "oldest" | "name">("recent");
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
-  const inputId = useMemo(() => `media-upload-${Math.random().toString(36).slice(2)}`, []);
+  const reactId = useId();
+  const inputId = `media-upload-${reactId.replace(/:/g, "")}`;
 
   async function refresh() {
     try { setItems(await listMedia(supabase)); }
