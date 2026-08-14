@@ -2,6 +2,7 @@
 
 import type { Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
+import { SafeImage } from "./SafeImage";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
   language === "fr" ? "fr-FR" : "en-GB",
@@ -26,7 +27,13 @@ export function MenuInfoCard({ product }: { product: Product }) {
   return (
     <article className="menu-info-card">
       <div className="menu-info-media">
-        <img src={image} alt={name} loading="lazy" />
+        <SafeImage
+          src={image}
+          alt={name}
+          width={800}
+          height={640}
+          sizes="(max-width: 720px) calc(100vw - 32px), (max-width: 1100px) 45vw, 360px"
+        />
         {product.badge && <span className={`menu-info-badge ${badgeLengthClass(product.badge)}`}>{product.badge}</span>}
       </div>
       <div className="menu-info-body">

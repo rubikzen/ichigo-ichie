@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
@@ -131,7 +132,14 @@ export function CartPageClient({ products }: { products: Product[] }) {
             const lineStockConflict = maxForThisLine !== null && item.quantity > maxForThisLine;
             const canEdit = Boolean(product && (product.variants.length > 0 || product.option_groups.length > 0));
             return <article className={`cart-item cart-item-v216 ${savedKey === item.key ? "is-updated" : ""}`} key={item.key}>
-              <img className="cart-item-image-v216" src={item.imageUrl || product?.image_url || "/product-placeholder.svg"} alt="" />
+              <SafeImage
+                className="cart-item-image-v216"
+                src={item.imageUrl || product?.image_url || "/product-placeholder.svg"}
+                alt=""
+                width={236}
+                height={300}
+                sizes="(max-width: 560px) 82px, (max-width: 820px) 100px, 118px"
+              />
               <div className="cart-item-body-v216">
                 <div className="cart-item-title-v216">
                   <div>

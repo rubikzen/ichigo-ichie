@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
+import { SafeImage } from "./SafeImage";
 
 export function SiteFooter() {
   const { language } = useLanguage();
@@ -18,7 +19,9 @@ export function SiteFooter() {
     <div className="footer-main-v226 footer-main-v227">
       <div className="footer-brand-v226">
         <Link href="/#top" className="footer-brandline-v226">
-          {settings.footer_show_logo !== "false" && settings.brand_logo_url && <img src={settings.brand_logo_url} alt="" />}
+          {settings.footer_show_logo !== "false" && settings.brand_logo_url && (
+            <SafeImage src={settings.brand_logo_url} alt="" width={64} height={64} sizes="64px" />
+          )}
           <span><strong>{settings.footer_brand || settings.brand_name || "ICHIGO ICHIE"}</strong><small>{t("brand_subtitle_fr", "brand_subtitle_en")}</small></span>
         </Link>
         <p>{t("footer_tagline_fr", "footer_tagline_en")}</p>
