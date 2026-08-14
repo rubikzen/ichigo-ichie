@@ -73,10 +73,7 @@ export function MobileBottomNav() {
   }, [hidden]);
 
   useEffect(() => {
-    if (!onHome) {
-      setActive("");
-      return;
-    }
+    if (!onHome) return;
     const nodes = (["menu", "boutique", "maison"] as const)
       .map((id) => document.getElementById(id))
       .filter((node): node is HTMLElement => Boolean(node));
@@ -93,19 +90,21 @@ export function MobileBottomNav() {
     return () => observer.disconnect();
   }, [onHome]);
 
+  const visibleActive: SectionId = onHome ? active : "";
+
   if (hidden) return null;
 
   return (
     <nav className="mobile-bottom-nav-v225 mobile-bottom-nav-v236" aria-label={language === "fr" ? "Navigation mobile" : "Mobile navigation"}>
-      <Link href="/#menu" className={active === "menu" ? "active" : ""}>
+      <Link href="/#menu" className={visibleActive === "menu" ? "active" : ""}>
         <IconMenu />
         <span>{language === "fr" ? "Carte" : "Menu"}</span>
       </Link>
-      <Link href="/#boutique" className={active === "boutique" ? "active" : ""}>
+      <Link href="/#boutique" className={visibleActive === "boutique" ? "active" : ""}>
         <IconShop />
         <span>{t("nav_shop_fr", "nav_shop_en", language === "fr" ? "Boutique" : "Shop")}</span>
       </Link>
-      <Link href="/#maison" className={active === "maison" ? "active" : ""}>
+      <Link href="/#maison" className={visibleActive === "maison" ? "active" : ""}>
         <IconHouse />
         <span>{language === "fr" ? "Maison" : "About"}</span>
       </Link>

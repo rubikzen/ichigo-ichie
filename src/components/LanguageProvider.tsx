@@ -29,11 +29,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("fr");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("ichigo-language");
-    const initial: Language = saved === "en" ? "en" : "fr";
-    setLanguageState(initial);
-    syncDocumentLanguage(initial);
-    persistLanguage(initial);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const saved = window.localStorage.getItem("ichigo-language");
+      const initial: Language = saved === "en" ? "en" : "fr";
+      setLanguageState(initial);
+      syncDocumentLanguage(initial);
+      persistLanguage(initial);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
