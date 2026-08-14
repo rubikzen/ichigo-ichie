@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { ProductImage } from "@/lib/types";
 import { formatBytes, optimizeImageFile } from "@/lib/image-optimize";
+import { SafeImage } from "./SafeImage";
 
 type Props = {
   productId: string;
@@ -137,7 +138,16 @@ export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, 
     </div>
     <div className="gallery-admin-grid">
       {slots.map((image, index) => image ? <article className={`gallery-admin-card ${index === 0 ? "is-main" : ""}`} key={image.id}>
-        <div className="gallery-admin-image"><img src={image.url} alt={`${productName} ${index + 1}`} />{index === 0 && <span>Principale</span>}</div>
+        <div className="gallery-admin-image">
+          <SafeImage
+            src={image.url}
+            alt={`${productName} ${index + 1}`}
+            fill
+            sizes="(max-width: 560px) calc(100vw - 40px), (max-width: 820px) 45vw, 240px"
+            style={{ objectFit: "cover" }}
+          />
+          {index === 0 && <span>Principale</span>}
+        </div>
         <div className="gallery-admin-actions">
           {index !== 0 && <button type="button" onClick={() => makeMain(image)}>Mettre en principale</button>}
           <button type="button" className="text-danger" onClick={() => remove(image)}>Supprimer</button>

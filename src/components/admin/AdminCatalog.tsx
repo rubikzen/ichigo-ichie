@@ -1,6 +1,7 @@
 "use client";
 
 import { ProductGalleryAdmin } from "../ProductGalleryAdmin";
+import { SafeImage } from "../SafeImage";
 import type { Category, ProductType } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { VariantEditor } from "./AdminCatalogEditors";
@@ -64,7 +65,7 @@ export function AdminCatalog({
     const productVariants = variants.filter((variant) => variant.product_id === product.id);
     const totalVariantStock = productVariants.filter((variant) => variant.active).reduce((sum, variant) => sum + Math.max(0, Number(variant.stock)), 0);
     return <article className={`quick-product-row zone-${catalogZone} ${!product.active ? "is-hidden" : ""}`} key={product.id}>
-      <div className="quick-product-image"><img src={product.image_url || "/product-placeholder.svg"} alt="" /><button type="button" className={product.featured ? "featured active" : "featured"} title="Mettre en avant" onClick={() => quickPatchProduct(product.id, { featured: !product.featured })}>★</button></div>
+      <div className="quick-product-image"><SafeImage src={product.image_url || "/product-placeholder.svg"} alt="" width={128} height={128} sizes="(max-width: 1280px) 58px, 64px" /><button type="button" className={product.featured ? "featured active" : "featured"} title="Mettre en avant" onClick={() => quickPatchProduct(product.id, { featured: !product.featured })}>★</button></div>
       <div className="quick-product-main">
         <div className="quick-name-line"><input aria-label="Nom du produit" value={product.name_fr} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, name_fr: e.target.value } : item))} onBlur={() => quickPatchProduct(product.id, { name_fr: product.name_fr, name_en: product.name_en || product.name_fr })} /><span className={`visibility-dot ${product.active ? "on" : "off"}`}></span></div>
         <div className="quick-meta-line"><select aria-label="Catégorie" value={product.category_id} onChange={(e) => quickPatchProduct(product.id, { category_id: e.target.value })}>{catalogCategories.map((item) => <option key={item.id} value={item.id}>{item.name_fr}</option>)}</select>{productVariants.length ? <button type="button" className="mini-chip" onClick={() => chooseProduct(product)}>{productVariants.length} format{productVariants.length > 1 ? "s" : ""}</button> : <span className="mini-chip subtle">Sans variante</span>}{product.badge && <span className="mini-chip">{product.badge}</span>}</div>
