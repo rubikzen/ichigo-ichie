@@ -85,7 +85,13 @@ export function ProductionAdmin({ supabase, onOrdersChanged }: { supabase: Supab
     }
   }, [authHeaders]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void refresh();
+    });
+    return () => { cancelled = true; };
+  }, [refresh]);
 
   async function dataAction(action: "mark_legacy_test" | "archive_test" | "restore_test", required: string) {
     if (confirmation.trim().toUpperCase() !== required) {

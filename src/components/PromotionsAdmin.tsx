@@ -95,7 +95,13 @@ export function PromotionsAdmin({ supabase }: { supabase: SupabaseBrowser }) {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function setCheckoutVisibility(next: boolean) {
     setFieldVisible(next);

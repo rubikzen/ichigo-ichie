@@ -122,7 +122,14 @@ export function SiteMediaField({ supabase, label, value, onChange, slot, help, c
     catch (error) { setMessage(error instanceof Error ? error.message : "Impossible de charger les médias."); }
   }
 
-  useEffect(() => { if (libraryOpen) refresh(); }, [libraryOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!libraryOpen) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void refresh();
+    });
+    return () => { cancelled = true; };
+  }, [libraryOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleUpload(file?: File) {
     if (!file) return;
@@ -193,7 +200,13 @@ export function SiteMediaLibrary({ supabase }: { supabase: SupabaseClient }) {
     try { setItems(await listMedia(supabase)); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Impossible de charger les médias."); }
   }
-  useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void refresh();
+    });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase("fr");
