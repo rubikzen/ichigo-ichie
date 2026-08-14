@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "./ProductCard";
@@ -50,7 +50,7 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     activeCategory === "all" || product.category_id === activeCategory
   )), [products, activeCategory]);
 
-  const sortProducts = (items: Product[]) => [...items].sort((a, b) => {
+  const sortProducts = useCallback((items: Product[]) => [...items].sort((a, b) => {
     if (sortMode === "price-asc") return productPrice(a) - productPrice(b);
     if (sortMode === "price-desc") return productPrice(b) - productPrice(a);
 
@@ -60,16 +60,16 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     if (sortMode === "name-desc") return nameB.localeCompare(nameA, language, { sensitivity: "base" });
 
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-  });
+  }), [sortMode, language]);
 
   const groups = useMemo(() => categories.map((category) => ({
     category,
     products: sortProducts(filtered.filter((product) => product.category_id === category.id)),
-  })).filter((group) => group.products.length > 0), [categories, filtered, sortMode, language]);
+  })).filter((group) => group.products.length > 0), [categories, filtered, sortProducts]);
 
   const uncategorized = useMemo(() => sortProducts(
     filtered.filter((product) => !categories.some((category) => category.id === product.category_id)),
-  ), [categories, filtered, sortMode, language]);
+  ), [categories, filtered, sortProducts]);
 
   const renderProduct = (product: Product) => kind === "menu"
     ? <MenuInfoCard key={product.id} product={product} />

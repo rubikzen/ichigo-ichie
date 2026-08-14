@@ -282,7 +282,7 @@ export default function CheckoutPage() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [postalCode, orderType]);
+  }, [postalCode, orderType, city, addressVerified]);
 
   const selectedShipping = quote?.methods.find((method) => method.id === shippingMethodId) ?? null;
   const manualAddressReady = addressEntryMode === "manual" && address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2;

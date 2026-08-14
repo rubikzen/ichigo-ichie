@@ -57,14 +57,12 @@ export function ProductCard({ product }: { product: Product }) {
   })));
   const [justAdded, setJustAdded] = useState(false);
 
-  const optionSignature = useMemo(() => product.option_groups.map((group) => `${group.id}:${group.required ? 1 : 0}:${group.min_select}:${group.max_select}:${group.values.map((value) => value.id).join(",")}`).join("|"), [product.option_groups]);
-
   useEffect(() => {
     setSelected(Object.fromEntries(product.option_groups.map((group) => {
       const minimum = group.required ? Math.max(1, group.min_select) : Math.max(0, group.min_select);
       return [group.id, group.values.slice(0, minimum).map((value) => value.id)];
     })));
-  }, [product.id, optionSignature]); // keep storefront options in sync with Admin
+  }, [product.id, product.option_groups]); // keep storefront options in sync with Admin
 
 
   useEffect(() => {
