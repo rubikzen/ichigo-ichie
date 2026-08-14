@@ -84,17 +84,15 @@ export function CustomerAccount() {
     return stats;
   }, [orders]);
 
-  const visibleOrders = useMemo(() => {
-    if (orderFilter === "all") return orders;
-    return orders.filter((order) => orderBucket(order) === orderFilter);
-  }, [orders, orderFilter]);
+  const effectiveOrderFilter: OrderFilter =
+    !loading && user && orders.length > 0 && orderFilter === "active" && orderStats.active === 0
+      ? (orderStats.payment > 0 ? "payment" : "all")
+      : orderFilter;
 
-  useEffect(() => {
-    if (loading || !user || !orders.length) return;
-    if (orderFilter === "active" && orderStats.active === 0) {
-      setOrderFilter(orderStats.payment > 0 ? "payment" : "all");
-    }
-  }, [loading, user, orders.length, orderFilter, orderStats.active, orderStats.payment]);
+  const visibleOrders = useMemo(() => {
+    if (effectiveOrderFilter === "all") return orders;
+    return orders.filter((order) => orderBucket(order) === effectiveOrderFilter);
+  }, [orders, effectiveOrderFilter]);
 
   const loadAccount = useCallback(async (authUser: User) => {
     if (!supabase) return;
@@ -714,11 +712,11 @@ export function CustomerAccount() {
 
         {!!orders.length && <>
           <div className="customer-order-summary-v244" aria-label={language === "fr" ? "Résumé des commandes" : "Order summary"}>
-            <button type="button" onClick={() => setOrderFilter("payment")} className={orderFilter === "payment" ? "active" : ""}><span>{orderStats.payment}</span><small>{language === "fr" ? "Paiement" : "Payment"}</small></button>
-            <button type="button" onClick={() => setOrderFilter("active")} className={orderFilter === "active" ? "active" : ""}><span>{orderStats.active}</span><small>{language === "fr" ? "En cours" : "In progress"}</small></button>
-            <button type="button" onClick={() => setOrderFilter("completed")} className={orderFilter === "completed" ? "active" : ""}><span>{orderStats.completed}</span><small>{language === "fr" ? "Terminées" : "Completed"}</small></button>
-            <button type="button" onClick={() => setOrderFilter("cancelled")} className={orderFilter === "cancelled" ? "active" : ""}><span>{orderStats.cancelled}</span><small>{language === "fr" ? "Annulées" : "Cancelled"}</small></button>
-            {orderStats.refunded > 0 && <button type="button" onClick={() => setOrderFilter("refunded")} className={orderFilter === "refunded" ? "active" : ""}><span>{orderStats.refunded}</span><small>{language === "fr" ? "Remboursées" : "Refunded"}</small></button>}
+            <button type="button" onClick={() => setOrderFilter("payment")} className={effectiveOrderFilter === "payment" ? "active" : ""}><span>{orderStats.payment}</span><small>{language === "fr" ? "Paiement" : "Payment"}</small></button>
+            <button type="button" onClick={() => setOrderFilter("active")} className={effectiveOrderFilter === "active" ? "active" : ""}><span>{orderStats.active}</span><small>{language === "fr" ? "En cours" : "In progress"}</small></button>
+            <button type="button" onClick={() => setOrderFilter("completed")} className={effectiveOrderFilter === "completed" ? "active" : ""}><span>{orderStats.completed}</span><small>{language === "fr" ? "Terminées" : "Completed"}</small></button>
+            <button type="button" onClick={() => setOrderFilter("cancelled")} className={effectiveOrderFilter === "cancelled" ? "active" : ""}><span>{orderStats.cancelled}</span><small>{language === "fr" ? "Annulées" : "Cancelled"}</small></button>
+            {orderStats.refunded > 0 && <button type="button" onClick={() => setOrderFilter("refunded")} className={effectiveOrderFilter === "refunded" ? "active" : ""}><span>{orderStats.refunded}</span><small>{language === "fr" ? "Remboursées" : "Refunded"}</small></button>}
           </div>
 
           <div className="customer-order-filters-v244" role="tablist" aria-label={language === "fr" ? "Filtrer les commandes" : "Filter orders"}>
@@ -729,7 +727,7 @@ export function CustomerAccount() {
               ["completed", language === "fr" ? "Terminées" : "Completed"],
               ["cancelled", language === "fr" ? "Annulées" : "Cancelled"],
               ...(orderStats.refunded > 0 ? [["refunded", language === "fr" ? "Remboursées" : "Refunded"]] : []),
-            ] as Array<[OrderFilter, string]>).map(([value, label]) => <button type="button" role="tab" aria-selected={orderFilter === value} key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}{value !== "all" && <span>{orderStats[value]}</span>}</button>)}
+            ] as Array<[OrderFilter, string]>).map(([value, label]) => <button type="button" role="tab" aria-selected={effectiveOrderFilter === value} key={value} className={effectiveOrderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}{value !== "all" && <span>{orderStats[value]}</span>}</button>)}
           </div>
         </>}
 

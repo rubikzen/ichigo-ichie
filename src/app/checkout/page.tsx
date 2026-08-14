@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -105,7 +105,7 @@ export default function CheckoutPage() {
   } | null>(null);
   const [orderType, setOrderType] = useState<"pickup" | "shipping">(mustPickup ? "pickup" : "shipping");
   const [pickupMode, setPickupMode] = useState<"asap" | "scheduled">("asap");
-  const [clientReference, setClientReference] = useState("");
+  const clientReferenceRef = useRef<string | null>(null);
   const [quote, setQuote] = useState<ShippingQuoteResult | null>(null);
   const [quoteError, setQuoteError] = useState("");
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -138,7 +138,6 @@ export default function CheckoutPage() {
   const [customerPrefilled, setCustomerPrefilled] = useState(false);
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
-  useEffect(() => { setClientReference(window.crypto.randomUUID()); }, []);
   useEffect(() => { if (mustPickup) setOrderType("pickup"); }, [mustPickup]);
 
   // V2.43 — A signed-in customer gets their verified profile and default address
@@ -299,7 +298,7 @@ export default function CheckoutPage() {
   const paymentMethod = "online" as const;
   const promoFieldVisible = settings.promo_field_visible !== "false";
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
-  const submitDisabled = loading || !clientReference || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
+  const submitDisabled = loading || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
 
   useEffect(() => {
     setAppliedPromo(null);
@@ -369,7 +368,8 @@ export default function CheckoutPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!clientReference) return;
+    const clientReference = clientReferenceRef.current ?? window.crypto.randomUUID();
+    clientReferenceRef.current = clientReference;
     if (!acceptedTerms) {
       setError(language === "fr" ? "Veuillez accepter les CGV avant de confirmer la commande." : "Please accept the terms before confirming your order.");
       return;
