@@ -56,7 +56,7 @@ export function CustomerAccount() {
   const { language } = useLanguage();
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(supabase));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -127,15 +127,18 @@ export function CustomerAccount() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!supabase) { setLoading(false); return; }
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("reset_password") === "1") setResetPasswordMode(true);
-
-    const callbackError = params.get("auth_error");
-    if (callbackError) setAuthError(callbackError);
+    if (!supabase) return;
 
     let active = true;
+
+    queueMicrotask(() => {
+      if (!active) return;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("reset_password") === "1") setResetPasswordMode(true);
+
+      const callbackError = params.get("auth_error");
+      if (callbackError) setAuthError(callbackError);
+    });
 
     supabase.auth.getUser().then(async ({ data }) => {
       if (!active) return;

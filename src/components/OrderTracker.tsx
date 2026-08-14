@@ -65,17 +65,22 @@ export function OrderTracker({ token }: { token: string }) {
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
   useEffect(() => {
-    const state = new URLSearchParams(window.location.search).get("payment");
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const state = new URLSearchParams(window.location.search).get("payment");
 
-    if (state === "retry") {
-      setAutoRetryRequested(true);
+      if (state === "retry") {
+        setAutoRetryRequested(true);
+        window.history.replaceState(window.history.state, "", window.location.pathname);
+        return;
+      }
+
+      if (state !== "success" && state !== "cancelled") return;
+      setPaymentReturn(state);
       window.history.replaceState(window.history.state, "", window.location.pathname);
-      return;
-    }
-
-    if (state !== "success" && state !== "cancelled") return;
-    setPaymentReturn(state);
-    window.history.replaceState(window.history.state, "", window.location.pathname);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const paymentConfirmed = order?.payment_status === "paid" || order?.payment_status === "refunded";

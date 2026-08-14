@@ -138,7 +138,14 @@ export default function CheckoutPage() {
   const [customerPrefilled, setCustomerPrefilled] = useState(false);
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
-  useEffect(() => { if (mustPickup) setOrderType("pickup"); }, [mustPickup]);
+  useEffect(() => {
+    if (!mustPickup) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setOrderType("pickup");
+    });
+    return () => { cancelled = true; };
+  }, [mustPickup]);
 
   // V2.43 — A signed-in customer gets their verified profile and default address
   // prefilled without making account creation mandatory for checkout.
@@ -180,10 +187,14 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (orderType !== "shipping" || mustPickup || !items.length) {
-      setQuote(null);
-      setQuoteError("");
-      setShippingMethodId("");
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setQuote(null);
+        setQuoteError("");
+        setShippingMethodId("");
+      });
+      return () => { cancelled = true; };
     }
     let active = true;
     async function loadQuote() {
@@ -212,17 +223,24 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (orderType !== "shipping" || addressEntryMode === "manual") {
-      setAddressSuggestions([]);
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (!cancelled) setAddressSuggestions([]);
+      });
+      return () => { cancelled = true; };
     }
     const query = address1.trim();
     if (addressVerified || query.length < 3) {
-      setAddressSuggestions([]);
-      if (query.length < 3) {
-        setAddressSearchAttempted(false);
-        setAddressLookupUnavailable(false);
-      }
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setAddressSuggestions([]);
+        if (query.length < 3) {
+          setAddressSearchAttempted(false);
+          setAddressLookupUnavailable(false);
+        }
+      });
+      return () => { cancelled = true; };
     }
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -255,8 +273,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (orderType !== "shipping" || !/^\d{5}$/.test(postalCode)) {
-      setCitySuggestions([]);
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (!cancelled) setCitySuggestions([]);
+      });
+      return () => { cancelled = true; };
     }
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -301,8 +322,13 @@ export default function CheckoutPage() {
   const submitDisabled = loading || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
 
   useEffect(() => {
-    setAppliedPromo(null);
-    setPromoError("");
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setAppliedPromo(null);
+      setPromoError("");
+    });
+    return () => { cancelled = true; };
   }, [subtotal]);
 
   async function applyPromo() {
