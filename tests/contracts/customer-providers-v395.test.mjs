@@ -22,9 +22,10 @@ test("language preference hydration is deferred and remains cancel-safe", () => 
   assert.match(language, /cancelled = true/);
 });
 
-test("mobile navigation derives inactive state off-home instead of setting it in an effect", () => {
+test("mobile navigation derives section state without off-home effect resets", () => {
   assert.match(nav, /if \(!onHome\) return;/);
-  assert.match(nav, /const visibleActive: SectionId = onHome \? active : "";/);
+  assert.match(nav, /const pathSection = sectionFromPathname\(pathname\);/);
+  assert.match(nav, /const visibleActive: SectionId = pathSection \|\| \(onHome \? active \|\| hashSection : ""\);/);
   assert.doesNotMatch(nav, /if \(!onHome\) \{\s*setActive\(""\)/);
   assert.match(nav, /visibleActive === "menu"/);
   assert.match(nav, /visibleActive === "boutique"/);

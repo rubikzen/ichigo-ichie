@@ -32,3 +32,19 @@ test("mobile account and cart navigation remain reachable", async ({ page }) => 
     page.locator('.mobile-bottom-nav-v236 a[href="/panier"]')
   ).toBeVisible();
 });
+
+
+test("mobile dock marks Boutique active after a Boutique hash jump", async ({ page }) => {
+  await page.goto("/#boutique", { waitUntil: "domcontentloaded" });
+
+  const boutique = page.locator("#boutique");
+  await boutique.scrollIntoViewIfNeeded();
+
+  const boutiqueLink = page.locator('.mobile-bottom-nav-v236 a[href="/#boutique"]');
+  await expect(boutiqueLink).toHaveClass(/active/);
+  await expect(boutiqueLink).toHaveAttribute("aria-current", "location");
+
+  await expect(
+    page.locator('.mobile-bottom-nav-v236 a[href="/#maison"]')
+  ).not.toHaveClass(/active/);
+});

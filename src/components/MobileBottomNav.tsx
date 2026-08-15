@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
@@ -10,6 +10,28 @@ import { useSiteSettings } from "./SiteSettingsProvider";
 type SectionId = "menu" | "boutique" | "maison" | "";
 
 const HIDDEN_PATH_PREFIXES = ["/checkout"];
+const HOME_SECTION_IDS = ["menu", "boutique", "maison"] as const;
+
+function sectionFromPathname(pathname: string): SectionId {
+  if (pathname === "/menu" || pathname.startsWith("/menu/")) return "menu";
+  if (pathname === "/boutique" || pathname.startsWith("/boutique/")) return "boutique";
+  return "";
+}
+
+function readHashSection(): SectionId {
+  if (typeof window === "undefined") return "";
+  const hash = window.location.hash.replace(/^#/, "");
+  return HOME_SECTION_IDS.includes(hash as Exclude<SectionId, "">) ? hash as SectionId : "";
+}
+
+function subscribeHashSection(callback: () => void) {
+  window.addEventListener("hashchange", callback);
+  return () => window.removeEventListener("hashchange", callback);
+}
+
+function readServerHashSection(): SectionId {
+  return "";
+}
 
 function IconMenu() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h10" /></svg>;
@@ -63,9 +85,11 @@ export function MobileBottomNav() {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
   const [active, setActive] = useState<SectionId>("");
+  const hashSection = useSyncExternalStore<SectionId>(subscribeHashSection, readHashSection, readServerHashSection);
   const t = (fr: string, en: string, fallback: string) => settings[language === "fr" ? fr : en] || settings[fr] || fallback;
   const hidden = HIDDEN_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const onHome = pathname === "/";
+  const pathSection = sectionFromPathname(pathname);
 
   useEffect(() => {
     document.body.classList.toggle("mobile-dock-hidden-v236", hidden);
@@ -74,37 +98,58 @@ export function MobileBottomNav() {
 
   useEffect(() => {
     if (!onHome) return;
-    const nodes = (["menu", "boutique", "maison"] as const)
+    const nodes = HOME_SECTION_IDS
       .map((id) => document.getElementById(id))
       .filter((node): node is HTMLElement => Boolean(node));
     if (!nodes.length) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target?.id) setActive(visible.target.id as SectionId);
-    }, { rootMargin: "-28% 0px -56% 0px", threshold: [0, .08, .2, .5] });
+    const updateActiveFromViewport = () => {
+      const marker = Math.min(window.innerHeight * 0.42, 420);
+      const ranked = nodes
+        .map((node) => {
+          const rect = node.getBoundingClientRect();
+          const containsMarker = rect.top <= marker && rect.bottom >= marker;
+          const distance = containsMarker
+            ? 0
+            : Math.min(Math.abs(rect.top - marker), Math.abs(rect.bottom - marker));
+          return { id: node.id as SectionId, distance, top: rect.top };
+        })
+        .sort((a, b) => a.distance - b.distance || Math.abs(a.top) - Math.abs(b.top));
+
+      if (ranked[0]?.id) setActive(ranked[0].id);
+    };
+
+    const observer = new IntersectionObserver(updateActiveFromViewport, {
+      rootMargin: "-18% 0px -62% 0px",
+      threshold: [0, .01, .08, .2],
+    });
+    const frame = window.requestAnimationFrame(updateActiveFromViewport);
 
     nodes.forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
+    window.addEventListener("hashchange", updateActiveFromViewport);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", updateActiveFromViewport);
+      observer.disconnect();
+    };
   }, [onHome]);
 
-  const visibleActive: SectionId = onHome ? active : "";
+  const visibleActive: SectionId = pathSection || (onHome ? active || hashSection : "");
 
   if (hidden) return null;
 
   return (
     <nav className="mobile-bottom-nav-v225 mobile-bottom-nav-v236" aria-label={language === "fr" ? "Navigation mobile" : "Mobile navigation"}>
-      <Link href="/#menu" className={visibleActive === "menu" ? "active" : ""}>
+      <Link href="/#menu" className={visibleActive === "menu" ? "active" : ""} aria-current={visibleActive === "menu" ? "location" : undefined}>
         <IconMenu />
         <span>{language === "fr" ? "Carte" : "Menu"}</span>
       </Link>
-      <Link href="/#boutique" className={visibleActive === "boutique" ? "active" : ""}>
+      <Link href="/#boutique" className={visibleActive === "boutique" ? "active" : ""} aria-current={visibleActive === "boutique" ? "location" : undefined}>
         <IconShop />
         <span>{t("nav_shop_fr", "nav_shop_en", language === "fr" ? "Boutique" : "Shop")}</span>
       </Link>
-      <Link href="/#maison" className={visibleActive === "maison" ? "active" : ""}>
+      <Link href="/#maison" className={visibleActive === "maison" ? "active" : ""} aria-current={visibleActive === "maison" ? "location" : undefined}>
         <IconHouse />
         <span>{language === "fr" ? "Maison" : "About"}</span>
       </Link>

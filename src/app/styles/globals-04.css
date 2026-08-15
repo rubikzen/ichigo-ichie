@@ -3892,3 +3892,55 @@
     font-size: 13px;
   }
 }
+
+
+/* Ichigo Ichie V4.17 — Mobile Boutique navigation & above-the-fold */
+@media (max-width: 760px) {
+  /* Keep the editorial divider, but do not spend most of a viewport on it. */
+  .onepage-divider {
+    margin-top: 28px !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Bring the Boutique heading and first product closer to the viewport entry. */
+  .onepage-catalog-shop {
+    padding-top: 34px !important;
+    scroll-margin-top: 104px;
+  }
+
+  .onepage-catalog-shop > .onepage-section-heading {
+    margin-bottom: 18px !important;
+  }
+
+  .onepage-catalog-shop .onepage-section-heading .eyebrow {
+    margin-bottom: 8px !important;
+  }
+
+  .onepage-catalog-shop .onepage-section-heading h2 {
+    margin-bottom: 10px !important;
+  }
+
+  .onepage-catalog-shop .onepage-section-heading > div > p:not(.eyebrow) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    line-height: 1.5;
+  }
+
+  .onepage-catalog-shop .onepage-catalog-toolbar-v225 {
+    margin-bottom: 22px !important;
+    padding-top: 8px;
+    padding-bottom: 9px;
+  }
+
+  .onepage-catalog-shop .onepage-category-groups {
+    gap: 28px !important;
+  }
+
+  .onepage-catalog-shop .onepage-category-group {
+    margin-top: 0 !important;
+  }
+
+  .onepage-catalog-shop .onepage-category-heading {
+    margin-bottom: 14px !important;
+  }
+}
