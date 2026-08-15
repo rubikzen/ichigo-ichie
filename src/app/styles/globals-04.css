@@ -3775,3 +3775,35 @@
     margin-top: 12px;
   }
 }
+
+
+/* Ichigo Ichie V4.15 — Clickable product title */
+.product-card-compact .product-title-button-v415 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-card-compact .product-title-button-v415:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.product-card-compact .product-title-button-v415:focus-visible {
+  outline: 2px solid var(--moss, #486a4b);
+  outline-offset: 4px;
+}
+
+@media (hover: none) {
+  .product-card-compact .product-title-button-v415:hover {
+    text-decoration: none;
+  }
+}

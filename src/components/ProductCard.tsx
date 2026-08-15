@@ -362,7 +362,16 @@ const requiresChoice = selectableVariants.length > 1;
       </button>
       <div className="product-copy">
         <div className="product-title-row">
-          <h3 title={name}>{name}</h3>
+          <h3 title={name}>
+            <button
+              type="button"
+              className="product-title-button-v415"
+              onClick={() => setOpen(true)}
+              aria-label={language === "fr" ? `Voir les détails de ${name}` : `View details for ${name}`}
+            >
+              {name}
+            </button>
+          </h3>
           <strong className="product-card-price">{selectableVariants.length > 1 && (language === "fr" ? "Dès " : "From ")}{money(minimumPrice, language)}</strong>
         </div>
 
