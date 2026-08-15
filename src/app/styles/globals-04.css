@@ -3681,3 +3681,24 @@
     padding: 10px 11px;
   }
 }
+
+
+/* Ichigo Ichie V4.11 — Compact desktop product media */
+@media (min-width: 821px) {
+  .product-card.product-card-compact .product-image-button {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 4 / 5 !important;
+    overflow: hidden;
+  }
+
+  .product-card.product-card-compact .product-image-button > .product-image {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    object-position: center;
+  }
+}
