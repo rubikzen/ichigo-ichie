@@ -53,3 +53,35 @@ test("restock honeypot stays harmless and never requires a valid product", async
   expect(response.status()).toBe(200);
   await expect(response.json()).resolves.toEqual({ ok: true });
 });
+
+
+test("restock unsubscribe rejects an invalid signed link without mutating data", async ({
+  request,
+}) => {
+  const response = await request.post("/api/restock/unsubscribe", {
+    data: {
+      subscriptionId: "00000000-0000-0000-0000-000000000001",
+      token: "0".repeat(64),
+    },
+  });
+
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body.code).toBe("RESTOCK_UNSUBSCRIBE_INVALID");
+});
+
+test("restock alert management page loads without mutating the alert", async ({
+  page,
+}) => {
+  const response = await page.goto(
+    "/restock/desinscription?id=00000000-0000-0000-0000-000000000001&token=" +
+      "0".repeat(64) +
+      "&lang=fr",
+    { waitUntil: "domcontentloaded" },
+  );
+
+  expect(response).not.toBeNull();
+  expect(response!.status()).toBeLessThan(400);
+  await expect(page.getByRole("heading", { name: "Gérer votre alerte" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annuler cette alerte" })).toBeVisible();
+});

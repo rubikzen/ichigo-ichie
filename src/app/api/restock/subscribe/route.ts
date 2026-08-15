@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
+import { sendRestockSubscriptionConfirmation } from "@/lib/restock-subscription";
 import {
   consumeRateLimit,
   PublicApiError,
@@ -200,6 +201,21 @@ export async function POST(request: Request) {
     }
     if (insertError || !inserted) {
       throw insertError ?? new Error("RESTOCK_SUBSCRIPTION_INSERT_FAILED");
+    }
+
+    try {
+      const productName =
+        locale === "fr" ? product.name_fr : product.name_en || product.name_fr;
+      await sendRestockSubscriptionConfirmation({
+        subscriptionId: inserted.id,
+        email,
+        locale,
+        productName,
+      });
+    } catch (confirmationError) {
+      // The registration is the source of truth. Email delivery must not
+      // discard a valid waitlist subscription.
+      console.error("Restock confirmation email error", confirmationError);
     }
 
     return NextResponse.json({ ok: true, id: inserted.id });

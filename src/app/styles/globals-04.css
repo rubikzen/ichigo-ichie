@@ -4469,3 +4469,16 @@
     justify-self:end;
   }
 }
+
+
+/* Ichigo Ichie V4.28 — Restock alert management */
+.restock-manage-page-v428{min-height:70vh;display:grid;place-items:center;padding:72px 20px 96px;background:linear-gradient(180deg,#fbfaf4 0%,#f4f1e7 100%)}
+.restock-manage-card-v428{width:min(100%,560px);display:grid;justify-items:start;gap:14px;padding:34px;border:1px solid var(--line,#dfe3d8);border-radius:26px;background:var(--paper,#fffdf8);box-shadow:0 18px 50px rgba(38,54,45,.08)}
+.restock-manage-kicker-v428{color:var(--moss,#486a4b);font-size:10px;font-weight:900;letter-spacing:.14em}
+.restock-manage-card-v428 h1{margin:0;color:var(--ink,#26362d);font-family:Georgia,serif;font-size:clamp(28px,5vw,38px);line-height:1.08}
+.restock-manage-card-v428 p{margin:0;color:var(--muted,#66736b);line-height:1.65}
+.restock-manage-actions-v428{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.restock-manage-actions-v428 .button,.restock-manage-card-v428>.button{min-height:48px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.restock-manage-check-v428{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#315b43;color:#fff;font-size:20px;font-weight:900}
+.restock-manage-error-v428{width:100%;padding:10px 12px;border-radius:12px;background:#fff2ef;color:#9a493e!important;font-size:12px;font-weight:700}
+@media(max-width:640px){.restock-manage-page-v428{min-height:62vh;padding:40px 14px 84px;align-items:start}.restock-manage-card-v428{padding:24px 18px;border-radius:20px}.restock-manage-actions-v428{grid-template-columns:1fr}}
