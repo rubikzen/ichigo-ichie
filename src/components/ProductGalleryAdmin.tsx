@@ -9,12 +9,30 @@ import { SafeImage } from "./SafeImage";
 type Props = {
   productId: string;
   productName: string;
+  catalogKind: "menu" | "shop";
   fallbackImageUrl?: string | null;
   onMainImageChange?: (url: string) => void;
 };
 
 const MAX_IMAGES = 3;
-const PRODUCT_TARGET_RATIO = 6 / 5;
+const PRODUCT_IMAGE_GUIDES = {
+  shop: {
+    width: 800,
+    height: 1000,
+    ratio: 4 / 5,
+    ratioLabel: "4:5",
+    context: "Boutique · Matcha & accessoires",
+    note: "WebP conseillé · produit centré · gardez de l’espace autour.",
+  },
+  menu: {
+    width: 1200,
+    height: 900,
+    ratio: 4 / 3,
+    ratioLabel: "4:3",
+    context: "La carte · Boissons & desserts",
+    note: "WebP conseillé · sujet centré · évitez les détails importants sur les bords.",
+  },
+} as const;
 
 function readImageSize(file: File) {
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
@@ -33,8 +51,9 @@ function readImageSize(file: File) {
   });
 }
 
-export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, onMainImageChange }: Props) {
+export function ProductGalleryAdmin({ productId, productName, catalogKind, fallbackImageUrl, onMainImageChange }: Props) {
   const supabase = useMemo(() => createBrowserSupabase(), []);
+  const imageGuide = PRODUCT_IMAGE_GUIDES[catalogKind];
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -67,10 +86,10 @@ export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, 
     try {
       const dimensions = await readImageSize(file);
       const ratio = dimensions.width / Math.max(1, dimensions.height);
-      const delta = Math.abs(ratio - PRODUCT_TARGET_RATIO) / PRODUCT_TARGET_RATIO;
+      const delta = Math.abs(ratio - imageGuide.ratio) / imageGuide.ratio;
       dimensionNote = `${dimensions.width} × ${dimensions.height} px`;
-      if (delta > 0.14) dimensionNote += " · ratio différent du 6:5 recommandé, vérifiez le cadrage.";
-      else dimensionNote += " · format adapté ✓";
+      if (delta > 0.14) dimensionNote += ` · ratio différent du ${imageGuide.ratioLabel} recommandé (${imageGuide.width} × ${imageGuide.height} px), vérifiez le cadrage.`;
+      else dimensionNote += ` · format ${imageGuide.ratioLabel} adapté ✓`;
     } catch {
       // Keep upload available even when dimensions cannot be decoded.
     }
@@ -132,9 +151,13 @@ export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, 
       <div><strong>Galerie du produit</strong><p>3 photos communes à tous les formats : Boîte, Sachet, 30 g, 100 g…</p></div>
       <span>{images.length}/{MAX_IMAGES} photos</span>
     </div>
-    <div className="image-format-guide product-image-guide" role="note">
-      <div><span>Format idéal</span><strong>1200 × 1000 px</strong><em>6:5</em></div>
-      <p>Centrez le produit et gardez 10–15 % d’espace libre autour. Évitez les textes ou détails importants collés aux bords.</p>
+    <div className="image-format-guide product-image-guide" role="note" aria-label={`Guide photo ${imageGuide.context}`}>
+      <div>
+        <span>Format recommandé</span>
+        <strong>{imageGuide.width} × {imageGuide.height} px</strong>
+        <em>{imageGuide.ratioLabel}</em>
+      </div>
+      <p><strong>{imageGuide.context}</strong> — {imageGuide.note}</p>
     </div>
     <div className="gallery-admin-grid">
       {slots.map((image, index) => image ? <article className={`gallery-admin-card ${index === 0 ? "is-main" : ""}`} key={image.id}>
@@ -153,7 +176,7 @@ export function ProductGalleryAdmin({ productId, productName, fallbackImageUrl, 
           <button type="button" className="text-danger" onClick={() => remove(image)}>Supprimer</button>
         </div>
       </article> : <label className="gallery-upload-slot" key={`empty-${index}`}>
-        <span>＋</span><strong>Photo {index + 1}</strong><small>1200 × 1000 px · 6:5</small>
+        <span>＋</span><strong>Photo {index + 1}</strong><small>{imageGuide.width} × {imageGuide.height} px · {imageGuide.ratioLabel}</small>
         <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden disabled={loading} onChange={(event) => event.target.files?.[0] && upload(event.target.files[0])} />
       </label>)}
     </div>
