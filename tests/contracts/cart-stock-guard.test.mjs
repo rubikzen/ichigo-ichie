@@ -22,7 +22,8 @@ test("product card counts all cart configurations sharing the same stock unit", 
 test("direct and modal add actions stop when cart already consumes available stock", () => {
   assert.match(productCard, /const canAdd = hasStock && !stockLimitReached/);
   assert.match(productCard, /showStock && quantityInCartForStock >= currentStock/);
-  assert.match(productCard, /disabled=\{isSoldOut \|\| \(!requiresChoice && stockLimitReached\)\}/);
+  assert.match(productCard, /\{isSoldOut \? \([\s\S]*?<RestockNotify/);
+  assert.match(productCard, /disabled=\{!requiresChoice && stockLimitReached\}/);
   assert.match(productCard, /Quantité maximale atteinte/);
 });
 

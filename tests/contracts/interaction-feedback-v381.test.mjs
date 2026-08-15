@@ -17,8 +17,8 @@ test("direct-add product cards acknowledge a successful add immediately", () => 
 });
 
 test("direct-add success feedback takes priority before the maximum-stock label", () => {
-  const addedIndex = productCard.indexOf(': !requiresChoice && justAdded');
-  const maxIndex = productCard.indexOf(': !requiresChoice && stockLimitReached', addedIndex);
+  const addedIndex = productCard.indexOf("{!requiresChoice && justAdded");
+  const maxIndex = productCard.indexOf(": !requiresChoice && stockLimitReached", addedIndex);
   assert.ok(addedIndex >= 0, "missing direct-add feedback branch");
   assert.ok(maxIndex > addedIndex, "maximum-stock branch must follow added feedback");
   assert.match(productCard, /window\.setTimeout\(\(\) => setJustAdded\(false\), 1200\)/);

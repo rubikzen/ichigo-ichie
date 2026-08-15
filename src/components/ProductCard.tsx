@@ -8,6 +8,7 @@ import type { CartChoice, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, packagingLabel, variantLabel } from "@/lib/product-label";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
+import { RestockNotify } from "./RestockNotify";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }).format(value);
 
@@ -310,26 +311,29 @@ function ProductCardStateful({ product }: { product: Product }) {
                   {language === "fr" ? "Continuer mes achats" : "Continue shopping"}
                 </button>
               </div>
+            ) : !hasStock ? (
+              <RestockNotify
+                productId={product.id}
+                productName={name}
+                language={language}
+                context="modal"
+              />
             ) : (
               <>
-                {hasStock && <div className="product-price-block">
+                <div className="product-price-block">
                   <span>{language === "fr" ? "Prix" : "Price"}</span>
                   <strong>{money(price, language)}</strong>
-                </div>}
+                </div>
                 <button
   type="button"
   className="button primary product-buy-button"
   disabled={!canAdd}
   onClick={handleAdd}
 >
-  {!hasStock
+  {stockLimitReached
     ? language === "fr"
-      ? "Indisponible"
-      : "Unavailable"
-    : stockLimitReached
-      ? language === "fr"
-        ? "Quantité maximale atteinte"
-        : "Maximum quantity reached"
+      ? "Quantité maximale atteinte"
+      : "Maximum quantity reached"
     : language === "fr"
       ? `Ajouter au panier · ${money(price, language)}`
       : `Add to cart · ${money(price, language)}`}
@@ -398,15 +402,23 @@ const requiresChoice = selectableVariants.length > 1;
           )}
         </div>
 
-        <button
+        {isSoldOut ? (
+          <RestockNotify
+            productId={product.id}
+            productName={name}
+            language={language}
+            context="card"
+          />
+        ) : (
+          <button
   type="button"
-  className={`button full product-card-cta ${
-    isSoldOut ? "product-card-cta-soldout" : "primary"
-  } ${!requiresChoice && justAdded ? "is-added-v381" : ""}`}
-  disabled={isSoldOut || (!requiresChoice && stockLimitReached)}
+  className={`button full product-card-cta primary ${
+    !requiresChoice && justAdded ? "is-added-v381" : ""
+  }`}
+  disabled={!requiresChoice && stockLimitReached}
   aria-live="polite"
   onClick={(event) => {
-    if (isSoldOut || (!requiresChoice && stockLimitReached)) return;
+    if (!requiresChoice && stockLimitReached) return;
 
     if (requiresChoice) {
       openProductDetails(event.currentTarget);
@@ -416,14 +428,10 @@ const requiresChoice = selectableVariants.length > 1;
     handleAdd();
   }}
 >
-  {isSoldOut
+  {!requiresChoice && justAdded
     ? language === "fr"
-      ? "Indisponible"
-      : "Unavailable"
-    : !requiresChoice && justAdded
-      ? language === "fr"
-        ? "✓ Ajouté au panier"
-        : "✓ Added to cart"
+      ? "✓ Ajouté au panier"
+      : "✓ Added to cart"
     : !requiresChoice && stockLimitReached
       ? language === "fr"
         ? "Quantité maximale atteinte"
@@ -436,6 +444,7 @@ const requiresChoice = selectableVariants.length > 1;
         ? `Ajouter · ${money(minimumPrice, language)}`
         : `Add · ${money(minimumPrice, language)}`}
 </button>
+        )}
       </div>
     </article>
     {modal}

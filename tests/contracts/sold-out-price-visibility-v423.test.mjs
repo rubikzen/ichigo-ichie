@@ -28,7 +28,8 @@ test("sold-out variant choices show Sold out instead of their price", () => {
   );
 });
 
-test("sold-out product modal hides its main price block while keeping unavailable feedback", () => {
-  assert.match(product, /\{hasStock && <div className="product-price-block">/);
-  assert.match(product, /!hasStock[\s\S]*?"Indisponible"[\s\S]*?"Unavailable"/);
+test("sold-out product modal hides its main price block and exposes restock recovery", () => {
+  assert.match(product, /\) : !hasStock \? \([\s\S]*?<RestockNotify/);
+  assert.match(product, /productName=\{name\}[\s\S]*?context="modal"/);
+  assert.match(product, /\) : \([\s\S]*?<div className="product-price-block">/);
 });

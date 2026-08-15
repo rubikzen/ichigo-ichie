@@ -5,6 +5,7 @@ import { SafeImage } from "../SafeImage";
 import type { Category, ProductType } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { VariantEditor } from "./AdminCatalogEditors";
+import { RestockWaitlistAdmin } from "./RestockWaitlistAdmin";
 import { inferProductPreset, type AdminProduct } from "./catalog-model";
 import { useAdminCatalog } from "./useAdminCatalog";
 
@@ -114,6 +115,10 @@ export function AdminCatalog({
           </details>;
         }) : <div className="empty-state">{normalizedCatalogSearch ? `Aucun ${catalogZone === "menu" ? "article" : "produit"} ne correspond à cette recherche.` : `Aucune catégorie ${catalogZone === "menu" ? "Menu" : "Boutique"}. Créez d’abord une catégorie.`}</div>}
       </div>
+
+      {catalogZone === "shop" && (
+        <RestockWaitlistAdmin supabase={supabase} products={products} />
+      )}
 
       {advancedOpen && selectedId && <div className="quick-detail-panel">
         <div className="quick-detail-backdrop" onClick={() => setAdvancedOpen(false)}></div>
