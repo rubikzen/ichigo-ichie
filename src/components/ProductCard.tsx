@@ -191,6 +191,7 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const isShopProduct = product.type === "product" || product.type === "accessory";
   const hasProductFacts = Boolean(product.origin || product.cultivar || product.ideal_for.length);
+  const isSoldOut = totalStock <= 0;
 
   const modal = open && mounted ? createPortal(
     <div className="modal-backdrop product-detail-backdrop" onMouseDown={() => setOpen(false)} role="presentation">
@@ -238,7 +239,7 @@ function ProductCardStateful({ product }: { product: Product }) {
 
               {variantsForPackaging.length > 1 && <div className="option-group variant-dimension compact-option-group">
                 <span className="option-label">{language === "fr" ? "Format" : "Size"}</span>
-                <div className="option-pills format-pills-v28">{variantsForPackaging.map((item) => <button type="button" key={item.id} className={variantId === item.id ? "active" : ""} onClick={() => setVariantId(item.id)} disabled={item.stock <= 0}><span>{variantLabel(item)}</span><small>{money(item.price, language)}</small>{item.stock <= 0 && <b>{language === "fr" ? "Épuisé" : "Sold out"}</b>}</button>)}</div>
+                <div className="option-pills format-pills-v28">{variantsForPackaging.map((item) => <button type="button" key={item.id} className={variantId === item.id ? "active" : ""} onClick={() => setVariantId(item.id)} disabled={item.stock <= 0}><span>{variantLabel(item)}</span>{item.stock > 0 && <small>{money(item.price, language)}</small>}{item.stock <= 0 && <b>{language === "fr" ? "Épuisé" : "Sold out"}</b>}</button>)}</div>
               </div>}
 
               {selectableVariants.length === 1 && variant && <div className="selected-variant-summary selected-variant-v28">
@@ -311,10 +312,10 @@ function ProductCardStateful({ product }: { product: Product }) {
               </div>
             ) : (
               <>
-                <div className="product-price-block">
+                {hasStock && <div className="product-price-block">
                   <span>{language === "fr" ? "Prix" : "Price"}</span>
                   <strong>{money(price, language)}</strong>
-                </div>
+                </div>}
                 <button
   type="button"
   className="button primary product-buy-button"
@@ -342,10 +343,10 @@ function ProductCardStateful({ product }: { product: Product }) {
     document.body,
   ) : null;
 
-  const minimumPrice = selectableVariants.length ? Math.min(...selectableVariants.map((item) => item.price)) : product.base_price;
+  const availableVariants = selectableVariants.filter((item) => item.stock > 0);
+  const minimumPrice = availableVariants.length ? Math.min(...availableVariants.map((item) => item.price)) : product.base_price;
   const formatLabels = [...new Set(selectableVariants.map((item) => variantLabel(item)))];
   const packagingLabels = packageOptions.map((option) => packagingLabel(option.packaging, language));
-  const isSoldOut = totalStock <= 0;
 const requiresChoice = selectableVariants.length > 1;
 
   return <>
@@ -374,7 +375,7 @@ const requiresChoice = selectableVariants.length > 1;
               {name}
             </button>
           </h3>
-          <strong className="product-card-price">{selectableVariants.length > 1 && (language === "fr" ? "Dès " : "From ")}{money(minimumPrice, language)}</strong>
+          {!isSoldOut && <strong className="product-card-price">{selectableVariants.length > 1 && (language === "fr" ? "Dès " : "From ")}{money(minimumPrice, language)}</strong>}
         </div>
 
         {shortDescription && <p className="product-card-description" title={shortDescription}>{shortDescription}</p>}
