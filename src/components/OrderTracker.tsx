@@ -247,7 +247,7 @@ const canDownloadInvoice =
       <div>
         <strong>{paymentSyncPending
           ? (language === "fr" ? "Confirmation Stripe en cours" : "Stripe confirmation in progress")
-          : paymentTitle(order, language)}</strong>
+          : paymentTitle(order, language, paymentReturn)}</strong>
         <small>{paymentSyncPending
           ? (language === "fr"
               ? "Vous revenez du paiement sécurisé. Nous vérifions la confirmation Stripe ; ne relancez pas le paiement pendant quelques secondes."
@@ -266,7 +266,9 @@ const canDownloadInvoice =
               ? (language === "fr" ? "Préparation…" : "Preparing…")
               : ["pending", "unpaid"].includes(order.payment_status)
                 ? (language === "fr" ? "Payer maintenant" : "Pay now")
-                : (language === "fr" ? "Réessayer le paiement" : "Retry payment")}
+                : order.payment_status === "expired"
+                  ? (language === "fr" ? "Créer une nouvelle session" : "Create new payment session")
+                  : (language === "fr" ? "Réessayer le paiement" : "Retry payment")}
           </button>
           {canCancelUnpaid && (
             <button
@@ -384,9 +386,12 @@ const canDownloadInvoice =
   </div></section>;
 }
 
-function paymentTitle(order: PublicOrder, language: "fr" | "en") {
+function paymentTitle(order: PublicOrder, language: "fr" | "en", paymentReturn: "success" | "cancelled" | "" = "") {
   if (order.status === "cancelled" && order.payment_status !== "paid") {
     return language === "fr" ? "Aucun paiement effectué" : "No payment was taken";
+  }
+  if (paymentReturn === "cancelled" && ["pending", "unpaid"].includes(order.payment_status)) {
+    return language === "fr" ? "Paiement interrompu" : "Payment interrupted";
   }
   if (order.payment_status === "paid") return language === "fr" ? "Paiement confirmé" : "Payment confirmed";
   if (order.payment_status === "refunded") return language === "fr" ? "Paiement remboursé" : "Payment refunded";
@@ -420,7 +425,9 @@ function paymentDescription(order: PublicOrder, language: "fr" | "en", paymentRe
   if (order.payment_status === "refund_failed") return language === "fr" ? "Le remboursement nécessite une vérification par la boutique." : "The refund needs to be reviewed by the shop.";
   if (order.payment_method === "pickup") return language === "fr" ? "Vous réglerez directement à la boutique lors du retrait." : "Pay directly at the boutique when collecting your order.";
   if (order.payment_status === "failed") return language === "fr" ? "Le règlement n’a pas abouti. Vous pouvez recommencer sans recréer la commande." : "The payment did not complete. You can retry without creating a new order.";
-  if (order.payment_status === "expired") return language === "fr" ? "La réservation de paiement a expiré. Cliquez sur Réessayer pour générer une nouvelle session." : "The payment reservation expired. Retry to create a new session.";
+  if (order.payment_status === "expired") return language === "fr"
+    ? "La session de paiement a expiré. Créez-en une nouvelle depuis cette commande : inutile de refaire votre panier ou de créer une autre commande."
+    : "The payment session expired. Create a new one from this order; there is no need to rebuild your cart or create another order.";
   if (paymentReturn === "cancelled") return language === "fr" ? "Vous avez quitté Stripe sans payer. La session peut être reprise tant qu’elle reste ouverte." : "You left Stripe without paying. You can resume while the session remains open.";
   return language === "fr" ? "La page s’actualise automatiquement dès que Stripe confirme le paiement." : "This page updates automatically as soon as Stripe confirms the payment.";
 }
