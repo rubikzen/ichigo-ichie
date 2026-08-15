@@ -4178,3 +4178,34 @@
     font-size: 12px !important;
   }
 }
+
+
+/* Ichigo Ichie V4.20 — Mobile cart checkout hierarchy */
+@media (max-width: 820px) {
+  /*
+   * V4.19 makes checkout permanently reachable above the mobile dock.
+   * The summary keeps useful order/shipping context, but its legacy checkout
+   * action is redundant and can sit underneath the fixed controls.
+   */
+  .cart-summary-v216 > .cart-checkout-v216,
+  .cart-summary-v216 > .cart-summary-note-v216 {
+    display: none !important;
+  }
+
+  /* Give the last summary content enough scroll clearance above both fixed bars. */
+  .cart-page-v216 {
+    padding-bottom:
+      calc(
+        230px
+        + env(safe-area-inset-bottom, 0px)
+      ) !important;
+  }
+
+  .cart-summary-v216 {
+    padding-bottom: 18px !important;
+  }
+
+  .cart-fulfilment-v216 {
+    margin-bottom: 0 !important;
+  }
+}
