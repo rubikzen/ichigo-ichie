@@ -3740,3 +3740,38 @@
     margin-bottom: 10px;
   }
 }
+
+
+/* Ichigo Ichie V4.13 — Sparse card inner density */
+/*
+ * Sparse shop rows already stop card-level stretching in V4.12.
+ * On desktop, also release the legacy internal min-heights that were
+ * reserved for equal-height full rows.
+ */
+@media (min-width: 821px) {
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-description {
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-meta {
+    min-height: 0;
+    justify-content: flex-start;
+    gap: 6px;
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
+
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-meta p {
+    min-height: 0;
+  }
+
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-stock-card {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-cta {
+    margin-top: 12px;
+  }
+}
