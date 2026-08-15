@@ -4,6 +4,7 @@ import { getStripeServer } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
 import { issueAndEmailCreditNote, issueAndEmailInvoice } from "@/lib/invoice";
 import { cancelUnpaidOrder } from "@/lib/order-cancellation";
+import { processRestockNotificationsForOrder } from "@/lib/restock-notifications";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ORDER_STATUSES = new Set(["pending", "preparing", "ready", "completed", "cancelled", "refunded"]);
@@ -107,6 +108,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           status: "refunded", payment_status: "refunded", stripe_refund_id: refund.id, refunded_at: new Date().toISOString(),
         }).eq("id", id);
         if (updateError) throw updateError;
+        try { await processRestockNotificationsForOrder(supabase, id); } catch (restockError) { console.error("Refund restock notification error", restockError); }
         try { await issueAndEmailCreditNote(supabase, id); } catch (invoiceError) { console.error("Credit note error", invoiceError); }
         try { await sendOrderEmail(supabase, id, "refund"); } catch (emailError) { console.error("Refund email error", emailError); }
       } else if (refund.status === "failed" || refund.status === "canceled") {

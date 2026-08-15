@@ -45,17 +45,25 @@ export function RestockWaitlistAdmin({
   useEffect(() => {
     let cancelled = false;
 
-    queueMicrotask(() => {
+    const applyRows = (data: unknown, loadError: { message?: string } | null) => {
+      if (cancelled) return;
+      setRows((data ?? []) as WaitlistRow[]);
+      setError(loadError?.message || "");
+      setLoading(false);
+    };
+
+    const reload = () => {
       void fetchRows().then(({ data, error: loadError }) => {
-        if (cancelled) return;
-        setRows((data ?? []) as WaitlistRow[]);
-        setError(loadError ? loadError.message : "");
-        setLoading(false);
+        applyRows(data, loadError);
       });
-    });
+    };
+
+    queueMicrotask(reload);
+    window.addEventListener("ichigo:restock-processed", reload);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("ichigo:restock-processed", reload);
     };
   }, [fetchRows]);
 
@@ -88,8 +96,9 @@ export function RestockWaitlistAdmin({
       <div className="restock-admin-body-v425">
         <div className="restock-admin-head-v425">
           <p>
-            Les adresses ci-dessous ont demandé une alerte. L’envoi automatique
-            sera activé dans V426.
+            Les alertes sont envoyées automatiquement dès qu’un produit ou un
+            format redevient disponible. Une inscription disparaît de cette
+            liste après un envoi réussi.
           </p>
           <button
             type="button"

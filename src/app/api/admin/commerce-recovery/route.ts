@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
 import { getStripeServer, markStripeOrderPaid } from "@/lib/stripe";
+import { processRestockNotificationsForOrder } from "@/lib/restock-notifications";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -383,6 +384,14 @@ export async function POST(request: Request) {
         );
       }
       promoReleased = true;
+    }
+
+    if (stockReleased) {
+      try {
+        await processRestockNotificationsForOrder(supabase, latest.id);
+      } catch (restockError) {
+        console.error("Commerce recovery restock notification error", restockError);
+      }
     }
 
     return NextResponse.json({

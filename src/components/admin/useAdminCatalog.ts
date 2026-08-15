@@ -40,6 +40,46 @@ export function useAdminCatalog(
     setVariants((variantRows ?? []) as Variant[]);
   }
 
+  async function processRestock(productId: string) {
+    if (!supabase || !productId) return null;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return null;
+
+      const response = await fetch("/api/admin/restock/process", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productId }),
+      });
+      const data = (await response.json()) as {
+        sent?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        console.error("Restock processing error", data.error || response.status);
+        return null;
+      }
+
+      window.dispatchEvent(new CustomEvent("ichigo:restock-processed"));
+      return { sent: Math.max(0, Number(data.sent || 0)) };
+    } catch (error) {
+      // Stock saving must never fail because the optional email side effect failed.
+      console.error("Restock processing error", error);
+      return null;
+    }
+  }
+
+  function savedWithRestock(sent: number) {
+    if (!sent) return "Enregistré ✓";
+    return `Enregistré ✓ · ${sent} alerte${sent > 1 ? "s" : ""} retour en stock envoyée${sent > 1 ? "s" : ""} ✓`;
+  }
+
   function chooseProduct(
     product?: AdminProduct,
     zone: "menu" | "shop" = catalogZone,
@@ -156,7 +196,8 @@ export function useAdminCatalog(
       setSaving(false);
       if (error) return setMessage(error.message);
 
-      setMessage("Enregistré ✓");
+      const restock = await processRestock(productDraft.id);
+      setMessage(savedWithRestock(restock?.sent ?? 0));
       await loadProducts();
       setProductDraft((current) => ({ ...current, ...payload }));
       return;
@@ -227,6 +268,11 @@ export function useAdminCatalog(
 
     if (productDraft.id === id) {
       setProductDraft((current) => ({ ...current, ...patch }));
+    }
+
+    if ("stock" in patch || ("active" in patch && patch.active === true)) {
+      const restock = await processRestock(id);
+      if (restock?.sent) setMessage(savedWithRestock(restock.sent));
     }
   }
 
@@ -413,7 +459,15 @@ export function useAdminCatalog(
       .eq("id", variant.id);
 
     setMessage(error ? error.message : "Format enregistré ✓");
-    if (!error) await loadProducts();
+    if (!error) {
+      const restock = await processRestock(variant.product_id);
+      setMessage(
+        restock?.sent
+          ? `Format enregistré ✓ · ${restock.sent} alerte${restock.sent > 1 ? "s" : ""} envoyée${restock.sent > 1 ? "s" : ""} ✓`
+          : "Format enregistré ✓",
+      );
+      await loadProducts();
+    }
   }
 
   async function deleteVariant(id: string) {

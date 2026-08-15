@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStripeServer, markStripeOrderPaid } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
+import { processRestockNotificationsForOrder } from "@/lib/restock-notifications";
 
 type CancellationActor = "customer" | "admin";
 
@@ -202,6 +203,12 @@ export async function cancelUnpaidOrder(
         cancelled: true,
       };
     }
+  }
+
+  try {
+    await processRestockNotificationsForOrder(supabase, order.id);
+  } catch (restockError) {
+    console.error(`${logPrefix} restock notification error`, restockError);
   }
 
   if (cancelledNow) {
