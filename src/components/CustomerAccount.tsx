@@ -715,7 +715,12 @@ export function CustomerAccount() {
 
         {!!orders.length && <>
           <div className="customer-order-summary-v244" aria-label={language === "fr" ? "Résumé des commandes" : "Order summary"}>
-            <button type="button" onClick={() => setOrderFilter("payment")} className={effectiveOrderFilter === "payment" ? "active" : ""}><span>{orderStats.payment}</span><small>{language === "fr" ? "Paiement" : "Payment"}</small></button>
+            <button
+              type="button"
+              onClick={() => setOrderFilter("payment")}
+              className={`customer-payment-summary-v410 ${effectiveOrderFilter === "payment" ? "active" : ""} ${orderStats.payment > 0 ? "has-attention-v410" : ""}`}
+              aria-label={language === "fr" ? `${orderStats.payment} commande(s) nécessitant un paiement` : `${orderStats.payment} order(s) requiring payment`}
+            ><span>{orderStats.payment}</span><small>{language === "fr" ? "Paiement" : "Payment"}</small></button>
             <button type="button" onClick={() => setOrderFilter("active")} className={effectiveOrderFilter === "active" ? "active" : ""}><span>{orderStats.active}</span><small>{language === "fr" ? "En cours" : "In progress"}</small></button>
             <button type="button" onClick={() => setOrderFilter("completed")} className={effectiveOrderFilter === "completed" ? "active" : ""}><span>{orderStats.completed}</span><small>{language === "fr" ? "Terminées" : "Completed"}</small></button>
             <button type="button" onClick={() => setOrderFilter("cancelled")} className={effectiveOrderFilter === "cancelled" ? "active" : ""}><span>{orderStats.cancelled}</span><small>{language === "fr" ? "Annulées" : "Cancelled"}</small></button>
@@ -741,7 +746,12 @@ export function CustomerAccount() {
           const expanded = expandedOrderId === order.id;
           const previewItems = (order.order_items ?? []).slice(0, expanded ? undefined : 2);
           const paymentHint = customerPaymentRecoveryHint(order, language);
-          return <article key={order.id} className={`customer-order-card-v243 customer-order-card-v244 state-${visual}`}>
+          const paymentNeedsAttention = canRecoverPaymentStatus(order.payment_status);
+          return <article
+            key={order.id}
+            className={`customer-order-card-v243 customer-order-card-v244 state-${visual} ${paymentNeedsAttention ? "needs-payment-v410" : ""}`}
+            aria-label={`${order.order_number} — ${orderBadgeLabel(order, language)}`}
+          >
             <div className="customer-order-top-v243 customer-order-top-v244"><div><span>{new Date(order.created_at).toLocaleDateString(language === "fr" ? "fr-FR" : "en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span><h3>{order.order_number}</h3></div><div><span className={`customer-state-badge-v244 ${visual}`}>{orderBadgeLabel(order, language)}</span><strong>{money.format(Number(order.total))}</strong></div></div>
 
             <div className="customer-order-progress-v243 customer-order-progress-v244"><span className={`customer-order-state-v244 ${visual}`}>{customerStatusLabel(order, language)}</span><small>{order.order_type === "shipping" ? (order.shipping_method_name || (language === "fr" ? "Livraison" : "Shipping")) : (language === "fr" ? "Retrait boutique" : "Boutique pickup")}</small>{order.tracking_number && <small className="customer-tracking-number-v244">{order.tracking_number}</small>}{paymentHint && <small className="customer-payment-recovery-hint-v409">{paymentHint}</small>}</div>
@@ -749,16 +759,16 @@ export function CustomerAccount() {
             <div className={`customer-order-items-v243 customer-order-items-v244 ${expanded ? "expanded" : ""}`}>{previewItems.map((item) => <div key={item.id}><span><strong>{item.quantity} × {formatOrderItem(item, language)}</strong>{choiceSummary(item, language) ? <small>{choiceSummary(item, language)}</small> : null}</span><strong>{money.format(Number(item.line_total))}</strong></div>)}{!expanded && (order.order_items?.length || 0) > 2 && <small>+ {(order.order_items?.length || 0) - 2} {language === "fr" ? "article(s)" : "item(s)"}</small>}</div>
 
             <div className="customer-order-actions-v243 customer-order-actions-v244">
-              <button type="button" className="button ghost" aria-expanded={expanded} onClick={() => setExpandedOrderId(expanded ? null : order.id)}>{expanded ? (language === "fr" ? "Réduire" : "Collapse") : (language === "fr" ? "Voir le détail" : "View details")}</button>
+              <button type="button" className="button ghost customer-order-detail-action-v410" aria-expanded={expanded} onClick={() => setExpandedOrderId(expanded ? null : order.id)}>{expanded ? (language === "fr" ? "Réduire" : "Collapse") : (language === "fr" ? "Voir le détail" : "View details")}</button>
               {canPayOrder(order) && order.public_token ? (
                 <Link
-                  className="button primary"
+                  className="button primary customer-order-primary-action-v410"
                   href={`/commande/${order.public_token}?payment=retry`}
                 >
                   {customerPaymentActionLabel(order, language)}
                 </Link>
               ) : order.public_token ? (
-                <Link className="button primary" href={`/commande/${order.public_token}`}>
+                <Link className="button primary customer-order-primary-action-v410" href={`/commande/${order.public_token}`}>
                   {isActiveOrder(order)
                     ? (language === "fr" ? "Suivre ma commande" : "Track order")
                     : (language === "fr" ? "Voir la commande" : "View order")}
