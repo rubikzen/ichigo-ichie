@@ -3807,3 +3807,88 @@
     text-decoration: none;
   }
 }
+
+
+/* Ichigo Ichie V4.16 — Mobile product interaction polish */
+@media (max-width: 820px) {
+  /* Let content define card height on mobile instead of legacy equal-height reserves. */
+  .product-card-compact .product-card-description,
+  .product-card-compact .product-card-meta,
+  .product-card-compact .product-card-meta p {
+    min-height: 0;
+  }
+
+  .product-card-compact .product-card-meta {
+    justify-content: flex-start;
+  }
+
+  /* Keep title and price stable while making the whole title easy to tap. */
+  .product-card-compact .product-title-row h3 {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+    overflow: visible;
+  }
+
+  .product-card-compact .product-title-button-v415 {
+    display: -webkit-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 3px 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    touch-action: manipulation;
+  }
+
+  .product-card-compact .product-card-price {
+    padding-top: 4px;
+  }
+
+  .product-card-compact .product-image-button,
+  .product-card-compact .product-card-cta {
+    touch-action: manipulation;
+  }
+
+  .product-card-compact .product-card-cta {
+    min-height: 50px;
+  }
+
+  /* Product sheet controls meet a comfortable mobile touch target. */
+  .product-modal-v28 .modal-close,
+  .product-modal-v28 .gallery-arrow {
+    width: 44px !important;
+    height: 44px !important;
+    touch-action: manipulation;
+  }
+
+  .product-modal-v28 .product-detail-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: 18px;
+  }
+
+  .product-modal-v28 .option-pills button,
+  .product-modal-v28 .product-buy-button,
+  .product-modal-v28 .product-view-cart,
+  .product-modal-v28 .product-continue-button {
+    touch-action: manipulation;
+  }
+
+  .product-modal-v28 .product-buy-button {
+    min-height: 54px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .product-card-compact .product-copy {
+    padding: 15px 14px 14px;
+  }
+
+  .product-card-compact .product-title-row {
+    gap: 9px;
+  }
+
+  .product-card-compact .product-card-price {
+    font-size: 13px;
+  }
+}
