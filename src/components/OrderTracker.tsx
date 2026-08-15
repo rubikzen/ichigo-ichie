@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useCart } from "@/components/CartProvider";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
+import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type PublicOrder = {
   id: string;
@@ -377,7 +378,7 @@ const canDownloadInvoice =
   </section>
 )}
 
-    <div className="tracking-lines">{order.order_items?.map((item) => <div key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span><strong>{money.format(Number(item.line_total))}</strong></div>)}</div>
+    <div className="tracking-lines">{order.order_items?.map((item) => <div key={item.id}><span><strong>{item.quantity} × {normalizeLegacyProductLabel(item.product_name, language)}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span><strong>{money.format(Number(item.line_total))}</strong></div>)}</div>
     {Number(order.discount_amount || 0) > 0 && <div className="tracking-shipping-cost tracking-promo-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong>{order.promo_code && <small>{order.promo_code}</small>}</span><strong>− {money.format(Number(order.discount_amount))}</strong></div>}
     {order.order_type === "shipping" && <div className="tracking-shipping-cost"><span>{language === "fr" ? "Livraison" : "Shipping"}</span><strong>{Number(order.shipping_fee) === 0 ? (language === "fr" ? "Offert" : "Free") : money.format(Number(order.shipping_fee))}</strong></div>}
     <div className="tracking-total"><span>Total</span><strong>{money.format(Number(order.total))}</strong></div>

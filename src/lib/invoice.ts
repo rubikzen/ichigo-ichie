@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type InvoiceType = "invoice" | "credit_note";
 
@@ -250,7 +251,7 @@ function calculateLines(order: any, productVatMap: Map<string, number>, shipping
     const tax = netTtc - netHt;
     return {
       kind: "product" as const,
-      description: String(item.product_name),
+      description: normalizeLegacyProductLabel(String(item.product_name), "fr"),
       quantity: Number(item.quantity || 1),
       vat_rate: rate,
       gross_ttc: euros(gross),

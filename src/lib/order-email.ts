@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation";
 
@@ -54,7 +55,7 @@ async function loadSettings(supabase: SupabaseClient) {
 function orderLines(order: any) {
   return (order.order_items ?? []).map((item: any) => {
     const choices = Array.isArray(item.choices) ? item.choices.map((c: any) => c?.label || c?.valueName || c?.value_name).filter(Boolean).join(" · ") : "";
-    return `<tr><td style="padding:10px 0;border-bottom:1px solid #e7e2d8"><strong>${escapeHtml(item.quantity)} × ${escapeHtml(item.product_name)}</strong>${choices ? `<div style="font-size:12px;color:#68756d;margin-top:3px">${escapeHtml(choices)}</div>` : ""}</td><td style="padding:10px 0;border-bottom:1px solid #e7e2d8;text-align:right;white-space:nowrap">${escapeHtml(money(item.line_total))}</td></tr>`;
+    return `<tr><td style="padding:10px 0;border-bottom:1px solid #e7e2d8"><strong>${escapeHtml(item.quantity)} × ${escapeHtml(normalizeLegacyProductLabel(item.product_name, "fr"))}</strong>${choices ? `<div style="font-size:12px;color:#68756d;margin-top:3px">${escapeHtml(choices)}</div>` : ""}</td><td style="padding:10px 0;border-bottom:1px solid #e7e2d8;text-align:right;white-space:nowrap">${escapeHtml(money(item.line_total))}</td></tr>`;
   }).join("");
 }
 

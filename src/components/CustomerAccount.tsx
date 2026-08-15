@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { useLanguage } from "@/components/LanguageProvider";
+import { composeProductVariantName, normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type Profile = {
   first_name: string;
@@ -880,15 +881,10 @@ function customerStatusLabel(order: CustomerOrder, language: "fr" | "en") {
 }
 
 function formatOrderItem(item: NonNullable<CustomerOrder["order_items"]>[number], language: "fr" | "en") {
-  if (!item.variant) return item.product_name;
   const base = item.product_name.split(" · ")[0]?.trim() || item.product_name;
-  const packaging = item.variant.packaging === "can" ? (language === "fr" ? "Boîte" : "Tin") : item.variant.packaging === "bag" ? (language === "fr" ? "Sachet" : "Bag") : "";
-  const variantName = String(item.variant.name || "").trim();
-  const weight = String(item.variant.weight || "").trim();
-  const cleanedVariantName = variantName.replace(/\b(bo[iî]te|sachet|bag|tin|can)\b/gi, "").replace(/^[\s·\-–—]+|[\s·\-–—]+$/g, "").trim();
-  const detail = weight || cleanedVariantName;
-  const parts = uniqueLabels([base, packaging, detail].filter(Boolean));
-  return parts.join(" · ");
+  return item.variant
+    ? composeProductVariantName(base, item.variant, language)
+    : normalizeLegacyProductLabel(item.product_name, language);
 }
 
 function choiceSummary(item: NonNullable<CustomerOrder["order_items"]>[number], language: "fr" | "en") {

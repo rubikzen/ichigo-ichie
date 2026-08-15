@@ -8,6 +8,7 @@ import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type OrderResult = {
   orderNumber: string;
@@ -700,7 +701,7 @@ export default function CheckoutPage() {
           <b aria-hidden="true">{summaryExpanded ? "−" : "+"}</b>
         </button>
         <div className={`checkout-summary-products-v236 ${summaryExpanded ? "is-open" : ""}`}>
-          {items.map((item) => <div className="checkout-line detailed" key={item.key}><span><strong>{item.quantity} × {item.name}</strong>{item.choices.map((choice) => <small key={`${choice.groupId}-${choice.valueId}`}>{choice.groupName}: {choice.valueName}</small>)}</span><strong>{money.format(item.unitPrice * item.quantity)}</strong></div>)}
+          {items.map((item) => <div className="checkout-line detailed" key={item.key}><span><strong>{item.quantity} × {normalizeLegacyProductLabel(item.name, language)}</strong>{item.choices.map((choice) => <small key={`${choice.groupId}-${choice.valueId}`}>{choice.groupName}: {choice.valueName}</small>)}</span><strong>{money.format(item.unitPrice * item.quantity)}</strong></div>)}
         </div>
         <div className="checkout-summary-totals">
           <div className="checkout-line"><span>{language === "fr" ? "Sous-total produits" : "Items subtotal"}</span><strong>{money.format(subtotal)}</strong></div>

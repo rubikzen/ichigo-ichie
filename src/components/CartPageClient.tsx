@@ -8,6 +8,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
+import { composeProductVariantName, normalizeLegacyProductLabel, packagingLabel, variantLabel } from "@/lib/product-label";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
   language === "fr" ? "fr-FR" : "en-GB",
@@ -15,20 +16,6 @@ const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
 ).format(value);
 
 const packagingKey = (variant: Variant) => variant.packaging ?? "other";
-const packagingLabel = (packaging: Variant["packaging"], language: "fr" | "en") => {
-  if (packaging === "can") return language === "fr" ? "Boîte" : "Tin";
-  if (packaging === "bag") return language === "fr" ? "Sachet" : "Pouch";
-  return language === "fr" ? "Autre" : "Other";
-};
-
-const normalized = (value?: string | null) => String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-const variantLabel = (variant: Variant) => {
-  const weight = String(variant.weight ?? "").trim();
-  const name = String(variant.name ?? "").trim();
-  if (weight && name && normalized(weight) !== normalized(name)) return `${name} · ${weight}`;
-  return weight || name || "Format";
-};
-
 function getItemStock(item: CartItem, product?: Product) {
   if (!product || (product.type !== "product" && product.type !== "accessory")) return null;
   if (item.variantId) {
@@ -127,6 +114,10 @@ export function CartPageClient({ products }: { products: Product[] }) {
           {items.map((item) => {
             const product = productMap.get(item.productId);
             const stock = getItemStock(item, product);
+            const itemVariant = item.variantId ? product?.variants.find((row) => row.id === item.variantId) ?? null : null;
+            const displayName = product
+              ? composeProductVariantName(language === "fr" ? product.name_fr : product.name_en, itemVariant, language)
+              : normalizeLegacyProductLabel(item.name, language);
             const usedElsewhere = quantityUsedByOtherLines(items, item);
             const maxForThisLine = stock === null ? null : Math.max(0, stock - usedElsewhere);
             const lineStockConflict = maxForThisLine !== null && item.quantity > maxForThisLine;
@@ -143,7 +134,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
               <div className="cart-item-body-v216">
                 <div className="cart-item-title-v216">
                   <div>
-                    <h3>{item.name}</h3>
+                    <h3>{displayName}</h3>
                     <span className={`cart-method-chip-v216 ${item.pickupOnly ? "pickup" : "shipping"}`}>
                       {item.pickupOnly
                         ? (language === "fr" ? "Retrait boutique" : "Boutique pickup")
@@ -353,12 +344,11 @@ function CartItemEditor({ item, product, allItems, language, onClose, onSave }: 
   const save = () => {
     if (!canSave) return;
     const baseName = language === "fr" ? product.name_fr : product.name_en;
-    const variantDescription = variant ? `${packagingLabel(variant.packaging, language)} · ${variantLabel(variant)}` : "";
     onSave({
       ...item,
       key: nextKey,
       variantId: variant?.id ?? null,
-      name: `${baseName}${variantDescription ? ` · ${variantDescription}` : ""}`,
+      name: composeProductVariantName(baseName, variant, language),
       imageUrl: product.images?.[0]?.url || product.image_url || item.imageUrl,
       unitPrice: nextUnitPrice,
       pickupOnly: product.pickup_only,

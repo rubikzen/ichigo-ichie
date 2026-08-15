@@ -5,6 +5,7 @@ import { SafeImage } from "./SafeImage";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
+import { composeProductVariantName, packagingLabel, variantLabel } from "@/lib/product-label";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 
@@ -16,20 +17,6 @@ const packagingKey = (variant: Variant): PackagingKey => {
   if (variant.packaging === "can" || variant.packaging === "bag") return variant.packaging;
   return "other";
 };
-const packagingLabel = (packaging: Variant["packaging"], language: "fr" | "en") => {
-  if (packaging === "can") return language === "fr" ? "Boîte" : "Tin";
-  if (packaging === "bag") return language === "fr" ? "Sachet" : "Pouch";
-  return language === "fr" ? "Autre" : "Other";
-};
-
-const normalized = (value?: string | null) => String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-const variantLabel = (variant: Variant) => {
-  const weight = String(variant.weight ?? "").trim();
-  const name = String(variant.name ?? "").trim();
-  if (weight && name && normalized(weight) !== normalized(name)) return `${name} · ${weight}`;
-  return weight || name || "Format";
-};
-
 function stockCopy(stock: number, language: "fr" | "en") {
   if (stock <= 0) return language === "fr" ? "Rupture de stock" : "Sold out";
   if (stock <= 5) return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
@@ -176,12 +163,11 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const handleAdd = () => {
     if (!canAdd) return;
-    const variantDescription = variant ? `${packagingLabel(variant.packaging, language)} · ${variantLabel(variant)}` : "";
     addItem({
       key: cartKey,
       productId: product.id,
       variantId: variant?.id,
-      name: `${name}${variantDescription ? ` · ${variantDescription}` : ""}`,
+      name: composeProductVariantName(name, variant, language),
       imageUrl: coverImage,
       unitPrice: price,
       pickupOnly: product.pickup_only,

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { composeProductVariantName } from "@/lib/product-label";
 
 export type PayloadItem = {
   productId: string;
@@ -22,7 +23,7 @@ export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]
 
   const [productResult, variantResult, choiceResult, joinResult] = await Promise.all([
     supabase.from("products").select("id,name_fr,base_price,stock,pickup_only,active,shipping_weight_g").in("id", productIds),
-    supabase.from("product_variants").select("id,product_id,name,price,stock,active,shipping_weight_g").in("product_id", productIds),
+    supabase.from("product_variants").select("id,product_id,name,packaging,weight,price,stock,active,shipping_weight_g").in("product_id", productIds),
     choiceIds.length
       ? supabase.from("option_values").select("id,option_group_id,label_fr,price_delta,active").in("id", choiceIds)
       : Promise.resolve({ data: [], error: null }),
@@ -60,7 +61,7 @@ export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]
       chosenVariant = productVariants.find((row) => row.id === item.variantId) ?? null;
       if (!chosenVariant || chosenVariant.stock < quantity) throw new OrderValidationError("Format indisponible.");
       unitPrice = Number(chosenVariant.price);
-      itemName += ` · ${chosenVariant.name}`;
+      itemName = composeProductVariantName(itemName, chosenVariant, "fr");
     } else {
       if (item.variantId) throw new OrderValidationError("Format invalide.");
       if (Number(product.stock) < quantity) throw new OrderValidationError("Stock insuffisant.");
