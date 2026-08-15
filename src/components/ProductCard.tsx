@@ -5,7 +5,7 @@ import { SafeImage } from "./SafeImage";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
-import { composeProductVariantName, packagingLabel, variantLabel } from "@/lib/product-label";
+import { composeProductVariantName, packagingLabel, productVariantLabel, variantLabel } from "@/lib/product-label";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
@@ -235,12 +235,31 @@ function ProductCardStateful({ product }: { product: Product }) {
             <section className="product-buy-panel" aria-label={language === "fr" ? "Choix du produit" : "Product choices"}>
               {packageOptions.length > 1 && <div className="option-group variant-dimension compact-option-group">
                 <span className="option-label">{language === "fr" ? "Conditionnement" : "Packaging"}</span>
-                <div className="option-pills packaging-pills">{packageOptions.map((option) => <button type="button" key={option.key} className={selectedPackaging === option.key ? "active" : ""} onClick={() => selectPackaging(option.key)} disabled={!option.available}>{packagingLabel(option.packaging, language)}</button>)}</div>
+                <div className="option-pills packaging-pills">{packageOptions.map((option) => <button
+                  type="button"
+                  key={option.key}
+                  className={`${selectedPackaging === option.key ? "active " : ""}${!option.available ? "is-sold-out-option-v429" : ""}`.trim()}
+                  onClick={() => selectPackaging(option.key)}
+                  title={!option.available ? (language === "fr" ? "Sélectionner pour créer une alerte" : "Select to create a restock alert") : undefined}
+                >
+                  <span>{packagingLabel(option.packaging, language)}</span>
+                  {!option.available && <small>{language === "fr" ? "Épuisé" : "Sold out"}</small>}
+                </button>)}</div>
               </div>}
 
               {variantsForPackaging.length > 1 && <div className="option-group variant-dimension compact-option-group">
                 <span className="option-label">{language === "fr" ? "Format" : "Size"}</span>
-                <div className="option-pills format-pills-v28">{variantsForPackaging.map((item) => <button type="button" key={item.id} className={variantId === item.id ? "active" : ""} onClick={() => setVariantId(item.id)} disabled={item.stock <= 0}><span>{variantLabel(item)}</span>{item.stock > 0 && <small>{money(item.price, language)}</small>}{item.stock <= 0 && <b>{language === "fr" ? "Épuisé" : "Sold out"}</b>}</button>)}</div>
+                <div className="option-pills format-pills-v28">{variantsForPackaging.map((item) => <button
+                  type="button"
+                  key={item.id}
+                  className={`${variantId === item.id ? "active " : ""}${item.stock <= 0 ? "is-sold-out-option-v429" : ""}`.trim()}
+                  onClick={() => setVariantId(item.id)}
+                  title={item.stock <= 0 ? (language === "fr" ? "Sélectionner pour créer une alerte" : "Select to create a restock alert") : undefined}
+                >
+                  <span>{variantLabel(item)}</span>
+                  {item.stock > 0 && <small>{money(item.price, language)}</small>}
+                  {item.stock <= 0 && <b>{language === "fr" ? "Épuisé" : "Sold out"}</b>}
+                </button>)}</div>
               </div>}
 
               {selectableVariants.length === 1 && variant && <div className="selected-variant-summary selected-variant-v28">
@@ -315,6 +334,8 @@ function ProductCardStateful({ product }: { product: Product }) {
               <RestockNotify
                 productId={product.id}
                 productName={name}
+                variantId={variant?.id}
+                variantName={variant ? productVariantLabel(variant, language) : undefined}
                 language={language}
                 context="modal"
               />

@@ -4482,3 +4482,46 @@
 .restock-manage-check-v428{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#315b43;color:#fff;font-size:20px;font-weight:900}
 .restock-manage-error-v428{width:100%;padding:10px 12px;border-radius:12px;background:#fff2ef;color:#9a493e!important;font-size:12px;font-weight:700}
 @media(max-width:640px){.restock-manage-page-v428{min-height:62vh;padding:40px 14px 84px;align-items:start}.restock-manage-card-v428{padding:24px 18px;border-radius:20px}.restock-manage-actions-v428{grid-template-columns:1fr}}
+
+
+/* Ichigo Ichie V4.29 — Variant restock targeting */
+.option-pills button.is-sold-out-option-v429 {
+  border-style: dashed;
+  opacity: .78;
+}
+.option-pills button.is-sold-out-option-v429:hover,
+.option-pills button.is-sold-out-option-v429:focus-visible,
+.option-pills button.is-sold-out-option-v429.active {
+  opacity: 1;
+}
+.packaging-pills button.is-sold-out-option-v429 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.packaging-pills button.is-sold-out-option-v429 small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.restock-target-v429 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(47, 79, 62, .06);
+}
+.restock-target-v429 span {
+  color: var(--muted, #66736b);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.restock-target-v429 strong {
+  color: var(--ink, #26362d);
+  font-size: 11px;
+  text-align: right;
+}

@@ -117,7 +117,11 @@ export function AdminCatalog({
       </div>
 
       {catalogZone === "shop" && (
-        <RestockWaitlistAdmin supabase={supabase} products={products} />
+        <RestockWaitlistAdmin
+          supabase={supabase}
+          products={products}
+          variants={variants}
+        />
       )}
 
       {advancedOpen && selectedId && <div className="quick-detail-panel">

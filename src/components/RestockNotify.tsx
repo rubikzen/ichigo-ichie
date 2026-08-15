@@ -5,6 +5,8 @@ import { useState, type FormEvent } from "react";
 type Props = {
   productId: string;
   productName: string;
+  variantId?: string;
+  variantName?: string;
   language: "fr" | "en";
   context?: "card" | "modal";
 };
@@ -12,6 +14,8 @@ type Props = {
 export function RestockNotify({
   productId,
   productName,
+  variantId,
+  variantName,
   language,
   context = "card",
 }: Props) {
@@ -36,6 +40,7 @@ export function RestockNotify({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           productId,
+          variantId: variantId || undefined,
           email: email.trim(),
           locale: language,
           website,
@@ -52,11 +57,15 @@ export function RestockNotify({
         );
       }
 
+      const targetName = variantName
+        ? `${productName} · ${variantName}`
+        : productName;
+
       setStatus("success");
       setMessage(
         language === "fr"
-          ? `C’est noté. Nous vous préviendrons lorsque ${productName} sera de retour.`
-          : `You're on the list. We'll let you know when ${productName} is back.`,
+          ? `C’est noté. Nous vous préviendrons lorsque ${targetName} sera de retour.`
+          : `You're on the list. We'll let you know when ${targetName} is back.`,
       );
     } catch (error) {
       setStatus("error");
@@ -134,6 +143,13 @@ export function RestockNotify({
             autoComplete="off"
             aria-hidden="true"
           />
+
+          {variantName && (
+            <small className="restock-target-v429">
+              <span>{language === "fr" ? "Alerte pour" : "Alert for"}</span>
+              <strong>{variantName}</strong>
+            </small>
+          )}
 
           <div className="restock-notify-actions-v425">
             <button

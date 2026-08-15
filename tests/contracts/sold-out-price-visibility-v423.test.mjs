@@ -24,7 +24,11 @@ test("From price is calculated only from variants that can actually be purchased
 test("sold-out variant choices show Sold out instead of their price", () => {
   assert.match(
     product,
-    /\{item\.stock > 0 && <small>\{money\(item\.price, language\)\}<\/small>\}\{item\.stock <= 0 && <b>/,
+    /\{item\.stock > 0 && <small>\{money\(item\.price, language\)\}<\/small>\}/,
+  );
+  assert.match(
+    product,
+    /\{item\.stock <= 0 && <b>\{language === "fr" \? "Épuisé" : "Sold out"\}<\/b>\}/,
   );
 });
 

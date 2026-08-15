@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { productVariantLabel } from "@/lib/product-label";
+import type { Variant } from "@/lib/types";
 
 type AdminSupabase = NonNullable<ReturnType<typeof createBrowserSupabase>>;
 
@@ -23,9 +25,11 @@ type WaitlistRow = {
 export function RestockWaitlistAdmin({
   supabase,
   products,
+  variants,
 }: {
   supabase: AdminSupabase;
   products: WaitlistProduct[];
+  variants: Variant[];
 }) {
   const [rows, setRows] = useState<WaitlistRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +82,12 @@ export function RestockWaitlistAdmin({
   const productNames = new Map(
     products.map((product) => [product.id, product.name_fr]),
   );
+  const variantNames = new Map(
+    variants.map((variant) => [
+      variant.id,
+      productVariantLabel(variant, "fr") || variant.name || "Format",
+    ]),
+  );
 
   return (
     <details className="restock-admin-v425" open={rows.length > 0}>
@@ -129,7 +139,9 @@ export function RestockWaitlistAdmin({
                     {productNames.get(row.product_id) || "Produit supprimé"}
                   </strong>
                   <small>
-                    {row.variant_id ? "Format spécifique" : "Produit"}
+                    {row.variant_id
+                      ? variantNames.get(row.variant_id) || "Format supprimé"
+                      : "Tous les formats"}
                   </small>
                 </div>
                 <a href={`mailto:${row.email}`}>{row.email}</a>

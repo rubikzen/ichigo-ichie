@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { sendRestockSubscriptionConfirmation } from "@/lib/restock-subscription";
+import { productVariantLabel } from "@/lib/product-label";
 import {
   consumeRateLimit,
   PublicApiError,
@@ -107,10 +108,12 @@ export async function POST(request: Request) {
       );
     }
 
+    let confirmationVariantLabel = "";
+
     if (variantId) {
       const { data: variant, error: variantError } = await supabase
         .from("product_variants")
-        .select("id,product_id,active,stock")
+        .select("id,product_id,name,packaging,weight,active,stock")
         .eq("id", variantId)
         .eq("product_id", productId)
         .maybeSingle();
@@ -132,6 +135,8 @@ export async function POST(request: Request) {
           "RESTOCK_AVAILABLE",
         );
       }
+
+      confirmationVariantLabel = productVariantLabel(variant, locale);
     } else {
       const { data: variants, error: variantsError } = await supabase
         .from("product_variants")
@@ -206,11 +211,15 @@ export async function POST(request: Request) {
     try {
       const productName =
         locale === "fr" ? product.name_fr : product.name_en || product.name_fr;
+      const confirmationName = confirmationVariantLabel
+        ? `${productName} · ${confirmationVariantLabel}`
+        : productName;
+
       await sendRestockSubscriptionConfirmation({
         subscriptionId: inserted.id,
         email,
         locale,
-        productName,
+        productName: confirmationName,
       });
     } catch (confirmationError) {
       // The registration is the source of truth. Email delivery must not
