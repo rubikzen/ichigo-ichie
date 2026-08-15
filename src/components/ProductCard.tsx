@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SafeImage } from "./SafeImage";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
@@ -56,6 +56,8 @@ function ProductCardStateful({ product }: { product: Product }) {
   }, [product.images, product.image_url]);
 
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
   const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
@@ -66,19 +68,33 @@ function ProductCardStateful({ product }: { product: Product }) {
   })));
   const [justAdded, setJustAdded] = useState(false);
 
+  const openProductDetails = (opener: HTMLElement) => {
+    openerRef.current = opener;
+    setOpen(true);
+  };
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     document.body.style.overflow = "hidden";
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
       if (event.key === "ArrowLeft" && gallery.length > 1) setImageIndex((current) => (current - 1 + gallery.length) % gallery.length);
       if (event.key === "ArrowRight" && gallery.length > 1) setImageIndex((current) => (current + 1) % gallery.length);
     };
+
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
+
+      const opener = openerRef.current;
+      window.requestAnimationFrame(() => {
+        if (opener?.isConnected) opener.focus();
+      });
     };
   }, [open, gallery.length]);
 
@@ -193,7 +209,7 @@ function ProductCardStateful({ product }: { product: Product }) {
   const modal = open && mounted ? createPortal(
     <div className="modal-backdrop product-detail-backdrop" onMouseDown={() => setOpen(false)} role="presentation">
       <div className="product-modal product-modal-v28" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label={name}>
-        <button className="modal-close" onClick={() => setOpen(false)} aria-label={language === "fr" ? "Fermer" : "Close"}>×</button>
+        <button ref={closeButtonRef} className="modal-close" onClick={() => setOpen(false)} aria-label={language === "fr" ? "Fermer" : "Close"}>×</button>
 
         <div className="modal-media product-gallery-media product-gallery-v28">
           <div className="gallery-stage">
@@ -348,7 +364,7 @@ const requiresChoice = selectableVariants.length > 1;
 
   return <>
     <article className="product-card product-card-compact">
-      <button className="product-image-button" onClick={() => setOpen(true)} aria-label={name}>
+      <button className="product-image-button" onClick={(event) => openProductDetails(event.currentTarget)} aria-label={name}>
         <SafeImage
           className="product-image"
           src={coverImage}
@@ -366,7 +382,7 @@ const requiresChoice = selectableVariants.length > 1;
             <button
               type="button"
               className="product-title-button-v415"
-              onClick={() => setOpen(true)}
+              onClick={(event) => openProductDetails(event.currentTarget)}
               aria-label={language === "fr" ? `Voir les détails de ${name}` : `View details for ${name}`}
             >
               {name}
@@ -402,11 +418,11 @@ const requiresChoice = selectableVariants.length > 1;
   } ${!requiresChoice && justAdded ? "is-added-v381" : ""}`}
   disabled={isSoldOut || (!requiresChoice && stockLimitReached)}
   aria-live="polite"
-  onClick={() => {
+  onClick={(event) => {
     if (isSoldOut || (!requiresChoice && stockLimitReached)) return;
 
     if (requiresChoice) {
-      setOpen(true);
+      openProductDetails(event.currentTarget);
       return;
     }
 

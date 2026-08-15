@@ -3944,3 +3944,106 @@
     margin-bottom: 14px !important;
   }
 }
+
+
+/* Ichigo Ichie V4.18 — Mobile product detail density & focus */
+@media (max-width: 760px) {
+  /*
+   * V2.25 made the product detail phone-native.
+   * V4.18 keeps that structure but gives more of the first viewport to product
+   * information and choices instead of the gallery.
+   */
+  .product-modal-v28 {
+    grid-template-rows: minmax(218px, 35dvh) minmax(0, 1fr) !important;
+  }
+
+  .product-modal-v28 .product-detail-scroll {
+    padding: 18px 18px 132px !important;
+  }
+
+  .product-modal-v28 .product-detail-header {
+    display: grid;
+    gap: 0;
+    margin: 0 0 14px;
+  }
+
+  .product-modal-v28 .product-detail-header .eyebrow {
+    margin: 0 0 8px !important;
+  }
+
+  .product-modal-v28 .product-detail-header h2 {
+    margin: 0 !important;
+    font-size: clamp(32px, 9vw, 42px) !important;
+    line-height: 1 !important;
+    letter-spacing: -.035em;
+    overflow-wrap: anywhere;
+  }
+
+  .product-modal-v28 .product-detail-lead {
+    margin: 11px 0 0 !important;
+    font-size: 13.5px !important;
+    line-height: 1.48 !important;
+  }
+
+  .product-modal-v28 .product-facts {
+    margin-block: 14px !important;
+    gap: 7px !important;
+  }
+
+  .product-modal-v28 .product-facts > div {
+    min-height: 0 !important;
+    padding: 13px 14px !important;
+  }
+
+  .product-modal-v28 .product-facts span {
+    margin-bottom: 5px !important;
+  }
+
+  .product-modal-v28 .product-fact-ideal > div {
+    gap: 6px !important;
+  }
+
+  .product-modal-v28 .product-buy-panel {
+    margin-top: 12px !important;
+    padding: 14px !important;
+  }
+
+  .product-modal-v28 .compact-option-group {
+    margin-block: 12px !important;
+  }
+
+  .product-modal-v28 .selected-variant-v28 {
+    min-height: 0 !important;
+    padding: 12px 14px !important;
+  }
+
+  .product-modal-v28 .product-stock-v28 {
+    min-height: 0 !important;
+    margin-top: 10px !important;
+    padding: 12px 14px !important;
+  }
+
+  .product-modal-v28 .product-stock-v28 small {
+    margin-top: 4px !important;
+  }
+
+  /* The close control receives focus on open; make that state obvious. */
+  .product-modal-v28 .modal-close:focus-visible {
+    outline: 3px solid var(--moss, #486a4b);
+    outline-offset: 3px;
+  }
+}
+
+@media (max-width: 390px) {
+  .product-modal-v28 {
+    grid-template-rows: minmax(205px, 33dvh) minmax(0, 1fr) !important;
+  }
+
+  .product-modal-v28 .product-detail-scroll {
+    padding-inline: 16px !important;
+  }
+
+  .product-modal-v28 .product-detail-header h2 {
+    font-size: clamp(30px, 9.5vw, 38px) !important;
+  }
+}
