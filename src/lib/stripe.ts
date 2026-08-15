@@ -5,6 +5,27 @@ import { issueAndEmailInvoice } from "@/lib/invoice";
 
 let stripeClient: Stripe | null | undefined;
 
+export const MINIMUM_ONLINE_PAYMENT_EUR_CENTS = 100;
+
+export class MinimumOnlinePaymentError extends Error {
+  readonly code = "ORDER_PAYMENT_MINIMUM";
+  readonly status = 409;
+  readonly totalCents: number;
+
+  constructor(totalCents: number) {
+    super("Le montant minimum pour un paiement en ligne est de 1,00 €.");
+    this.name = "MinimumOnlinePaymentError";
+    this.totalCents = totalCents;
+  }
+}
+
+export function assertMinimumOnlinePayment(total: number) {
+  const totalCents = Math.round(Number(total || 0) * 100);
+  if (totalCents > 0 && totalCents < MINIMUM_ONLINE_PAYMENT_EUR_CENTS) {
+    throw new MinimumOnlinePaymentError(totalCents);
+  }
+}
+
 export function getStripeServer() {
   if (stripeClient !== undefined) return stripeClient;
   const key = process.env.STRIPE_SECRET_KEY?.trim();
@@ -46,6 +67,8 @@ export async function createOrReuseStripeCheckout(
     .eq("id", orderId)
     .single();
   if (error || !order) throw error ?? new Error("Commande introuvable.");
+
+  assertMinimumOnlinePayment(Number(order.total || 0));
 
   const origin = siteOrigin(requestOrigin);
   const trackingUrl = `${origin}/commande/${order.public_token}`;

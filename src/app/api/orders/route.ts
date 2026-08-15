@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { OrderValidationError, resolveCart, type PayloadItem } from "@/lib/order-calculation";
 import { getPackagingWeightG, getShippingQuotes, requireShippingQuote } from "@/lib/shipping";
-import { createOrReuseStripeCheckout } from "@/lib/stripe";
+import { assertMinimumOnlinePayment, createOrReuseStripeCheckout, MinimumOnlinePaymentError } from "@/lib/stripe";
 import { sendOrderEmail, sendMerchantOrderNotification } from "@/lib/order-email";
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
 import { assertInvoiceReadyForProducts, issueAndEmailInvoice } from "@/lib/invoice";
@@ -35,6 +35,14 @@ function textValue(value: unknown) {
 function classifyOrderError(error: unknown) {
   const publicError = publicApiErrorInfo(error);
   if (publicError) return publicError;
+
+  if (error instanceof MinimumOnlinePaymentError) {
+    return {
+      status: error.status,
+      code: error.code,
+      message: "Le montant minimum pour un paiement en ligne est de 1,00 €.",
+    };
+  }
 
   if (error instanceof OrderValidationError) {
     return {
@@ -282,6 +290,12 @@ export async function POST(request: Request) {
     }
 
     const total = Math.round((discountedSubtotal + shippingFee) * 100) / 100;
+
+    // Zero-total orders keep the existing free-order path below.
+    // Positive totals below the shop minimum stop before order creation,
+    // stock reservation or Stripe Checkout Session creation.
+    assertMinimumOnlinePayment(total);
+
     const termsVersion = await getTermsVersion(supabase);
     const { data: order, error: orderError } = await supabase.from("orders").insert({
       order_number: number,

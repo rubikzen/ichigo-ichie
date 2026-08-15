@@ -8,7 +8,8 @@ const checkout = readFileSync(resolve(root, "src/app/checkout/page.tsx"), "utf8"
 const css = readFileSync(resolve(root, "src/app/styles/globals-03.css"), "utf8");
 
 test("checkout explains every custom condition that can keep payment disabled", () => {
-  assert.match(checkout, /const submitDisabled = loading \|\| !acceptedTerms \|\| \(orderType === "shipping" && \(quoteLoading \|\| !selectedShipping \|\| !shippingAddressReady\)\);/);
+  assert.match(checkout, /const submitDisabled = loading \|\| underMinimumOnlinePayment \|\| !acceptedTerms \|\| \(orderType === "shipping" && \(quoteLoading \|\| !selectedShipping \|\| !shippingAddressReady\)\);/);
+  assert.match(checkout, /underMinimumOnlinePayment[\s\S]*minimumPaymentMessage\(language\)/);
   assert.match(checkout, /const checkoutBlocker = loading \|\| paymentSession/);
   assert.match(checkout, /quoteLoading[\s\S]*Calcul de la livraison en cours/);
   assert.match(checkout, /quoteError[\s\S]*tarif de livraison doit être disponible/);

@@ -67,6 +67,14 @@ type CitySuggestion = {
   name: string;
 };
 
+const MIN_ONLINE_PAYMENT_EUR = 1;
+
+function minimumPaymentMessage(language: "fr" | "en") {
+  return language === "fr"
+    ? "Le montant minimum pour un paiement en ligne est de 1,00 €."
+    : "The minimum amount for an online payment is €1.00.";
+}
+
 
 function localDateTimeMin() {
   const date = new Date(Date.now() + 10 * 60 * 1000);
@@ -319,7 +327,8 @@ export default function CheckoutPage() {
   const paymentMethod = "online" as const;
   const promoFieldVisible = settings.promo_field_visible !== "false";
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
-  const submitDisabled = loading || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
+  const underMinimumOnlinePayment = checkoutTotal > 0 && checkoutTotal < MIN_ONLINE_PAYMENT_EUR;
+  const submitDisabled = loading || underMinimumOnlinePayment || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
   const checkoutBlocker = loading || paymentSession
     ? ""
     : orderType === "shipping" && quoteLoading
@@ -330,6 +339,8 @@ export default function CheckoutPage() {
           ? (language === "fr" ? "Complétez l’adresse de livraison pour continuer." : "Complete the delivery address to continue.")
           : orderType === "shipping" && !selectedShipping
             ? (language === "fr" ? "Choisissez un mode de livraison pour continuer." : "Choose a delivery method to continue.")
+            : underMinimumOnlinePayment
+              ? minimumPaymentMessage(language)
             : !acceptedTerms
               ? (language === "fr" ? "Acceptez les CGV et les informations Livraison & retours pour continuer." : "Accept the Terms and Shipping & returns information to continue.")
               : "";
@@ -417,6 +428,13 @@ export default function CheckoutPage() {
       setError(language === "fr" ? "Le tarif de livraison n’est pas encore disponible." : "Shipping quote is not ready yet.");
       return;
     }
+    if (underMinimumOnlinePayment) {
+      setError(minimumPaymentMessage(language));
+      setErrorCode("ORDER_PAYMENT_MINIMUM");
+      setErrorReference("");
+      setErrorDebug("");
+      return;
+    }
     setLoading(true); setError(""); setErrorCode(""); setErrorReference(""); setErrorDebug("");
     const form = new FormData(event.currentTarget);
     const pickupValue = String(form.get("pickupTime") || "");
@@ -451,8 +469,13 @@ export default function CheckoutPage() {
       let data: any = {};
       try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
       if (!response.ok) {
-        setError(data.error || (language === "fr" ? "Impossible de finaliser la commande." : "Unable to complete your order."));
-        setErrorCode(String(data.code || "ORDER_HTTP_ERROR"));
+        const responseCode = String(data.code || "ORDER_HTTP_ERROR");
+        setError(
+          responseCode === "ORDER_PAYMENT_MINIMUM"
+            ? minimumPaymentMessage(language)
+            : data.error || (language === "fr" ? "Impossible de finaliser la commande." : "Unable to complete your order."),
+        );
+        setErrorCode(responseCode);
         setErrorReference(String(data.reference || ""));
         setErrorDebug(String(data.debug || ""));
         return;
