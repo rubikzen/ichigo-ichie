@@ -20,6 +20,9 @@ jobs:
 
     env:
       NEXT_PUBLIC_SITE_URL: https://www.ichigoichiematcha.fr
+      # Public, CI-only HMAC key so invalid restock-management signatures can be
+      # verified deterministically. Never reuse this value in production.
+      RESTOCK_UNSUBSCRIBE_SECRET: ci-only-restock-management-key-not-for-production
 
     steps:
       - name: Checkout

@@ -23,26 +23,6 @@ function clean(value: unknown, max: number) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServiceSupabase();
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Service indisponible.", code: "RESTOCK_SERVICE_UNAVAILABLE" },
-        { status: 503 },
-      );
-    }
-
-    const rateLimit = await consumeRateLimit(request, supabase, {
-      scope: "restock:subscribe",
-      limit: 6,
-      windowSeconds: 600,
-    });
-    if (!rateLimit.allowed) {
-      return tooManyRequests(
-        rateLimit,
-        "Trop de demandes. Réessayez dans quelques instants.",
-      );
-    }
-
     const body = await readJsonBody<Record<string, unknown>>(request, 8_000);
 
     // Honeypot: bots filling this field get a harmless success response.
@@ -74,6 +54,26 @@ export async function POST(request: Request) {
         locale === "fr" ? "Adresse e-mail invalide." : "Invalid email address.",
         400,
         "RESTOCK_EMAIL_INVALID",
+      );
+    }
+
+    const supabase = createServiceSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Service indisponible.", code: "RESTOCK_SERVICE_UNAVAILABLE" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const rateLimit = await consumeRateLimit(request, supabase, {
+      scope: "restock:subscribe",
+      limit: 6,
+      windowSeconds: 600,
+    });
+    if (!rateLimit.allowed) {
+      return tooManyRequests(
+        rateLimit,
+        "Trop de demandes. Réessayez dans quelques instants.",
       );
     }
 

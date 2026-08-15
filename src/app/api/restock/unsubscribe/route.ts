@@ -20,11 +20,22 @@ function clean(value: unknown, max: number) {
 
 export async function POST(request: Request) {
   try {
+    const body = await readJsonBody<Record<string, unknown>>(request, 4_000);
+    const subscriptionId = clean(body.subscriptionId, 64);
+    const token = clean(body.token, 128);
+
+    if (!UUID_RE.test(subscriptionId) || !verifyRestockManageToken(subscriptionId, token)) {
+      throw new PublicApiError("Lien d’alerte invalide.", 400, "RESTOCK_UNSUBSCRIBE_INVALID");
+    }
+
     const supabase = createServiceSupabase();
     if (!supabase) {
       return NextResponse.json(
-        { error: "Service indisponible.", code: "RESTOCK_UNSUBSCRIBE_SERVICE_UNAVAILABLE" },
-        { status: 503 },
+        {
+          error: "Service indisponible.",
+          code: "RESTOCK_UNSUBSCRIBE_SERVICE_UNAVAILABLE",
+        },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
 
@@ -34,15 +45,10 @@ export async function POST(request: Request) {
       windowSeconds: 600,
     });
     if (!rateLimit.allowed) {
-      return tooManyRequests(rateLimit, "Trop de demandes. Réessayez dans quelques instants.");
-    }
-
-    const body = await readJsonBody<Record<string, unknown>>(request, 4_000);
-    const subscriptionId = clean(body.subscriptionId, 64);
-    const token = clean(body.token, 128);
-
-    if (!UUID_RE.test(subscriptionId) || !verifyRestockManageToken(subscriptionId, token)) {
-      throw new PublicApiError("Lien d’alerte invalide.", 400, "RESTOCK_UNSUBSCRIBE_INVALID");
+      return tooManyRequests(
+        rateLimit,
+        "Trop de demandes. Réessayez dans quelques instants.",
+      );
     }
 
     const { data: subscription, error: loadError } = await supabase

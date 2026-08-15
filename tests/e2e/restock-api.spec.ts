@@ -32,10 +32,17 @@ test("canonical UUID reaches product lookup instead of being rejected as Produit
     },
   });
 
-  expect(response.status()).toBe(404);
   const body = await response.json();
-  expect(body.code).toBe("RESTOCK_PRODUCT_NOT_FOUND");
   expect(body.error).not.toBe("Produit invalide.");
+
+  if (response.status() === 503) {
+    // GitHub CI intentionally has no production Supabase service credentials.
+    expect(body.code).toBe("RESTOCK_SERVICE_UNAVAILABLE");
+    return;
+  }
+
+  expect(response.status()).toBe(404);
+  expect(body.code).toBe("RESTOCK_PRODUCT_NOT_FOUND");
 });
 
 test("restock honeypot stays harmless and never requires a valid product", async ({
