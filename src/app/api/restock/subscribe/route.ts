@@ -10,8 +10,11 @@ import {
 
 export const runtime = "nodejs";
 
+// Product IDs are stored in PostgreSQL UUID columns. Accept the canonical UUID
+// shape without restricting the UUID version nibble; the database remains the
+// source of truth for whether the identifier exists and belongs to a product.
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function clean(value: unknown, max: number) {
   return String(value ?? "").replace(/\0/g, "").trim().slice(0, max);

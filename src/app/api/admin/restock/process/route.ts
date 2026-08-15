@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { processRestockNotificationsForProduct } from "@/lib/restock-notifications";
 
+// Product IDs are stored in PostgreSQL UUID columns. Accept the canonical UUID
+// shape without restricting the UUID version nibble; the database remains the
+// source of truth for whether the identifier exists and belongs to a product.
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
   try {
