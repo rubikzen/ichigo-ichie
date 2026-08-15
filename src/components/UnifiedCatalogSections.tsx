@@ -118,14 +118,14 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
                 <h3>{language === "fr" ? category.name_fr : category.name_en || category.name_fr}</h3>
                 <span>{categoryProducts.length}</span>
               </div>
-              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""}`}>
+              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""} ${kind === "shop" && categoryProducts.length < 4 ? "product-grid-sparse-v412" : ""}`}>
                 {categoryProducts.map(renderProduct)}
               </div>
             </section>
           ))}
           {uncategorized.length > 0 && (
             <section className="onepage-category-group">
-              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""}`}>
+              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""} ${kind === "shop" && uncategorized.length < 4 ? "product-grid-sparse-v412" : ""}`}>
                 {uncategorized.map(renderProduct)}
               </div>
             </section>

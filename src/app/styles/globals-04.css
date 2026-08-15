@@ -3702,3 +3702,41 @@
     object-position: center;
   }
 }
+
+
+/* Ichigo Ichie V4.12 — Compact sparse product rows */
+/*
+ * V3.79 deliberately keeps full storefront rows equal-height so CTAs align.
+ * Sparse shop groups (1–3 products) do not need that vertical stretching.
+ */
+.onepage-catalog-shop .product-grid-sparse-v412 {
+  align-items: start;
+}
+
+.onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact {
+  height: auto;
+  align-self: start;
+}
+
+.onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-copy {
+  flex: 0 0 auto;
+}
+
+.onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-meta {
+  margin-bottom: 0;
+}
+
+.onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-cta {
+  margin-top: 14px;
+}
+
+/* Keep the sparse-card rhythm compact on desktop without changing V411 media. */
+@media (min-width: 821px) {
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-copy {
+    padding-bottom: 16px;
+  }
+
+  .onepage-catalog-shop .product-grid-sparse-v412 .product-card-compact .product-card-description {
+    margin-bottom: 10px;
+  }
+}
