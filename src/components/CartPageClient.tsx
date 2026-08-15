@@ -225,6 +225,32 @@ export function CartPageClient({ products }: { products: Product[] }) {
         </Link>
         <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>
       </aside>
+
+      <div
+        className={`mobile-cart-checkout-bar-v419 ${hasStockConflict ? "has-conflict" : ""}`}
+        aria-label={language === "fr" ? "Accès rapide au paiement" : "Quick checkout"}
+      >
+        <div className="mobile-cart-total-v419" aria-live="polite">
+          <small>{language === "fr" ? "Sous-total" : "Subtotal"}</small>
+          <strong>{money(subtotal, language)}</strong>
+        </div>
+        <Link
+          className={`button primary mobile-cart-checkout-v419 ${hasStockConflict ? "is-disabled" : ""}`}
+          href="/checkout"
+          aria-disabled={hasStockConflict}
+          onClick={(event) => {
+            if (hasStockConflict) event.preventDefault();
+          }}
+        >
+          {hasStockConflict
+            ? language === "fr"
+              ? "Corriger les quantités"
+              : "Fix quantities"
+            : language === "fr"
+              ? "Commander"
+              : "Checkout"}
+        </Link>
+      </div>
     </div>}
 
     {editingItem && editingProduct && <CartItemEditor
