@@ -18,10 +18,24 @@ type CatalogBlockProps = {
 
 type SortMode = "recommended" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
 
+function productAvailableStock(product: Product) {
+  const activeVariants = (product.variants ?? []).filter((variant) => variant.active);
+  if (activeVariants.length) {
+    return activeVariants.reduce(
+      (sum, variant) => sum + Math.max(0, Number(variant.stock) || 0),
+      0,
+    );
+  }
+  return Math.max(0, Number(product.stock) || 0);
+}
+
 function productPrice(product: Product) {
   const activeVariants = (product.variants ?? []).filter((variant) => variant.active);
   if (!activeVariants.length) return Number(product.base_price) || 0;
-  return Math.min(...activeVariants.map((variant) => Number(variant.price) || 0));
+
+  const availableVariants = activeVariants.filter((variant) => Number(variant.stock) > 0);
+  const priceSource = availableVariants.length ? availableVariants : activeVariants;
+  return Math.min(...priceSource.map((variant) => Number(variant.price) || 0));
 }
 
 function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
@@ -51,6 +65,15 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
   )), [products, activeCategory]);
 
   const sortProducts = useCallback((items: Product[]) => [...items].sort((a, b) => {
+    // V4.24: in the Boutique, purchasable products always stay ahead of
+    // fully sold-out products. The selected sort mode is then applied
+    // inside each availability group.
+    if (kind === "shop") {
+      const soldOutA = productAvailableStock(a) <= 0;
+      const soldOutB = productAvailableStock(b) <= 0;
+      if (soldOutA !== soldOutB) return soldOutA ? 1 : -1;
+    }
+
     if (sortMode === "price-asc") return productPrice(a) - productPrice(b);
     if (sortMode === "price-desc") return productPrice(b) - productPrice(a);
 
@@ -60,7 +83,7 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     if (sortMode === "name-desc") return nameB.localeCompare(nameA, language, { sensitivity: "base" });
 
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-  }), [sortMode, language]);
+  }), [kind, sortMode, language]);
 
   const groups = useMemo(() => categories.map((category) => ({
     category,
