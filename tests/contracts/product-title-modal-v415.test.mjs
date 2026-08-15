@@ -10,11 +10,11 @@ const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8")
 test("product title opens the same detail modal as the product image", () => {
   assert.match(
     card,
-    /className="product-title-button-v415"[\s\S]*?onClick=\{\(\) => setOpen\(true\)\}/,
+    /className="product-title-button-v415"[\s\S]*?onClick=\{\(event\) => openProductDetails\(event\.currentTarget\)\}/,
   );
   assert.match(
     card,
-    /className="product-image-button"[\s\S]*?onClick=\{\(\) => setOpen\(true\)\}/,
+    /className="product-image-button"[\s\S]*?onClick=\{\(event\) => openProductDetails\(event\.currentTarget\)\}/,
   );
 });
 
