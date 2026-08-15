@@ -396,7 +396,7 @@ export function CustomerAccount() {
     return (
       Boolean(order.public_token) &&
       !["cancelled", "refunded", "preparing", "ready", "completed"].includes(order.status) &&
-      !["paid", "refunded", "refund_pending"].includes(order.payment_status)
+      !["paid", "refunded", "refund_pending", "refund_failed"].includes(order.payment_status)
     );
   }
 
@@ -740,10 +740,11 @@ export function CustomerAccount() {
           const visual = orderVisualState(order);
           const expanded = expandedOrderId === order.id;
           const previewItems = (order.order_items ?? []).slice(0, expanded ? undefined : 2);
+          const paymentHint = customerPaymentRecoveryHint(order, language);
           return <article key={order.id} className={`customer-order-card-v243 customer-order-card-v244 state-${visual}`}>
             <div className="customer-order-top-v243 customer-order-top-v244"><div><span>{new Date(order.created_at).toLocaleDateString(language === "fr" ? "fr-FR" : "en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span><h3>{order.order_number}</h3></div><div><span className={`customer-state-badge-v244 ${visual}`}>{orderBadgeLabel(order, language)}</span><strong>{money.format(Number(order.total))}</strong></div></div>
 
-            <div className="customer-order-progress-v243 customer-order-progress-v244"><span className={`customer-order-state-v244 ${visual}`}>{customerStatusLabel(order, language)}</span><small>{order.order_type === "shipping" ? (order.shipping_method_name || (language === "fr" ? "Livraison" : "Shipping")) : (language === "fr" ? "Retrait boutique" : "Boutique pickup")}</small>{order.tracking_number && <small className="customer-tracking-number-v244">{order.tracking_number}</small>}</div>
+            <div className="customer-order-progress-v243 customer-order-progress-v244"><span className={`customer-order-state-v244 ${visual}`}>{customerStatusLabel(order, language)}</span><small>{order.order_type === "shipping" ? (order.shipping_method_name || (language === "fr" ? "Livraison" : "Shipping")) : (language === "fr" ? "Retrait boutique" : "Boutique pickup")}</small>{order.tracking_number && <small className="customer-tracking-number-v244">{order.tracking_number}</small>}{paymentHint && <small className="customer-payment-recovery-hint-v409">{paymentHint}</small>}</div>
 
             <div className={`customer-order-items-v243 customer-order-items-v244 ${expanded ? "expanded" : ""}`}>{previewItems.map((item) => <div key={item.id}><span><strong>{item.quantity} × {formatOrderItem(item, language)}</strong>{choiceSummary(item, language) ? <small>{choiceSummary(item, language)}</small> : null}</span><strong>{money.format(Number(item.line_total))}</strong></div>)}{!expanded && (order.order_items?.length || 0) > 2 && <small>+ {(order.order_items?.length || 0) - 2} {language === "fr" ? "article(s)" : "item(s)"}</small>}</div>
 
@@ -754,7 +755,7 @@ export function CustomerAccount() {
                   className="button primary"
                   href={`/commande/${order.public_token}?payment=retry`}
                 >
-                  {language === "fr" ? "Payer maintenant" : "Pay now"}
+                  {customerPaymentActionLabel(order, language)}
                 </Link>
               ) : order.public_token ? (
                 <Link className="button primary" href={`/commande/${order.public_token}`}>
@@ -816,6 +817,37 @@ function orderVisualState(order: CustomerOrder) {
   if (order.status === "ready") return "ready";
   if (order.status === "preparing") return "preparing";
   return "paid";
+}
+
+function customerPaymentActionLabel(order: CustomerOrder, language: "fr" | "en") {
+  if (order.payment_status === "expired") {
+    return language === "fr" ? "Créer une nouvelle session" : "Create new payment session";
+  }
+  if (order.payment_status === "failed") {
+    return language === "fr" ? "Réessayer le paiement" : "Retry payment";
+  }
+  return language === "fr" ? "Payer maintenant" : "Pay now";
+}
+
+function customerPaymentRecoveryHint(order: CustomerOrder, language: "fr" | "en") {
+  if (!canRecoverPaymentStatus(order.payment_status)) return "";
+  if (order.payment_status === "failed") {
+    return language === "fr"
+      ? "Le paiement n’a pas abouti. Reprenez cette commande sans en créer une nouvelle."
+      : "The payment did not complete. Retry this order without creating a new one.";
+  }
+  if (order.payment_status === "expired") {
+    return language === "fr"
+      ? "La session a expiré. Créez une nouvelle session pour cette même commande."
+      : "The session expired. Create a new payment session for this same order.";
+  }
+  return language === "fr"
+    ? "Paiement requis pour que cette commande puisse être traitée."
+    : "Payment is required before this order can be processed.";
+}
+
+function canRecoverPaymentStatus(paymentStatus: string) {
+  return ["pending", "unpaid", "failed", "expired"].includes(paymentStatus);
 }
 
 function orderBadgeLabel(order: CustomerOrder, language: "fr" | "en") {
