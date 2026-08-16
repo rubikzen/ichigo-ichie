@@ -15,8 +15,13 @@ test("Boutique product permalink opens a canonical SEO product page", async ({ p
   await page.goto(href!);
 
   await expect(page.locator("main[data-product-page-v431]")).toBeVisible();
+  await expect(page.locator("main[data-product-page-v432]")).toBeVisible();
   await expect(page.locator(".product-page-story-v431 h1")).not.toHaveText("");
+  await expect(page.locator(".product-page-gallery-v432")).toBeVisible();
   await expect(page.locator(".product-page-purchase-v431 .product-card")).toBeVisible();
+  await expect(
+    page.locator(".product-page-purchase-v432 .product-image-button"),
+  ).toBeHidden();
   await expect(page.locator("script[data-product-schema-v431]")).toHaveCount(1);
 
   const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
+import { SafeImage } from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
 
 export function ProductPageContent({
@@ -15,6 +17,8 @@ export function ProductPageContent({
   categoryNameEn: string;
 }) {
   const { language } = useLanguage();
+  const [imageIndex, setImageIndex] = useState(0);
+
   const name =
     (language === "fr" ? product.name_fr : product.name_en) || product.name_fr;
   const description =
@@ -28,9 +32,23 @@ export function ProductPageContent({
   const categoryName =
     (language === "fr" ? categoryNameFr : categoryNameEn) || categoryNameFr;
 
+  const imageRows = [...(product.images ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
+  const gallery = imageRows.length
+    ? imageRows.map((image) => image.url)
+    : [product.image_url || "/product-placeholder.svg"];
+  const activeImage =
+    gallery[Math.min(imageIndex, gallery.length - 1)] ||
+    "/product-placeholder.svg";
+
   return (
-    <main className="product-page-v431" data-product-page-v431>
-      <div className="product-page-shell-v431">
+    <main
+      className="product-page-v431 product-page-v432"
+      data-product-page-v431
+      data-product-page-v432
+    >
+      <div className="product-page-shell-v431 product-page-shell-v432">
         <nav
           className="product-page-breadcrumb-v431"
           aria-label={language === "fr" ? "Fil d’Ariane" : "Breadcrumb"}
@@ -46,27 +64,147 @@ export function ProductPageContent({
           )}
         </nav>
 
-        <section className="product-page-hero-v431">
-          <div className="product-page-purchase-v431">
-            <ProductCard product={product} />
+        <header className="product-page-story-v431 product-page-header-v432">
+          <p className="eyebrow">
+            {product.badge ||
+              (language === "fr"
+                ? "Sélection Ichigo Ichie"
+                : "Ichigo Ichie selection")}
+          </p>
+          <h1>{name}</h1>
+          {description && (
+            <p className="product-page-lead-v431 product-page-lead-v432">
+              {description}
+            </p>
+          )}
+        </header>
+
+        <section className="product-page-hero-v431 product-page-grid-v432">
+          <div
+            className="product-page-gallery-v432"
+            aria-label={language === "fr" ? "Photos du produit" : "Product photos"}
+          >
+            <div className="product-page-gallery-stage-v432">
+              <SafeImage
+                src={activeImage}
+                alt={`${name} ${imageIndex + 1}`}
+                fill
+                sizes="(max-width: 860px) calc(100vw - 28px), (max-width: 1280px) 52vw, 620px"
+                priority
+              />
+
+              {gallery.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="product-page-gallery-arrow-v432 previous"
+                    aria-label={
+                      language === "fr" ? "Image précédente" : "Previous image"
+                    }
+                    onClick={() =>
+                      setImageIndex(
+                        (current) =>
+                          (current - 1 + gallery.length) % gallery.length,
+                      )
+                    }
+                  >
+                    {"‹"}
+                  </button>
+                  <button
+                    type="button"
+                    className="product-page-gallery-arrow-v432 next"
+                    aria-label={
+                      language === "fr" ? "Image suivante" : "Next image"
+                    }
+                    onClick={() =>
+                      setImageIndex((current) => (current + 1) % gallery.length)
+                    }
+                  >
+                    {"›"}
+                  </button>
+                  <span className="product-page-gallery-count-v432">
+                    {imageIndex + 1} / {gallery.length}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {gallery.length > 1 && (
+              <div className="product-page-thumbnails-v432">
+                {gallery.slice(0, 4).map((url, index) => (
+                  <button
+                    type="button"
+                    key={`${url}-${index}`}
+                    className={imageIndex === index ? "active" : ""}
+                    aria-label={
+                      language === "fr"
+                        ? `Afficher la photo ${index + 1}`
+                        : `Show photo ${index + 1}`
+                    }
+                    aria-pressed={imageIndex === index}
+                    onClick={() => setImageIndex(index)}
+                  >
+                    <SafeImage
+                      src={url}
+                      alt=""
+                      width={180}
+                      height={180}
+                      sizes="84px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <article className="product-page-story-v431">
-            <p className="eyebrow">
-              {product.badge ||
-                (language === "fr"
-                  ? "Sélection Ichigo Ichie"
-                  : "Ichigo Ichie selection")}
-            </p>
-            <h1>{name}</h1>
-            {description && (
-              <p className="product-page-lead-v431">{description}</p>
-            )}
+          <aside className="product-page-side-v432">
+            <section className="product-page-buy-box-v432">
+              <div className="product-page-buy-intro-v432">
+                <span>
+                  {language === "fr" ? "Commander en ligne" : "Order online"}
+                </span>
+                <strong>
+                  {product.variants.filter((variant) => variant.active).length > 1
+                    ? language === "fr"
+                      ? "Choisissez votre format"
+                      : "Choose your format"
+                    : language === "fr"
+                      ? "Ajouter à votre panier"
+                      : "Add to your cart"}
+                </strong>
+              </div>
+
+              <div
+                className="product-page-purchase-v431 product-page-purchase-v432"
+                data-product-purchase-v432
+              >
+                <ProductCard product={product} />
+              </div>
+
+              <div className="product-page-service-v432">
+                <span>
+                  <b aria-hidden="true">✓</b>
+                  {language === "fr"
+                    ? "Paiement sécurisé"
+                    : "Secure payment"}
+                </span>
+                <span>
+                  <b aria-hidden="true">✓</b>
+                  {product.pickup_only
+                    ? language === "fr"
+                      ? "Retrait à Nice"
+                      : "Pickup in Nice"
+                    : language === "fr"
+                      ? "Livraison France métropolitaine"
+                      : "Delivery across metropolitan France"}
+                </span>
+              </div>
+            </section>
 
             {(product.origin ||
               product.cultivar ||
               product.ideal_for.length > 0) && (
-              <dl className="product-page-facts-v431">
+              <dl className="product-page-facts-v431 product-page-facts-v432">
                 {product.origin && (
                   <div>
                     <dt>{language === "fr" ? "Origine" : "Origin"}</dt>
@@ -80,7 +218,7 @@ export function ProductPageContent({
                   </div>
                 )}
                 {product.ideal_for.length > 0 && (
-                  <div className="product-page-ideal-v431">
+                  <div className="product-page-ideal-v431 product-page-ideal-v432">
                     <dt>{language === "fr" ? "Idéal pour" : "Ideal for"}</dt>
                     <dd>
                       {product.ideal_for.map((item) => (
@@ -91,26 +229,24 @@ export function ProductPageContent({
                 )}
               </dl>
             )}
-
-            {longDescription && longDescription !== description && (
-              <section className="product-page-description-v431">
-                <h2>
-                  {language === "fr"
-                    ? "À propos de ce produit"
-                    : "About this product"}
-                </h2>
-                <p>{longDescription}</p>
-              </section>
-            )}
-
-            <div className="product-page-trust-v431">
-              <span>✓ {language === "fr" ? "Paiement sécurisé" : "Secure payment"}</span>
-              <span>✓ {language === "fr" ? "Expédition depuis la France" : "Ships from France"}</span>
-            </div>
-          </article>
+          </aside>
         </section>
 
-        <div className="product-page-back-v431">
+        {longDescription && longDescription !== description && (
+          <section className="product-page-description-v431 product-page-description-v432">
+            <p className="eyebrow">
+              {language === "fr" ? "LE PRODUIT" : "THE PRODUCT"}
+            </p>
+            <h2>
+              {language === "fr"
+                ? "À propos de ce produit"
+                : "About this product"}
+            </h2>
+            <p>{longDescription}</p>
+          </section>
+        )}
+
+        <div className="product-page-back-v431 product-page-back-v432">
           <Link href="/#boutique">
             ← {language === "fr" ? "Retour à la boutique" : "Back to shop"}
           </Link>
