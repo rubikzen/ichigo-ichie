@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
-type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation" | "pickup_preparing" | "pickup_ready" | "pickup_completed";
+type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation" | "pickup_ready" | "pickup_completed";
 
 function escapeHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
@@ -79,13 +79,11 @@ export async function sendOrderEmail(
         ? "shipping_email_sent_at"
         : kind === "refund"
           ? "refund_email_sent_at"
-          : kind === "pickup_preparing"
-            ? "pickup_preparing_email_sent_at"
-            : kind === "pickup_ready"
-              ? "pickup_ready_email_sent_at"
-              : kind === "pickup_completed"
-                ? "pickup_completed_email_sent_at"
-                : null;
+          : kind === "pickup_ready"
+            ? "pickup_ready_email_sent_at"
+            : kind === "pickup_completed"
+              ? "pickup_completed_email_sent_at"
+              : null;
   if (timestampField && order[timestampField] && !options.force) {
     return { skipped: true as const, reason: "already_sent" as const };
   }
@@ -101,9 +99,17 @@ export async function sendOrderEmail(
     const destination = order.order_type === "shipping"
       ? `<p style="line-height:1.6"><strong>Livraison</strong><br>${escapeHtml(order.shipping_method_name || "Livraison à domicile")}<br>${escapeHtml([order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim()].filter(Boolean).join(" · "))}</p>`
       : `<p style="line-height:1.6"><strong>Retrait boutique</strong><br>${escapeHtml(order.pickup_time ? new Date(order.pickup_time).toLocaleString("fr-FR") : "Dès que possible")}<br>${escapeHtml(settings.store_address || "Nice")}</p>`;
+    const pickupPreparationNotice = order.order_type === "pickup"
+      ? `<div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:18px 0;line-height:1.6">
+          <strong>Notre équipe va maintenant préparer votre commande.</strong>
+          <div style="margin-top:7px;color:#59665f">Nous vous enverrons un nouvel e-mail dès qu’elle sera prête à être retirée en boutique.</div>
+          <div style="margin-top:7px;color:#59665f">Merci d’attendre cette confirmation avant de vous déplacer.</div>
+        </div>`
+      : "";
     html = shell(brand, "Votre commande est confirmée", `Bonjour ${order.customer_first_name || ""}, nous avons bien reçu votre commande ${order.order_number}.`, `
       <table style="width:100%;border-collapse:collapse;margin:22px 0">${orderLines(order)}</table>
       ${destination}
+      ${pickupPreparationNotice}
       <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e7e2d8">${Number(order.discount_amount || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;color:#486a4b"><span>Code promo ${escapeHtml(order.promo_code || "")}</span><strong>− ${money(order.discount_amount)}</strong></div>` : ""}<div style="display:flex;justify-content:space-between"><span>Livraison</span><strong>${order.shipping_fee ? money(order.shipping_fee) : "Offerte / retrait"}</strong></div><div style="display:flex;justify-content:space-between;font-size:20px;margin-top:10px"><strong>Total</strong><strong>${money(order.total)}</strong></div></div>
       <p style="margin-top:24px"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Suivre ma commande</a></p>`);
   } else if (kind === "shipping") {
@@ -114,19 +120,6 @@ export async function sendOrderEmail(
     html = shell(brand, "Votre colis est en route", `La commande ${order.order_number} a été remise au transporteur.`, `
       <div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:22px 0"><strong>${escapeHtml(carrier)}</strong>${tracking ? `<div style="margin-top:8px">N° de suivi : <strong>${escapeHtml(tracking)}</strong></div>` : ""}</div>
       <p><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Suivre mon colis</a></p>`);
-  } else if (kind === "pickup_preparing") {
-    subject = `${brand} · Nous préparons votre commande ${order.order_number}`;
-    html = shell(
-      brand,
-      "Votre commande est en préparation",
-      `Bonjour ${order.customer_first_name || ""}, notre équipe prépare maintenant votre commande ${order.order_number}.`,
-      `
-      <div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:22px 0;line-height:1.6">
-        <strong>Nous vous préviendrons dès qu’elle sera prête.</strong>
-        <div style="margin-top:7px;color:#59665f">Inutile de vous déplacer avant notre prochain e-mail de confirmation de retrait.</div>
-      </div>
-      <p style="margin-top:24px"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Voir ma commande</a></p>`
-    );
   } else if (kind === "pickup_ready") {
     const storeAddress = settings.store_address || "14 rue Centrale, 06300 Nice";
     const openingHours = settings.opening_hours || "Consultez les horaires à jour sur notre site";
@@ -158,8 +151,9 @@ export async function sendOrderEmail(
       <div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:22px 0;line-height:1.6">
         <strong>Merci d’avoir choisi ${escapeHtml(brand)}.</strong>
         <div style="margin-top:7px;color:#59665f">Nous espérons que vous apprécierez votre commande et serons ravis de vous accueillir de nouveau.</div>
+        <div style="margin-top:12px;color:#59665f">Votre facture est disponible dans le suivi de votre commande. Vous pouvez la télécharger quand vous le souhaitez.</div>
       </div>
-      <p style="margin-top:24px"><a href="${escapeHtml(`${siteOrigin()}/#boutique`)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Retour à la boutique</a></p>`
+      <p style="margin-top:24px"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Voir ma commande</a></p>`
     );
   } else if (kind === "cancellation") {
     subject = `${brand} · Commande ${order.order_number} annulée`;

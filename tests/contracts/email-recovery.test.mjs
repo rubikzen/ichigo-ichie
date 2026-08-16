@@ -24,7 +24,7 @@ test("manual order email recovery uses force mode with a deduplicating suffix", 
 });
 
 test("manual recovery is limited to valid lifecycle states", () => {
-  assert.match(adminOrderApi, /EMAIL_KINDS = new Set\(\["confirmation", "shipping", "refund", "pickup_preparing", "pickup_ready", "pickup_completed"\]\)/);
+  assert.match(adminOrderApi, /EMAIL_KINDS = new Set\(\["confirmation", "shipping", "refund", "pickup_ready", "pickup_completed"\]\)/);
   assert.match(adminOrderApi, /confirmation.*\["paid", "refunded"\]/s);
   assert.match(adminOrderApi, /emailKind === "shipping"/);
   assert.match(adminOrderApi, /order\.status !== "completed"/);
@@ -44,21 +44,19 @@ test("admin loads email timestamps for invoices and exposes recovery controls", 
   assert.match(adminUi, /confirmation_email_sent_at/);
   assert.match(adminUi, /shipping_email_sent_at/);
   assert.match(adminUi, /refund_email_sent_at/);
-  assert.match(adminUi, /pickup_preparing_email_sent_at/);
   assert.match(adminUi, /pickup_ready_email_sent_at/);
   assert.match(adminUi, /pickup_completed_email_sent_at/);
   assert.match(adminUi, /order-email-recovery-v373/);
   assert.match(adminUi, /Suivi & renvoi/);
 });
 
-test("admin recovery covers confirmation pickup lifecycle invoice shipping refund and credit note", () => {
-  for (const label of ["Confirmation", "Préparation", "Prête au retrait", "Retrait terminé", "Facture", "Expédition", "Remboursement", "Avoir"]) {
+test("admin recovery covers the simplified pickup lifecycle plus optional accounting resend", () => {
+  for (const label of ["Confirmation", "Prête au retrait", "Retrait terminé", "Facture", "Expédition", "Remboursement", "Avoir"]) {
     assert.ok(adminUi.includes(label), `missing recovery row: ${label}`);
   }
   assert.match(adminUi, /orderEmailAction\(order, "confirmation"\)/);
   assert.match(adminUi, /orderEmailAction\(order, "shipping"\)/);
   assert.match(adminUi, /orderEmailAction\(order, "refund"\)/);
-  assert.match(adminUi, /orderEmailAction\(order, "pickup_preparing"\)/);
   assert.match(adminUi, /orderEmailAction\(order, "pickup_ready"\)/);
   assert.match(adminUi, /orderEmailAction\(order, "pickup_completed"\)/);
   assert.match(adminUi, /invoiceAction\(order, "email"\)/);

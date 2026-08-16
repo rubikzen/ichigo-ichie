@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getStripeServer } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
-import { issueAndEmailCreditNote, issueAndEmailInvoice } from "@/lib/invoice";
+import { ensureInvoiceForOrder, issueAndEmailCreditNote } from "@/lib/invoice";
 import { cancelUnpaidOrder } from "@/lib/order-cancellation";
 import { processRestockNotificationsForOrder } from "@/lib/restock-notifications";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ORDER_STATUSES = new Set(["pending", "preparing", "ready", "completed", "cancelled", "refunded"]);
-const EMAIL_KINDS = new Set(["confirmation", "shipping", "refund", "pickup_preparing", "pickup_ready", "pickup_completed"]);
+const EMAIL_KINDS = new Set(["confirmation", "shipping", "refund", "pickup_ready", "pickup_completed"]);
 
 function clean(value: unknown, max = 300) {
   return String(value ?? "").trim().slice(0, max);
@@ -46,7 +46,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       }
       if (emailKind.startsWith("pickup_")) {
         const allowedPickupStatuses: Record<string, string[]> = {
-          pickup_preparing: ["preparing", "ready", "completed"],
           pickup_ready: ["ready", "completed"],
           pickup_completed: ["completed"],
         };
@@ -59,7 +58,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         const result = await sendOrderEmail(
           supabase,
           id,
-          emailKind as "confirmation" | "shipping" | "refund" | "pickup_preparing" | "pickup_ready" | "pickup_completed",
+          emailKind as "confirmation" | "shipping" | "refund" | "pickup_ready" | "pickup_completed",
           {
             force: true,
             // Same-minute retries reuse the same key to protect against double-click duplicates.
@@ -92,7 +91,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       if (order.payment_method !== "pickup") return NextResponse.json({ error: "Ce bouton est réservé au paiement au retrait." }, { status: 409 });
       const { error: paidError } = await supabase.from("orders").update({ payment_status: "paid", paid_at: new Date().toISOString() }).eq("id", id);
       if (paidError) throw paidError;
-      try { await issueAndEmailInvoice(supabase, id); } catch (invoiceError) { console.error("Manual payment invoice error", invoiceError); }
+      try { await ensureInvoiceForOrder(supabase, id); } catch (invoiceError) { console.error("Manual payment invoice issue error", invoiceError); }
       return NextResponse.json({ ok: true });
     }
 
@@ -197,13 +196,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     if (order.order_type === "pickup" && status && status !== order.status) {
       const pickupEmailKind =
-        status === "preparing"
-          ? "pickup_preparing"
-          : status === "ready"
-            ? "pickup_ready"
-            : status === "completed"
-              ? "pickup_completed"
-              : null;
+        status === "ready"
+          ? "pickup_ready"
+          : status === "completed"
+            ? "pickup_completed"
+            : null;
 
       if (pickupEmailKind) {
         try {

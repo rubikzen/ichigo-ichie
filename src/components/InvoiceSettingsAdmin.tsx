@@ -125,7 +125,7 @@ export function InvoiceSettingsAdmin({ supabase }: { supabase: SupabaseClient })
     {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
 
     <div className="invoice-switch-card-v245">
-      <div><strong>Facturation automatique après paiement</strong><p>Quand elle est active, une facture immuable est émise après confirmation Stripe et envoyée au client si l’e-mail automatique est activé.</p></div>
+      <div><strong>Facturation automatique après paiement</strong><p>Quand elle est active, une facture immuable est émise après confirmation du paiement et reste disponible dans le suivi de commande et l’espace client, sans e-mail de facture séparé.</p></div>
       <button type="button" className={settings.invoice_enabled === "true" ? "invoice-toggle-v245 active" : "invoice-toggle-v245"} onClick={toggleEnabled}><span></span>{settings.invoice_enabled === "true" ? "Activée" : "Désactivée"}</button>
     </div>
 
@@ -156,7 +156,7 @@ export function InvoiceSettingsAdmin({ supabase }: { supabase: SupabaseClient })
           <label>Préfixe facture<input value={settings.invoice_prefix} onChange={(e) => set("invoice_prefix", e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 12))} /></label>
           <label>Préfixe avoir<input value={settings.credit_note_prefix} onChange={(e) => set("credit_note_prefix", e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 12))} /></label>
           <label>TVA livraison (%)<input type="number" min="0" max="100" step="0.1" value={settings.invoice_shipping_vat_rate} onChange={(e) => set("invoice_shipping_vat_rate", e.target.value)} /><small>À valider selon votre traitement comptable des frais de transport.</small></label>
-          <label className="invoice-check-v245"><input type="checkbox" checked={settings.invoice_auto_email === "true"} onChange={(e) => set("invoice_auto_email", e.target.checked ? "true" : "false")} /><span>Envoyer automatiquement le PDF au client</span></label>
+          <label className="invoice-check-v245"><input type="checkbox" checked={settings.invoice_auto_email === "true"} onChange={(e) => set("invoice_auto_email", e.target.checked ? "true" : "false")} /><span>Envoyer automatiquement l’avoir PDF après remboursement</span></label>
           <label className="cms-wide-field">Pied de facture<textarea rows={3} value={settings.invoice_footer} onChange={(e) => set("invoice_footer", e.target.value)} /></label>
         </div>
         <button type="button" className="button primary" disabled={saving} onClick={saveSettings}>{saving ? "Enregistrement…" : "Enregistrer la facturation"}</button>

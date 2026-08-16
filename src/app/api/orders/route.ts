@@ -5,7 +5,7 @@ import { getPackagingWeightG, getShippingQuotes, requireShippingQuote } from "@/
 import { assertMinimumOnlinePayment, createOrReuseStripeCheckout, MinimumOnlinePaymentError } from "@/lib/stripe";
 import { sendOrderEmail, sendMerchantOrderNotification } from "@/lib/order-email";
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
-import { assertInvoiceReadyForProducts, issueAndEmailInvoice } from "@/lib/invoice";
+import { assertInvoiceReadyForProducts, ensureInvoiceForOrder } from "@/lib/invoice";
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
 import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 import { getTermsVersion } from "@/lib/terms";
@@ -381,8 +381,8 @@ export async function POST(request: Request) {
       if (freeOrderError) throw freeOrderError;
       const { error: promoCommitError } = await supabase.rpc("commit_order_promo", { p_order_id: order.id });
       if (promoCommitError) console.error("Promo commit error", promoCommitError);
-      try { await issueAndEmailInvoice(supabase, order.id); }
-      catch (invoiceError) { console.error("Automatic invoice error", invoiceError); }
+      try { await ensureInvoiceForOrder(supabase, order.id); }
+      catch (invoiceError) { console.error("Automatic invoice issue error", invoiceError); }
       if (email) {
         try { await sendOrderEmail(supabase, order.id, "confirmation"); }
         catch (emailError) { console.error("Order confirmation email error", emailError); }

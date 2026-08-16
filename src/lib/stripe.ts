@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendMerchantOrderNotification, sendOrderEmail } from "@/lib/order-email";
-import { issueAndEmailInvoice } from "@/lib/invoice";
+import { ensureInvoiceForOrder } from "@/lib/invoice";
 
 let stripeClient: Stripe | null | undefined;
 
@@ -265,12 +265,13 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
   }).eq("id", orderId).neq("payment_status", "refunded").neq("payment_status", "refund_pending");
   const { error: promoCommitError } = await supabase.rpc("commit_order_promo", { p_order_id: orderId });
   if (promoCommitError) console.error("Promo commit error", promoCommitError);
-  // Customer lifecycle: confirmation first, accounting document second.
-  // Both sends are idempotent and neither failure blocks the paid order state.
+  // Customer lifecycle: send one confirmation e-mail, then issue the
+  // accounting document silently. The invoice stays available in tracking and
+  // the customer account without creating a second automatic e-mail.
   try { await sendOrderEmail(supabase, orderId, "confirmation"); }
   catch (emailError) { console.error("Order confirmation email error", emailError); }
-  try { await issueAndEmailInvoice(supabase, orderId); }
-  catch (invoiceError) { console.error("Automatic invoice error", invoiceError); }
+  try { await ensureInvoiceForOrder(supabase, orderId); }
+  catch (invoiceError) { console.error("Automatic invoice issue error", invoiceError); }
   try { await sendMerchantOrderNotification(supabase, orderId); }
   catch (merchantEmailError) { console.error("Merchant order notification email error", merchantEmailError); }
 }
