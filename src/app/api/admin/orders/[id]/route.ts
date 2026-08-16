@@ -8,7 +8,7 @@ import { processRestockNotificationsForOrder } from "@/lib/restock-notifications
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ORDER_STATUSES = new Set(["pending", "preparing", "ready", "completed", "cancelled", "refunded"]);
-const EMAIL_KINDS = new Set(["confirmation", "shipping", "refund"]);
+const EMAIL_KINDS = new Set(["confirmation", "shipping", "refund", "pickup_preparing", "pickup_ready", "pickup_completed"]);
 
 function clean(value: unknown, max = 300) {
   return String(value ?? "").trim().slice(0, max);
@@ -44,12 +44,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       if (emailKind === "refund" && order.payment_status !== "refunded") {
         return NextResponse.json({ error: "L’e-mail de remboursement est disponible après confirmation du remboursement." }, { status: 409 });
       }
+      if (emailKind.startsWith("pickup_")) {
+        const allowedPickupStatuses: Record<string, string[]> = {
+          pickup_preparing: ["preparing", "ready", "completed"],
+          pickup_ready: ["ready", "completed"],
+          pickup_completed: ["completed"],
+        };
+        if (order.order_type !== "pickup" || !allowedPickupStatuses[emailKind]?.includes(order.status)) {
+          return NextResponse.json({ error: "Cet e-mail de retrait n’est pas disponible pour l’état actuel de la commande." }, { status: 409 });
+        }
+      }
 
       try {
         const result = await sendOrderEmail(
           supabase,
           id,
-          emailKind as "confirmation" | "shipping" | "refund",
+          emailKind as "confirmation" | "shipping" | "refund" | "pickup_preparing" | "pickup_ready" | "pickup_completed",
           {
             force: true,
             // Same-minute retries reuse the same key to protect against double-click duplicates.
@@ -167,6 +177,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "email_not_configured"
       | "failed"
       | null = null;
+    let pickupEmail:
+      | "sent"
+      | "already_sent"
+      | "missing_recipient"
+      | "email_not_configured"
+      | "failed"
+      | null = null;
 
     if (order.order_type === "shipping" && status === "completed") {
       try {
@@ -178,7 +195,28 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       }
     }
 
-    return NextResponse.json({ ok: true, shippingEmail });
+    if (order.order_type === "pickup" && status && status !== order.status) {
+      const pickupEmailKind =
+        status === "preparing"
+          ? "pickup_preparing"
+          : status === "ready"
+            ? "pickup_ready"
+            : status === "completed"
+              ? "pickup_completed"
+              : null;
+
+      if (pickupEmailKind) {
+        try {
+          const emailResult = await sendOrderEmail(supabase, id, pickupEmailKind);
+          pickupEmail = emailResult.skipped ? emailResult.reason : "sent";
+        } catch (emailError) {
+          pickupEmail = "failed";
+          console.error("Pickup lifecycle email error", emailError);
+        }
+      }
+    }
+
+    return NextResponse.json({ ok: true, shippingEmail, pickupEmail });
   } catch (error) {
     const status = typeof (error as any)?.status === "number" ? (error as any).status : 500;
     console.error("Admin order update error", error);

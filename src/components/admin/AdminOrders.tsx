@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { OrderStatistics } from "../OrderStatistics";
 
-type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; confirmation_email_sent_at?: string | null; shipping_email_sent_at?: string | null; refund_email_sent_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string; email_sent_at?: string | null }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
+type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; confirmation_email_sent_at?: string | null; shipping_email_sent_at?: string | null; refund_email_sent_at?: string | null; pickup_preparing_email_sent_at?: string | null; pickup_ready_email_sent_at?: string | null; pickup_completed_email_sent_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string; email_sent_at?: string | null }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
 type TrackingDraft = { carrier: string; number: string; url: string };
 const TRACKING_CARRIERS = ["Colissimo", "Chronopost", "Mondial Relay", "DHL", "UPS", "Autre"] as const;
@@ -134,6 +134,21 @@ function shippingEmailMessage(result: unknown) {
     return "Commande expédiée ✓";
   }
 
+function pickupLifecycleEmailMessage(status: string, result: unknown) {
+    const label =
+      status === "preparing"
+        ? "Commande en préparation"
+        : status === "ready"
+          ? "Commande prête au retrait"
+          : "Commande remise";
+    if (result === "sent") return `${label} ✓ · e-mail client envoyé`;
+    if (result === "already_sent") return `${label} ✓ · e-mail déjà envoyé`;
+    if (result === "missing_recipient") return `${label} ✓ · aucun e-mail client renseigné`;
+    if (result === "email_not_configured") return `${label} ✓ · e-mail non configuré`;
+    if (result === "failed") return `${label} ✓ · envoi e-mail à vérifier`;
+    return `${label} ✓`;
+  }
+
 function emailStatusText(sentAt?: string | null) {
     if (!sentAt) return "Non envoyé";
     return `Envoyé le ${new Date(sentAt).toLocaleString("fr-FR", {
@@ -178,6 +193,11 @@ async function updateOrder(id: string, status: string) {
         setOrderActionMessage("Commande annulée ✓ · réservations libérées");
       } else if (status === "completed" && order.order_type === "shipping") {
         setOrderActionMessage(shippingEmailMessage(data.shippingEmail));
+      } else if (
+        order.order_type === "pickup" &&
+        ["preparing", "ready", "completed"].includes(status)
+      ) {
+        setOrderActionMessage(pickupLifecycleEmailMessage(status, data.pickupEmail));
       } else {
         setOrderActionMessage("Commande enregistrée ✓");
       }
@@ -341,7 +361,7 @@ async function updateOrder(id: string, status: string) {
     }
   }
 
-  async function orderEmailAction(order: OrderRow, kind: "confirmation" | "shipping" | "refund") {
+  async function orderEmailAction(order: OrderRow, kind: "confirmation" | "shipping" | "refund" | "pickup_preparing" | "pickup_ready" | "pickup_completed") {
     if (!supabase) return;
     const actionKey = `${order.id}:${kind}`;
     setEmailActionKey(actionKey);
@@ -356,6 +376,9 @@ async function updateOrder(id: string, status: string) {
       confirmation: "confirmation",
       shipping: "expédition",
       refund: "remboursement",
+      pickup_preparing: "préparation",
+      pickup_ready: "commande prête au retrait",
+      pickup_completed: "retrait terminé",
     } as const;
 
     setOrderActionMessage(`Envoi de l’e-mail de ${labels[kind]}…`);
@@ -547,11 +570,22 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           order.status === "completed" &&
           Boolean(order.tracking_number);
         const refundEmailEligible = order.payment_status === "refunded";
+        const pickupPreparingEmailEligible =
+          order.order_type === "pickup" &&
+          ["preparing", "ready", "completed"].includes(order.status);
+        const pickupReadyEmailEligible =
+          order.order_type === "pickup" &&
+          ["ready", "completed"].includes(order.status);
+        const pickupCompletedEmailEligible =
+          order.order_type === "pickup" && order.status === "completed";
         const showEmailRecovery =
           confirmationEmailEligible ||
           Boolean(invoiceDoc) ||
           shippingEmailEligible ||
           refundEmailEligible ||
+          pickupPreparingEmailEligible ||
+          pickupReadyEmailEligible ||
+          pickupCompletedEmailEligible ||
           Boolean(creditNoteDoc);
         return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
   <div>
@@ -799,6 +833,63 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
                       {emailActionKey === `${order.id}:confirmation`
                         ? "Envoi…"
                         : emailActionLabel(order.confirmation_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {pickupPreparingEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Préparation</strong>
+                      <small>{emailStatusText(order.pickup_preparing_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "pickup_preparing")}
+                    >
+                      {emailActionKey === `${order.id}:pickup_preparing`
+                        ? "Envoi…"
+                        : emailActionLabel(order.pickup_preparing_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {pickupReadyEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Prête au retrait</strong>
+                      <small>{emailStatusText(order.pickup_ready_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "pickup_ready")}
+                    >
+                      {emailActionKey === `${order.id}:pickup_ready`
+                        ? "Envoi…"
+                        : emailActionLabel(order.pickup_ready_email_sent_at)}
+                    </button>
+                  </div>
+                )}
+
+                {pickupCompletedEmailEligible && (
+                  <div className="order-email-recovery-row-v373">
+                    <div>
+                      <strong>Retrait terminé</strong>
+                      <small>{emailStatusText(order.pickup_completed_email_sent_at)}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      disabled={!order.customer_email || Boolean(emailActionKey)}
+                      onClick={() => orderEmailAction(order, "pickup_completed")}
+                    >
+                      {emailActionKey === `${order.id}:pickup_completed`
+                        ? "Envoi…"
+                        : emailActionLabel(order.pickup_completed_email_sent_at)}
                     </button>
                   </div>
                 )}
