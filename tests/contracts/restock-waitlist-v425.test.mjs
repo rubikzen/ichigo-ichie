@@ -55,10 +55,11 @@ test("restock form is bilingual, purpose-limited and includes bot protection", (
   assert.match(notify, /fetch\("\/api\/restock\/subscribe"/);
 });
 
-test("Boutique admin exposes the private active waitlist without touching Menu", () => {
+test("Boutique admin exposes the private restock dashboard without touching Menu", () => {
   assert.match(admin, /catalogZone === "shop"[\s\S]*?<RestockWaitlistAdmin/);
   assert.match(waitlist, /\.from\("restock_subscriptions"\)/);
-  assert.match(waitlist, /\.eq\("status", "active"\)/);
-  assert.match(waitlist, /Liste d’attente retour en stock/);
+  assert.match(waitlist, /useState<WaitlistStatus>\("active"\)/);
+  assert.match(waitlist, /\.eq\("status", activeTab\)/);
+  assert.match(waitlist, /Alertes retour en stock/);
   assert.match(css, /Ichigo Ichie V4\.25 — Restock waitlist/);
 });

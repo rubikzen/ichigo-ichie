@@ -52,11 +52,12 @@ test("admin product and variant stock saves trigger restock processing without c
   assert.match(catalog, /processRestock\(variant\.product_id\)/);
 });
 
-test("waitlist admin refreshes after automatic processing and no longer describes V426 as future work", () => {
+test("waitlist admin refreshes after automatic processing and exposes processed history", () => {
   assert.match(waitlist, /ichigo:restock-processed/);
-  assert.match(waitlist, /Les alertes sont envoyées automatiquement/);
+  assert.match(waitlist, /alertes déjà envoyées/);
+  assert.match(waitlist, /label: "Envoyées"/);
   assert.doesNotMatch(waitlist, /sera activé dans V426/);
-  assert.match(v425, /Liste d’attente retour en stock/);
+  assert.match(v425, /Alertes retour en stock/);
 });
 
 test("stock returned by cancellation refund or recovery also processes pending restock alerts", () => {
