@@ -405,6 +405,14 @@ const requiresChoice = selectableVariants.length > 1;
 
         {shortDescription && <p className="product-card-description" title={shortDescription}>{shortDescription}</p>}
 
+        <Link
+          className="product-permalink-v431"
+          href={`/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}`}
+        >
+          <span>{language === "fr" ? "Voir la page produit" : "View product page"}</span>
+          <span aria-hidden="true">→</span>
+        </Link>
+
         <div className="product-card-meta">
           {packagingLabels.length > 1 && <div className="product-card-chips" aria-label={language === "fr" ? "Conditionnements disponibles" : "Available packaging"}>
             {packagingLabels.map((label) => <span key={label}>{label}</span>)}
