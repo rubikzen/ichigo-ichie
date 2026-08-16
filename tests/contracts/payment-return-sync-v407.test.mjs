@@ -7,11 +7,11 @@ const root = process.cwd();
 const tracker = readFileSync(resolve(root, "src/components/OrderTracker.tsx"), "utf8");
 const css = readFileSync(resolve(root, "src/app/styles/globals-03.css"), "utf8");
 
-test("successful Stripe return gets a bounded synchronization grace window", () => {
-  assert.match(tracker, /const \[paymentSyncGraceExpired, setPaymentSyncGraceExpired\] = useState\(false\)/);
-  assert.match(tracker, /paymentReturn === "success" && !paymentConfirmed && !paymentSyncGraceExpired/);
-  assert.match(tracker, /window\.setTimeout\(\(\) => setPaymentSyncGraceExpired\(true\), 20_000\)/);
-  assert.match(tracker, /return \(\) => window\.clearTimeout\(timer\)/);
+test("successful Stripe return stays guarded while backend payment is still pending", () => {
+  assert.match(tracker, /const paymentSyncRequested = paymentReturn === "success" \|\| paymentSubmissionGuard/);
+  assert.match(tracker, /const paymentAwaitingConfirmation =[\s\S]*\["pending", "unpaid"\]\.includes\(order\.payment_status\)/);
+  assert.match(tracker, /paymentSyncRequested && Boolean\(paymentAwaitingConfirmation\)/);
+  assert.doesNotMatch(tracker, /setPaymentSyncGraceExpired/);
 });
 
 test("order polling accelerates only during the Stripe synchronization window", () => {

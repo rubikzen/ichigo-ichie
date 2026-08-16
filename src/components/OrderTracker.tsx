@@ -48,6 +48,36 @@ type PublicOrder = {
 };
 
 const steps = ["pending", "preparing", "ready", "completed"] as const;
+const PAYMENT_CONFIRMATION_MARKER_PREFIX = "ichigo:payment-confirming:";
+const PAYMENT_CONFIRMATION_MARKER_TTL_MS = 2 * 60_000;
+
+function paymentConfirmationMarkerKey(orderNumber: string) {
+  return `${PAYMENT_CONFIRMATION_MARKER_PREFIX}${orderNumber}`;
+}
+
+function readFreshPaymentConfirmationMarker(orderNumber: string) {
+  try {
+    const raw = window.sessionStorage.getItem(paymentConfirmationMarkerKey(orderNumber));
+    if (!raw) return null;
+    const startedAt = Number(raw);
+    if (!Number.isFinite(startedAt)) return null;
+    if (Date.now() - startedAt > PAYMENT_CONFIRMATION_MARKER_TTL_MS) {
+      window.sessionStorage.removeItem(paymentConfirmationMarkerKey(orderNumber));
+      return null;
+    }
+    return startedAt;
+  } catch {
+    return null;
+  }
+}
+
+function clearPaymentConfirmationMarker(orderNumber: string) {
+  try {
+    window.sessionStorage.removeItem(paymentConfirmationMarkerKey(orderNumber));
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
 
 export function OrderTracker({ token }: { token: string }) {
   const { language } = useLanguage();
@@ -60,7 +90,7 @@ export function OrderTracker({ token }: { token: string }) {
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancelled" | "">("");
   const [canceling, setCanceling] = useState(false);
   const [autoRetryRequested, setAutoRetryRequested] = useState(false);
-  const [paymentSyncGraceExpired, setPaymentSyncGraceExpired] = useState(false);
+  const [paymentSubmissionGuard, setPaymentSubmissionGuard] = useState(false);
   const autoRetryStarted = useRef(false);
   const cartClearedAfterPayment = useRef(false);
 
@@ -86,14 +116,13 @@ export function OrderTracker({ token }: { token: string }) {
   }, []);
 
   const paymentConfirmed = order?.payment_status === "paid" || order?.payment_status === "refunded";
-  const paymentSyncRefreshing = paymentReturn === "success" && !paymentConfirmed && !paymentSyncGraceExpired;
+  const paymentAwaitingConfirmation =
+    order?.payment_method === "online" &&
+    ["pending", "unpaid"].includes(order.payment_status);
+  const paymentSyncRequested = paymentReturn === "success" || paymentSubmissionGuard;
+  const paymentSyncRefreshing =
+    paymentSyncRequested && Boolean(paymentAwaitingConfirmation);
   const orderRefreshIntervalMs = paymentSyncRefreshing ? 2000 : 5000;
-
-  useEffect(() => {
-    if (paymentReturn !== "success" || paymentConfirmed) return;
-    const timer = window.setTimeout(() => setPaymentSyncGraceExpired(true), 20_000);
-    return () => window.clearTimeout(timer);
-  }, [paymentReturn, paymentConfirmed]);
 
   useEffect(() => {
   if (paymentReturn !== "success" || !paymentConfirmed) return;
@@ -111,7 +140,22 @@ export function OrderTracker({ token }: { token: string }) {
         const response = await fetch(`/api/orders/${encodeURIComponent(token)}`, { cache: "no-store" });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Order not found");
-        if (active) { setOrder(data); setError(""); setLoading(false); }
+        if (active) {
+          setOrder(data);
+          const paymentStillAwaitingConfirmation =
+            data.payment_method === "online" && ["pending", "unpaid"].includes(data.payment_status);
+          const markerStartedAt = readFreshPaymentConfirmationMarker(data.order_number);
+          if (paymentStillAwaitingConfirmation && markerStartedAt) {
+            setPaymentSubmissionGuard(true);
+          } else {
+            if (!paymentStillAwaitingConfirmation) {
+              clearPaymentConfirmationMarker(data.order_number);
+            }
+            setPaymentSubmissionGuard(false);
+          }
+          setError("");
+          setLoading(false);
+        }
       } catch (err) {
         if (active) { setError(err instanceof Error ? err.message : "Order not found"); setLoading(false); }
       }

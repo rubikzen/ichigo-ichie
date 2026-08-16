@@ -87,6 +87,33 @@ test("unpaid order offers pay now and cancel", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("fresh Stripe confirmation hides duplicate pay and cancel actions", async ({ page }) => {
+  await mockPendingOrder(page);
+  await page.addInitScript(
+    ({ orderNumber }) => {
+      window.sessionStorage.setItem(
+        `ichigo:payment-confirming:${orderNumber}`,
+        String(Date.now()),
+      );
+    },
+    { orderNumber: pendingOrder.order_number },
+  );
+
+  await page.goto(`/commande/${token}`, { waitUntil: "domcontentloaded" });
+
+  await expect(
+    page.getByText(/confirmation stripe en cours|stripe confirmation in progress/i),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole("button", { name: /payer maintenant|pay now/i }),
+  ).toHaveCount(0);
+
+  await expect(
+    page.getByRole("button", { name: /annuler la commande|cancel order/i }),
+  ).toHaveCount(0);
+});
+
 test("pay now calls retry payment API", async ({ page }) => {
   await mockPendingOrder(page);
 

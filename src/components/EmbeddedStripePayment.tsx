@@ -11,6 +11,27 @@ import {
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || "";
 const stripePromise = publishableKey ? loadStripe(publishableKey) : Promise.resolve(null);
+const PAYMENT_CONFIRMATION_MARKER_PREFIX = "ichigo:payment-confirming:";
+
+function paymentConfirmationMarkerKey(orderNumber: string) {
+  return `${PAYMENT_CONFIRMATION_MARKER_PREFIX}${orderNumber}`;
+}
+
+function markPaymentConfirmationStarted(orderNumber: string) {
+  try {
+    window.sessionStorage.setItem(paymentConfirmationMarkerKey(orderNumber), String(Date.now()));
+  } catch {
+    // UX-only marker: payment never depends on browser storage.
+  }
+}
+
+function clearPaymentConfirmationMarker(orderNumber: string) {
+  try {
+    window.sessionStorage.removeItem(paymentConfirmationMarkerKey(orderNumber));
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
 
 type EmbeddedStripePaymentProps = {
   clientSecret: string;
@@ -47,15 +68,18 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
     if (submitting) return;
     setSubmitting(true);
     setPaymentError("");
+    markPaymentConfirmationStarted(orderNumber);
     try {
       const result = await checkout.confirm();
       if (result.type === "error") {
+        clearPaymentConfirmationMarker(orderNumber);
         setPaymentError(result.error.message || (language === "fr" ? "Le paiement n’a pas pu être confirmé." : "The payment could not be confirmed."));
         setSubmitting(false);
       }
       // On success Stripe completes the flow and follows the return_url of the
       // Checkout Session. Keep the button disabled while that transition occurs.
     } catch (error) {
+      clearPaymentConfirmationMarker(orderNumber);
       setPaymentError(error instanceof Error ? error.message : (language === "fr" ? "Erreur de paiement." : "Payment error."));
       setSubmitting(false);
     }
@@ -65,15 +89,18 @@ function PaymentContents({ total, language, orderNumber }: Omit<EmbeddedStripePa
     if (submitting) return;
     setSubmitting(true);
     setPaymentError("");
+    markPaymentConfirmationStarted(orderNumber);
     try {
       const result = await checkout.confirm({
         expressCheckoutConfirmEvent: event,
       });
       if (result.type === "error") {
+        clearPaymentConfirmationMarker(orderNumber);
         setPaymentError(result.error.message || (language === "fr" ? "Le paiement express n’a pas pu être confirmé." : "Express payment could not be confirmed."));
         setSubmitting(false);
       }
     } catch (error) {
+      clearPaymentConfirmationMarker(orderNumber);
       setPaymentError(error instanceof Error ? error.message : (language === "fr" ? "Erreur de paiement express." : "Express payment error."));
       setSubmitting(false);
     }
