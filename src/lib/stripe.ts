@@ -255,7 +255,7 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
   }
 
   const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
-  await supabase.from("orders").update({
+  const { error: paidUpdateError } = await supabase.from("orders").update({
     payment_method: "online",
     payment_status: "paid",
     paid_at: new Date().toISOString(),
@@ -263,6 +263,7 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
     stripe_payment_intent_id: paymentIntentId,
     payment_expires_at: null,
   }).eq("id", orderId).neq("payment_status", "refunded").neq("payment_status", "refund_pending");
+  if (paidUpdateError) throw paidUpdateError;
   const { error: promoCommitError } = await supabase.rpc("commit_order_promo", { p_order_id: orderId });
   if (promoCommitError) console.error("Promo commit error", promoCommitError);
   // Customer lifecycle: send one confirmation e-mail, then issue the

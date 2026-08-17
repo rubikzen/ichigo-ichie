@@ -14,10 +14,12 @@ test("successful Stripe return stays guarded while backend payment is still pend
   assert.doesNotMatch(tracker, /setPaymentSyncGraceExpired/);
 });
 
-test("order polling accelerates only during the Stripe synchronization window", () => {
+test("order polling accelerates during Stripe synchronization and can reconcile the return", () => {
   assert.match(tracker, /const orderRefreshIntervalMs = paymentSyncRefreshing \? 2000 : 5000/);
   assert.match(tracker, /window\.setInterval\(load, orderRefreshIntervalMs\)/);
-  assert.match(tracker, /\[token, orderRefreshIntervalMs\]/);
+  assert.match(tracker, /fetch\("\/api\/stripe\/sync"/);
+  assert.match(tracker, /paymentReturnSessionId/);
+  assert.match(tracker, /paymentSyncRequested/);
 });
 
 test("pending webhook synchronization never offers duplicate pay or cancel actions immediately", () => {

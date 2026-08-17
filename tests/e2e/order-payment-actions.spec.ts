@@ -114,6 +114,55 @@ test("fresh Stripe confirmation hides duplicate pay and cancel actions", async (
   ).toHaveCount(0);
 });
 
+test("successful Stripe return reconciles its Checkout Session before staying pending", async ({ page }) => {
+  let reconciled = false;
+  let syncBody: Record<string, unknown> | null = null;
+
+  await page.route(`**/api/orders/${token}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...pendingOrder,
+        payment_status: reconciled ? "paid" : "pending",
+      }),
+    });
+  });
+
+  await page.route("**/api/stripe/sync", async (route) => {
+    syncBody = route.request().postDataJSON() as Record<string, unknown>;
+    reconciled = true;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        changed: true,
+        paid: true,
+        paymentStatus: "paid",
+      }),
+    });
+  });
+
+  await page.goto(
+    `/commande/${token}?payment=success&session_id=cs_test_v436return`,
+    { waitUntil: "domcontentloaded" },
+  );
+
+  await expect.poll(() => syncBody).not.toBeNull();
+  expect(syncBody).toMatchObject({
+    publicToken: token,
+    sessionId: "cs_test_v436return",
+  });
+
+  await expect(
+    page.getByText(/^(paiement confirmé|payment confirmed)$/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/confirmation stripe en cours|stripe confirmation in progress/i),
+  ).toHaveCount(0);
+});
+
 test("pay now calls retry payment API", async ({ page }) => {
   await mockPendingOrder(page);
 

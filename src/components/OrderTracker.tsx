@@ -88,11 +88,13 @@ export function OrderTracker({ token }: { token: string }) {
   const [retrying, setRetrying] = useState(false);
   const [retryPaymentSession, setRetryPaymentSession] = useState<{ clientSecret: string; orderNumber: string; total: number; trackingUrl?: string | null } | null>(null);
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancelled" | "">("");
+  const [paymentReturnSessionId, setPaymentReturnSessionId] = useState("");
   const [canceling, setCanceling] = useState(false);
   const [autoRetryRequested, setAutoRetryRequested] = useState(false);
   const [paymentSubmissionGuard, setPaymentSubmissionGuard] = useState(false);
   const autoRetryStarted = useRef(false);
   const cartClearedAfterPayment = useRef(false);
+  const stripeSyncLastAttempt = useRef(0);
 
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
 
@@ -100,7 +102,9 @@ export function OrderTracker({ token }: { token: string }) {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      const state = new URLSearchParams(window.location.search).get("payment");
+      const params = new URLSearchParams(window.location.search);
+      const state = params.get("payment");
+      const sessionId = params.get("session_id")?.trim() || "";
 
       if (state === "retry") {
         setAutoRetryRequested(true);
@@ -109,6 +113,9 @@ export function OrderTracker({ token }: { token: string }) {
       }
 
       if (state !== "success" && state !== "cancelled") return;
+      if (state === "success" && sessionId) {
+        setPaymentReturnSessionId(sessionId);
+      }
       setPaymentReturn(state);
       window.history.replaceState(window.history.state, "", window.location.pathname);
     });
@@ -135,16 +142,63 @@ export function OrderTracker({ token }: { token: string }) {
 
   useEffect(() => {
     let active = true;
+
+    async function loadPublicOrder() {
+      const response = await fetch(`/api/orders/${encodeURIComponent(token)}`, {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Order not found");
+      return data;
+    }
+
+    async function reconcileStripeIfNeeded(data: PublicOrder) {
+      const awaitingStripe =
+        data.payment_method === "online" &&
+        ["pending", "unpaid"].includes(data.payment_status);
+      if (!awaitingStripe) return false;
+
+      const now = Date.now();
+      const urgentReturnSync = paymentSyncRequested;
+      if (!urgentReturnSync && now - stripeSyncLastAttempt.current < 15_000) {
+        return false;
+      }
+      stripeSyncLastAttempt.current = now;
+
+      try {
+        const response = await fetch("/api/stripe/sync", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            publicToken: token,
+            ...(paymentReturnSessionId
+              ? { sessionId: paymentReturnSessionId }
+              : {}),
+          }),
+        });
+        if (!response.ok) return false;
+        const result = await response.json();
+        return Boolean(result.changed);
+      } catch {
+        return false;
+      }
+    }
+
     async function load() {
       try {
-        const response = await fetch(`/api/orders/${encodeURIComponent(token)}`, { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Order not found");
+        let data = await loadPublicOrder();
+        if (await reconcileStripeIfNeeded(data)) {
+          data = await loadPublicOrder();
+        }
+
         if (active) {
           setOrder(data);
           const paymentStillAwaitingConfirmation =
-            data.payment_method === "online" && ["pending", "unpaid"].includes(data.payment_status);
-          const markerStartedAt = readFreshPaymentConfirmationMarker(data.order_number);
+            data.payment_method === "online" &&
+            ["pending", "unpaid"].includes(data.payment_status);
+          const markerStartedAt = readFreshPaymentConfirmationMarker(
+            data.order_number,
+          );
           if (paymentStillAwaitingConfirmation && markerStartedAt) {
             setPaymentSubmissionGuard(true);
           } else {
@@ -157,13 +211,25 @@ export function OrderTracker({ token }: { token: string }) {
           setLoading(false);
         }
       } catch (err) {
-        if (active) { setError(err instanceof Error ? err.message : "Order not found"); setLoading(false); }
+        if (active) {
+          setError(err instanceof Error ? err.message : "Order not found");
+          setLoading(false);
+        }
       }
     }
+
     load();
     const timer = window.setInterval(load, orderRefreshIntervalMs);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [token, orderRefreshIntervalMs]);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [
+    token,
+    orderRefreshIntervalMs,
+    paymentSyncRequested,
+    paymentReturnSessionId,
+  ]);
 
   async function retryPayment() {
     setRetrying(true); setError("");
