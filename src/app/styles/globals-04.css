@@ -5057,3 +5057,41 @@
   .order-priority-v438 { min-height: 48px; }
 }
 
+/* Ichigo Ichie V4.39 — Smart operational queue */
+.order-smart-queue-v439 {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  margin: -2px 0 14px;
+  padding: 9px 12px;
+  border: 1px solid #dde4dc;
+  border-radius: 13px;
+  background: #f7f9f5;
+  color: #657068;
+}
+
+.order-smart-queue-v439 strong {
+  flex: 0 0 auto;
+  color: var(--ink,#244336);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.order-smart-queue-v439 span {
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .order-smart-queue-v439 {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 12px;
+  }
+}
+

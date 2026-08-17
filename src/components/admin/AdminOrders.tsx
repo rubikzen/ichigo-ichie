@@ -582,6 +582,41 @@ function orderAwaitingPayment(order: OrderRow) {
     };
   }
 
+  function orderOperationalRank(order: OrderRow) {
+    const priority = orderPriorityMeta(order);
+
+    if (priority.tone === "alert") return 0;
+    if (orderReadyForProduction(order) && order.status === "ready") return 1;
+    if (orderReadyForProduction(order) && order.status === "preparing") return 2;
+    if (orderReadyForProduction(order) && order.status === "pending") return 3;
+    if (priority.tone === "waiting") return 4;
+    if (priority.tone === "done") return 5;
+
+    return 6;
+  }
+
+  function compareOperationalOrders(a: OrderRow, b: OrderRow) {
+    const rankDifference =
+      orderOperationalRank(a) - orderOperationalRank(b);
+
+    if (rankDifference !== 0) return rankDifference;
+
+    const aCreatedAt = Date.parse(a.created_at);
+    const bCreatedAt = Date.parse(b.created_at);
+    const safeACreatedAt = Number.isFinite(aCreatedAt)
+      ? aCreatedAt
+      : Number.MAX_SAFE_INTEGER;
+    const safeBCreatedAt = Number.isFinite(bCreatedAt)
+      ? bCreatedAt
+      : Number.MAX_SAFE_INTEGER;
+
+    if (safeACreatedAt !== safeBCreatedAt) {
+      return safeACreatedAt - safeBCreatedAt;
+    }
+
+    return a.order_number.localeCompare(b.order_number, "fr");
+  }
+
 function selectOrderEnvironment(environment: "live" | "test" | "all") {
     setOrderEnvironmentFilter(environment);
     // Changing environment should immediately reveal all orders in that environment.
@@ -631,6 +666,25 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     (!search || haystack.includes(search))
   );
 });
+
+  const smartQueueEnabled = [
+    "active",
+    "all",
+    "payment",
+    "pending",
+    "preparing",
+    "ready",
+  ].includes(orderFilter);
+
+  const visibleOrders = smartQueueEnabled
+    ? [...filteredOrders].sort(compareOperationalOrders)
+    : filteredOrders;
+
+  const smartQueueMessage = ["pending", "preparing", "ready"].includes(
+    orderFilter
+  )
+    ? "Dans cette étape, les commandes les plus anciennes passent d’abord."
+    : "Alertes → prêtes → préparation → nouvelles → attente. À priorité égale, les plus anciennes passent d’abord.";
 
   return (
 <div className="orders-admin orders-v214 orders-v227">
@@ -702,7 +756,13 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
   </button>
 </div>
       <div className="order-toolbar"><div className="order-filters">{[["active","Actives"],["pending","Nouvelles"],["preparing","Préparation"],["ready","Prêtes"],["payment",`Paiements (${orderStats.payment})`],["completed","Terminées / expédiées"],["cancelled","Annulées"],["refunded","Remboursées"],["all","Toutes"]].map(([value,label]) => <button key={value} className={orderFilter === value ? "active" : ""} onClick={() => setOrderFilter(value)}>{label}</button>)}</div><input className="order-search" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="N° commande, nom, téléphone, ville…" /></div>
-      {filteredOrders.length ? <div className="order-grid">{filteredOrders.map((order) => {
+      {smartQueueEnabled && (
+        <div className="order-smart-queue-v439">
+          <strong>Priorité automatique</strong>
+          <span>{smartQueueMessage}</span>
+        </div>
+      )}
+      {visibleOrders.length ? <div className="order-grid">{visibleOrders.map((order) => {
         const paymentBlocked =
           !["cancelled", "refunded"].includes(order.status) &&
           order.payment_method === "online" &&
