@@ -4981,3 +4981,79 @@
   .pickup-admin-timeline-step-v437 { min-height: 58px; }
 }
 
+/* Ichigo Ichie V4.38 — Admin order card priority */
+.order-card.admin-priority-action-v438,
+.order-card.admin-priority-waiting-v438,
+.order-card.admin-priority-alert-v438,
+.order-card.admin-priority-done-v438 {
+  position: relative;
+}
+.order-card.admin-priority-action-v438 { box-shadow: inset 4px 0 0 #66836b; }
+.order-card.admin-priority-waiting-v438 { box-shadow: inset 4px 0 0 #c49a4b; }
+.order-card.admin-priority-alert-v438 { box-shadow: inset 4px 0 0 #b65e50; }
+.order-card.admin-priority-done-v438 { box-shadow: inset 4px 0 0 #aab2ac; }
+
+.order-compact-summary-v248 > div:first-child { flex: 1 1 auto; }
+
+.order-compact-summary-v248 > .order-priority-v438 {
+  flex: 0 1 270px;
+  min-width: 190px;
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid #e1e5df;
+  border-radius: 13px;
+  background: #f7f8f5;
+}
+.order-priority-v438 > span {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.2;
+}
+.order-priority-v438 > small {
+  color: #667169;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.order-priority-v438.action {
+  border-color: #cad9ca;
+  background: #f1f7ef;
+}
+.order-priority-v438.action > span { color: #3f6749; }
+
+.order-priority-v438.waiting {
+  border-color: #e4d4ac;
+  background: #fff9ec;
+}
+.order-priority-v438.waiting > span { color: #866522; }
+
+.order-priority-v438.alert {
+  border-color: #e4c5be;
+  background: #fff4f1;
+}
+.order-priority-v438.alert > span,
+.order-priority-v438.alert > small { color: #944c40; }
+
+.order-priority-v438.done {
+  border-color: #dfe3df;
+  background: #f6f7f5;
+}
+.order-priority-v438.done > span,
+.order-priority-v438.neutral > span { color: #69736d; }
+
+@media (max-width: 920px) {
+  .order-compact-summary-v248 > .order-priority-v438 {
+    flex-basis: 230px;
+    min-width: 170px;
+  }
+}
+@media (max-width: 720px) {
+  .order-compact-summary-v248 > .order-priority-v438 {
+    width: 100%;
+    min-width: 0;
+  }
+  .order-priority-v438 { min-height: 48px; }
+}
+

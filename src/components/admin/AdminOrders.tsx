@@ -432,6 +432,156 @@ function orderAwaitingPayment(order: OrderRow) {
     return order.payment_method !== "online" || order.payment_status === "paid";
   }
 
+  function orderPriorityMeta(order: OrderRow) {
+    if (order.payment_status === "refund_failed") {
+      return {
+        tone: "alert",
+        label: "À VÉRIFIER",
+        detail: "Remboursement Stripe en échec",
+      };
+    }
+
+    if (order.payment_status === "refund_pending") {
+      return {
+        tone: "waiting",
+        label: "STRIPE EN COURS",
+        detail: "Remboursement en traitement",
+      };
+    }
+
+    if (order.status === "refunded" || order.payment_status === "refunded") {
+      return {
+        tone: "done",
+        label: "REMBOURSÉE",
+        detail: "Commande clôturée",
+      };
+    }
+
+    if (order.status === "cancelled") {
+      return {
+        tone: "done",
+        label: "ANNULÉE",
+        detail: "Hors du flux de production",
+      };
+    }
+
+    if (order.payment_method === "online" && order.payment_status === "failed") {
+      return {
+        tone: "alert",
+        label: "PAIEMENT ÉCHOUÉ",
+        detail: "Le client doit relancer le paiement",
+      };
+    }
+
+    if (order.payment_method === "online" && order.payment_status === "expired") {
+      return {
+        tone: "alert",
+        label: "PAIEMENT EXPIRÉ",
+        detail: "Le client doit relancer le paiement",
+      };
+    }
+
+    if (orderAwaitingPayment(order) || !orderReadyForProduction(order)) {
+      return {
+        tone: "waiting",
+        label: "EN ATTENTE",
+        detail: "Paiement Stripe à confirmer",
+      };
+    }
+
+    if (
+      order.customer_email &&
+      order.order_type === "pickup" &&
+      ["ready", "completed"].includes(order.status) &&
+      !order.pickup_ready_email_sent_at
+    ) {
+      return {
+        tone: "alert",
+        label: "E-MAIL À VÉRIFIER",
+        detail: "Notification « prête au retrait » non confirmée",
+      };
+    }
+
+    if (
+      order.customer_email &&
+      order.order_type === "pickup" &&
+      order.status === "completed" &&
+      !order.pickup_completed_email_sent_at
+    ) {
+      return {
+        tone: "alert",
+        label: "E-MAIL À VÉRIFIER",
+        detail: "E-mail de fin de retrait non confirmé",
+      };
+    }
+
+    if (
+      order.customer_email &&
+      order.order_type === "shipping" &&
+      order.status === "completed" &&
+      order.tracking_number &&
+      !order.shipping_email_sent_at
+    ) {
+      return {
+        tone: "alert",
+        label: "E-MAIL À VÉRIFIER",
+        detail: "Notification d’expédition non confirmée",
+      };
+    }
+
+    if (order.status === "pending") {
+      return {
+        tone: "action",
+        label: "À PRÉPARER",
+        detail:
+          order.order_type === "shipping"
+            ? "Démarrer la préparation du colis"
+            : "Démarrer la préparation",
+      };
+    }
+
+    if (order.status === "preparing") {
+      return {
+        tone: "action",
+        label: "À CONTINUER",
+        detail:
+          order.order_type === "shipping"
+            ? "Passer à « Colis prêt »"
+            : "Passer à « Prête »",
+      };
+    }
+
+    if (order.status === "ready") {
+      return order.order_type === "shipping"
+        ? {
+            tone: "action",
+            label: "À EXPÉDIER",
+            detail: order.tracking_number
+              ? "Suivi enregistré · marquer expédiée"
+              : "Ajouter le suivi puis expédier",
+          }
+        : {
+            tone: "action",
+            label: "À REMETTRE",
+            detail: "Commande prête pour le client",
+          };
+    }
+
+    if (order.status === "completed") {
+      return {
+        tone: "done",
+        label: order.order_type === "shipping" ? "EXPÉDIÉE" : "REMISE",
+        detail: "Flux terminé",
+      };
+    }
+
+    return {
+      tone: "neutral",
+      label: "SUIVI",
+      detail: "Consulter les détails",
+    };
+  }
+
 function selectOrderEnvironment(environment: "live" | "test" | "all") {
     setOrderEnvironmentFilter(environment);
     // Changing environment should immediately reveal all orders in that environment.
@@ -557,6 +707,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           !["cancelled", "refunded"].includes(order.status) &&
           order.payment_method === "online" &&
           order.payment_status !== "paid";
+        const orderPriority = orderPriorityMeta(order);
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
         const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
         const invoiceDoc = order.invoices?.find((doc) => doc.document_type === "invoice");
@@ -675,7 +826,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
                   ? "Retrait terminé."
                   : "";
 
-        return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
+        return <article className={`order-card status-${order.status} channel-shop admin-priority-${orderPriority.tone}-v438 ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
   <div>
     <strong>
       {order.customer_first_name} {order.customer_last_name}
@@ -696,6 +847,14 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
             })}`
           : "Retrait boutique"}
     </span>
+  </div>
+
+  <div
+    className={`order-priority-v438 ${orderPriority.tone}`}
+    aria-label={`${orderPriority.label} : ${orderPriority.detail}`}
+  >
+    <span>{orderPriority.label}</span>
+    <small>{orderPriority.detail}</small>
   </div>
 
   <button
