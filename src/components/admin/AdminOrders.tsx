@@ -518,7 +518,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     />
   )}
 </div>
-      <div className="production-order-note-v227"><strong>Flux production</strong><span>Paiement confirmé → préparation → suivi colis → expédition. Les paiements non confirmés restent hors production. Une commande Stripe payée ne peut plus être simplement annulée : utilisez le remboursement Stripe.</span></div>
+      <div className="production-order-note-v227"><strong>Flux production</strong><span>Retrait : paiement confirmé → préparation → prête → remise. Livraison : paiement confirmé → préparation → suivi colis → expédition. Les paiements non confirmés restent hors production.</span></div>
       <div className="order-kpis"><button className={orderFilter === "active" ? "active" : ""} onClick={() => setOrderFilter("active")}><span>À traiter</span><strong>{orderStats.active}</strong></button><button className={orderFilter === "pending" ? "active" : ""} onClick={() => setOrderFilter("pending")}><span>Nouvelles</span><strong>{orderStats.pending}</strong></button><button className={orderFilter === "preparing" ? "active" : ""} onClick={() => setOrderFilter("preparing")}><span>En préparation</span><strong>{orderStats.preparing}</strong></button><button className={orderFilter === "ready" ? "active" : ""} onClick={() => setOrderFilter("ready")}><span>Prêtes</span><strong>{orderStats.ready}</strong></button></div>
       <div className="order-environment-switch order-environment-switch-v351">
   <button
@@ -580,6 +580,101 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           pickupReadyEmailEligible ||
           pickupCompletedEmailEligible ||
           Boolean(creditNoteDoc);
+        const pickupStatusRank =
+          order.status === "completed"
+            ? 3
+            : order.status === "ready"
+              ? 2
+              : order.status === "preparing"
+                ? 1
+                : order.status === "pending"
+                  ? 0
+                  : -1;
+
+        const pickupFlowActive =
+          order.order_type === "pickup" &&
+          !["cancelled", "refunded"].includes(order.status);
+
+        const pickupFlowReady = orderReadyForProduction(order);
+
+        const pickupTimeline = pickupFlowActive
+          ? [
+              {
+                key: "confirmed",
+                label: "Confirmée",
+                state: !pickupFlowReady
+                  ? "blocked"
+                  : pickupStatusRank === 0
+                    ? "current"
+                    : "done",
+                detail: !pickupFlowReady
+                  ? "Paiement Stripe en attente"
+                  : order.confirmation_email_sent_at
+                    ? emailStatusText(order.confirmation_email_sent_at)
+                    : "Commande enregistrée",
+                attention: false,
+              },
+              {
+                key: "preparing",
+                label: "En préparation",
+                state:
+                  pickupStatusRank < 1
+                    ? "upcoming"
+                    : pickupStatusRank === 1
+                      ? "current"
+                      : "done",
+                detail:
+                  pickupStatusRank < 1
+                    ? "À faire"
+                    : "Étape interne · aucun e-mail client",
+                attention: false,
+              },
+              {
+                key: "ready",
+                label: "Prête",
+                state:
+                  pickupStatusRank < 2
+                    ? "upcoming"
+                    : pickupStatusRank === 2
+                      ? "current"
+                      : "done",
+                detail:
+                  pickupStatusRank < 2
+                    ? "L’e-mail de retrait sera envoyé à cette étape"
+                    : order.pickup_ready_email_sent_at
+                      ? emailStatusText(order.pickup_ready_email_sent_at)
+                      : "E-mail « prête à retirer » à vérifier",
+                attention:
+                  pickupStatusRank >= 2 && !order.pickup_ready_email_sent_at,
+              },
+              {
+                key: "completed",
+                label: "Remise",
+                state: pickupStatusRank < 3 ? "upcoming" : "done",
+                detail:
+                  pickupStatusRank < 3
+                    ? "L’e-mail final sera envoyé à la remise"
+                    : order.pickup_completed_email_sent_at
+                      ? emailStatusText(order.pickup_completed_email_sent_at)
+                      : "E-mail de fin de retrait à vérifier",
+                attention:
+                  pickupStatusRank >= 3 && !order.pickup_completed_email_sent_at,
+              },
+            ]
+          : [];
+
+        const pickupNextAction = !pickupFlowReady
+          ? "Attendre la confirmation du paiement avant préparation."
+          : order.status === "pending"
+            ? "Prochaine action : préparer la commande."
+            : order.status === "preparing"
+              ? "Prochaine action : passer à Prête — l’e-mail de retrait sera envoyé."
+              : order.status === "ready"
+                ? "Prochaine action : confirmer Remise — l’e-mail final sera envoyé."
+                : order.status === "completed"
+                  ? "Retrait terminé."
+                  : "";
+
         return <article className={`order-card status-${order.status} channel-shop ${order.status === "pending" ? "is-new" : ""}`} key={order.id}><div className="order-compact-summary-v248">
   <div>
     <strong>
@@ -798,6 +893,38 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     </div>
   </>
 )}
+          {pickupFlowActive && (
+            <section
+              className="pickup-admin-timeline-v437"
+              aria-label={`Parcours retrait ${order.order_number}`}
+            >
+              <div className="pickup-admin-timeline-head-v437">
+                <div>
+                  <span>RETRAIT BOUTIQUE</span>
+                  <strong>Parcours de la commande</strong>
+                </div>
+                <small>{pickupNextAction}</small>
+              </div>
+
+              <ol className="pickup-admin-timeline-list-v437">
+                {pickupTimeline.map((step, index) => (
+                  <li
+                    key={step.key}
+                    className={`pickup-admin-timeline-step-v437 ${step.state}${step.attention ? " attention" : ""}`}
+                  >
+                    <span className="pickup-admin-timeline-dot-v437" aria-hidden="true">
+                      {step.state === "done" ? "✓" : index + 1}
+                    </span>
+                    <div>
+                      <strong>{step.label}</strong>
+                      <small>{step.detail}</small>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           {showEmailRecovery && (
             <div className="order-email-recovery-v373">
               <div className="order-email-recovery-head-v373">
