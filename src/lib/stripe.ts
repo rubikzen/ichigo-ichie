@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendMerchantOrderNotification, sendOrderEmail } from "@/lib/order-email";
+import { sendMerchantOrderNotification, sendOrderEmail, sendPickupStaffOrderNotification } from "@/lib/order-email";
 import { ensureInvoiceForOrder } from "@/lib/invoice";
 
 let stripeClient: Stripe | null | undefined;
@@ -275,6 +275,8 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
   catch (invoiceError) { console.error("Automatic invoice issue error", invoiceError); }
   try { await sendMerchantOrderNotification(supabase, orderId); }
   catch (merchantEmailError) { console.error("Merchant order notification email error", merchantEmailError); }
+  try { await sendPickupStaffOrderNotification(supabase, orderId); }
+  catch (staffEmailError) { console.error("Pickup staff order notification email error", staffEmailError); }
 }
 
 export async function markStripeOrderUnpaid(

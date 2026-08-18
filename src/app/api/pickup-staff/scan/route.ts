@@ -95,6 +95,11 @@ export async function POST(request: Request) {
       {
         orderNumber: order.order_number,
         state,
+        workflowStatus: canRevealPickupDetails ? order.status : undefined,
+        canPrepare:
+          order.payment_status === "paid" && order.status === "pending",
+        canMarkReady:
+          order.payment_status === "paid" && order.status === "preparing",
         canHandoff: state === "ready",
         customerName,
         items,

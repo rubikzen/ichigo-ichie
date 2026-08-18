@@ -3,7 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase/admin";
 import { OrderValidationError, resolveCart, type PayloadItem } from "@/lib/order-calculation";
 import { getPackagingWeightG, getShippingQuotes, requireShippingQuote } from "@/lib/shipping";
 import { assertMinimumOnlinePayment, createOrReuseStripeCheckout, MinimumOnlinePaymentError } from "@/lib/stripe";
-import { sendOrderEmail, sendMerchantOrderNotification } from "@/lib/order-email";
+import { sendOrderEmail, sendMerchantOrderNotification, sendPickupStaffOrderNotification } from "@/lib/order-email";
 import { PromoCodeError, resolvePromoCode } from "@/lib/promo";
 import { assertInvoiceReadyForProducts, ensureInvoiceForOrder } from "@/lib/invoice";
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
@@ -389,6 +389,8 @@ export async function POST(request: Request) {
       }
       try { await sendMerchantOrderNotification(supabase, order.id); }
       catch (merchantEmailError) { console.error("Merchant order notification email error", merchantEmailError); }
+      try { await sendPickupStaffOrderNotification(supabase, order.id); }
+      catch (staffEmailError) { console.error("Pickup staff order notification email error", staffEmailError); }
       return NextResponse.json({
         orderNumber: number, publicToken: order.public_token, total, subtotal: cart.subtotal,
         promoCode: promo?.code ?? null, discountAmount, pickupTime: pickupTime?.toISOString() ?? null,

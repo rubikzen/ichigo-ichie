@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
+import { createPickupQrPayload } from "@/lib/pickup-qr";
 
 type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation" | "pickup_ready" | "pickup_completed";
 
@@ -41,6 +42,7 @@ async function loadOrder(supabase: SupabaseClient, orderId: string) {
     shipping_address1,shipping_address2,shipping_postal_code,shipping_city,shipping_country,
     package_weight_g,tracking_carrier,tracking_number,tracking_url,
     confirmation_email_sent_at,shipping_email_sent_at,refund_email_sent_at,merchant_notification_sent_at,
+    pickup_staff_notification_sent_at,
     pickup_preparing_email_sent_at,pickup_ready_email_sent_at,pickup_completed_email_sent_at,
     order_items(id,product_name,quantity,unit_price,line_total,choices)
   `).eq("id", orderId).single();
@@ -332,4 +334,127 @@ export async function sendMerchantOrderNotification(supabase: SupabaseClient, or
     .eq("id", order.id)
     .is("merchant_notification_sent_at", null);
   return { skipped: false };
+}
+
+
+async function pickupStaffRecipients(supabase: SupabaseClient) {
+  const { data: rows, error } = await supabase
+    .from("pickup_staff")
+    .select("user_id")
+    .limit(20);
+  if (error) throw error;
+
+  const recipients = await Promise.all(
+    (rows ?? []).map(async (row: { user_id: string }) => {
+      const { data, error: userError } =
+        await supabase.auth.admin.getUserById(row.user_id);
+      if (userError) {
+        console.error("Pickup staff recipient lookup error", userError);
+        return null;
+      }
+      const email = String(data.user?.email || "").trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(email)) return null;
+      return { userId: row.user_id, email };
+    })
+  );
+
+  return recipients.filter(
+    (recipient): recipient is { userId: string; email: string } =>
+      Boolean(recipient)
+  );
+}
+
+function pickupStaffOrderLines(order: any) {
+  return (order.order_items ?? [])
+    .map((item: any) => {
+      const choices = Array.isArray(item.choices)
+        ? item.choices
+            .map((choice: any) =>
+              choice?.label || choice?.valueName || choice?.value_name
+            )
+            .filter(Boolean)
+            .join(" · ")
+        : "";
+      return `<div style="padding:11px 0;border-bottom:1px solid #e7e2d8">
+        <strong>${escapeHtml(item.quantity)} × ${escapeHtml(
+          normalizeLegacyProductLabel(item.product_name, "fr")
+        )}</strong>
+        ${choices ? `<div style="font-size:12px;color:#68756d;margin-top:4px">${escapeHtml(choices)}</div>` : ""}
+      </div>`;
+    })
+    .join("");
+}
+
+/** Scanner-only employee alert for a paid pickup order. */
+export async function sendPickupStaffOrderNotification(
+  supabase: SupabaseClient,
+  orderId: string
+) {
+  const order = await loadOrder(supabase, orderId);
+  if (order.order_type !== "pickup" || order.payment_status !== "paid") {
+    return { skipped: true as const, reason: "not_paid_pickup" as const };
+  }
+  if (order.pickup_staff_notification_sent_at) {
+    return { skipped: true as const, reason: "already_sent" as const };
+  }
+
+  const recipients = await pickupStaffRecipients(supabase);
+  if (!recipients.length) {
+    return { skipped: true as const, reason: "missing_recipient" as const };
+  }
+
+  const settings = await loadSettings(supabase);
+  const brand = settings.brand_name || "ICHIGO ICHIE";
+  const customerName =
+    [order.customer_first_name, order.customer_last_name]
+      .filter(Boolean)
+      .join(" ") || "Client";
+  const pickupSlot = order.pickup_time
+    ? new Date(order.pickup_time).toLocaleString("fr-FR", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "Dès que possible";
+  const pickupPayload = createPickupQrPayload(order.id);
+  const staffUrl = `${siteOrigin()}/retrait?pickup=${encodeURIComponent(
+    pickupPayload
+  )}`;
+
+  const html = shell(
+    brand,
+    "Nouveau retrait à préparer",
+    `${order.order_number} · ${customerName}`,
+    `
+      <div style="background:#edf4e9;border-radius:16px;padding:18px;margin:20px 0;line-height:1.55">
+        <strong>Retrait boutique</strong>
+        <div style="margin-top:6px">${escapeHtml(pickupSlot)}</div>
+      </div>
+      <div style="margin:18px 0">
+        <strong>Articles à préparer</strong>
+        <div style="margin-top:6px">${pickupStaffOrderLines(order)}</div>
+      </div>
+      <p style="margin-top:24px"><a href="${escapeHtml(staffUrl)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:13px 18px;border-radius:999px;font-weight:700">Ouvrir le retrait</a></p>
+      <p style="font-size:12px;color:#68756d;line-height:1.5">Ce lien ouvre uniquement cette commande dans l’espace retrait après connexion du personnel.</p>`
+  );
+
+  const results = await Promise.all(
+    recipients.map((recipient) =>
+      sendResendEmail({
+        to: recipient.email,
+        subject: `🛍️ Retrait à préparer · ${order.order_number}`,
+        html,
+        idempotencyKey: `pickup-staff-paid-${order.id}-${recipient.userId}`,
+      })
+    )
+  );
+  const skipped = results.find((result) => result.skipped);
+  if (skipped) return skipped;
+
+  await supabase
+    .from("orders")
+    .update({ pickup_staff_notification_sent_at: new Date().toISOString() })
+    .eq("id", order.id)
+    .is("pickup_staff_notification_sent_at", null);
+
+  return { skipped: false as const, reason: "sent" as const };
 }

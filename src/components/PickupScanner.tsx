@@ -21,16 +21,25 @@ type PickupItem = {
   choices: string[];
 };
 
+type PickupWorkflowStatus =
+  | "pending"
+  | "preparing"
+  | "ready"
+  | "completed";
+
 type ScanResult = {
   orderNumber?: string;
   state: ScanState;
+  workflowStatus?: PickupWorkflowStatus;
+  canPrepare?: boolean;
+  canMarkReady?: boolean;
   canHandoff?: boolean;
   alreadyCompleted?: boolean;
   customerName?: string;
   items?: PickupItem[];
 };
 
-function stateCopy(state: ScanState) {
+function stateCopy(state: ScanState, workflowStatus?: PickupWorkflowStatus) {
   if (state === "ready") {
     return {
       title: "Prête à remettre",
@@ -52,10 +61,24 @@ function stateCopy(state: ScanState) {
       tone: "waiting",
     };
   }
+  if (state === "not_ready" && workflowStatus === "pending") {
+    return {
+      title: "À préparer",
+      description: "Le paiement est confirmé. Commencez la préparation.",
+      tone: "waiting",
+    };
+  }
+  if (state === "not_ready" && workflowStatus === "preparing") {
+    return {
+      title: "En préparation",
+      description: "Quand tout est prêt, prévenez le client.",
+      tone: "waiting",
+    };
+  }
   if (state === "not_ready") {
     return {
       title: "Pas encore prête",
-      description: "La commande doit être marquée prête avant la remise.",
+      description: "La commande doit avancer dans la préparation.",
       tone: "waiting",
     };
   }
@@ -89,9 +112,11 @@ export function PickupScanner() {
   const [activeQr, setActiveQr] = useState("");
   const [cameraActive, setCameraActive] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [actionNotice, setActionNotice] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const scanLockRef = useRef(false);
+  const linkedPickupLoadedRef = useRef(false);
 
   async function accessToken() {
     if (!supabase) return "";
@@ -129,6 +154,14 @@ export function PickupScanner() {
       await staffFetch("/api/pickup-staff/me");
       setAccessState("ready");
       setAuthError("");
+
+      if (typeof window !== "undefined" && !linkedPickupLoadedRef.current) {
+        const linkedPickup = new URL(window.location.href).searchParams.get("pickup");
+        if (linkedPickup) {
+          linkedPickupLoadedRef.current = true;
+          await inspectQr(linkedPickup, true);
+        }
+      }
     } catch (error) {
       const status = Number((error as { status?: number })?.status || 0);
       if (status === 401 || status === 403) {
@@ -191,13 +224,14 @@ export function PickupScanner() {
     setCameraActive(false);
   }
 
-  async function inspectQr(rawQr: string) {
+  async function inspectQr(rawQr: string, ignoreBusy = false) {
     const qr = rawQr.trim();
-    if (!qr || busy) return;
+    if (!qr || (busy && !ignoreBusy)) return;
 
     stopCamera();
     setBusy(true);
     setScanError("");
+    setActionNotice("");
     setScanResult(null);
 
     try {
@@ -210,6 +244,9 @@ export function PickupScanner() {
       setScanResult({
         orderNumber: data.orderNumber,
         state: data.state,
+        workflowStatus: data.workflowStatus,
+        canPrepare: Boolean(data.canPrepare),
+        canMarkReady: Boolean(data.canMarkReady),
         canHandoff: Boolean(data.canHandoff),
         customerName:
           typeof data.customerName === "string" ? data.customerName : undefined,
@@ -272,6 +309,43 @@ export function PickupScanner() {
     await inspectQr(String(form.get("qr") || ""));
   }
 
+
+  async function advancePickupWorkflow(target: "preparing" | "ready") {
+    if (!activeQr || !scanResult || busy) return;
+    setBusy(true);
+    setScanError("");
+    setActionNotice("");
+
+    try {
+      const data = await staffFetch("/api/pickup-staff/status", {
+        method: "POST",
+        body: JSON.stringify({ qr: activeQr, target }),
+      });
+      setScanResult((current) => current ? {
+        ...current,
+        state: data.state,
+        workflowStatus: data.workflowStatus,
+        canPrepare: Boolean(data.canPrepare),
+        canMarkReady: Boolean(data.canMarkReady),
+        canHandoff: Boolean(data.canHandoff),
+      } : current);
+
+      if (target === "preparing") {
+        setActionNotice("Préparation démarrée.");
+      } else if (data.pickupEmail === "sent" || data.pickupEmail === "already_sent") {
+        setActionNotice("Commande prête · client prévenu par e-mail.");
+      } else {
+        setActionNotice("Commande prête · l’e-mail client doit être vérifié.");
+      }
+    } catch (error) {
+      const data = (error as { data?: ScanResult })?.data;
+      if (data?.state) setScanResult(data);
+      setScanError(error instanceof Error ? error.message : "Mise à jour impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function confirmHandoff() {
     if (!activeQr || !scanResult?.canHandoff || busy) return;
 
@@ -287,11 +361,19 @@ export function PickupScanner() {
       setScanResult({
         orderNumber: data.orderNumber,
         state: "completed",
+        workflowStatus: "completed",
+        canPrepare: false,
+        canMarkReady: false,
         canHandoff: false,
         alreadyCompleted: Boolean(data.alreadyCompleted),
         customerName: scanResult.customerName,
         items: scanResult.items,
       });
+      if (data.pickupEmail === "failed" || data.pickupEmail === "email_not_configured") {
+        setActionNotice("Remise confirmée · l’e-mail client doit être vérifié.");
+      } else {
+        setActionNotice("Remise confirmée.");
+      }
     } catch (error) {
       const data = (error as { data?: ScanResult })?.data;
       if (data?.state) {
@@ -318,6 +400,7 @@ export function PickupScanner() {
     setScanResult(null);
     setActiveQr("");
     setScanError("");
+    setActionNotice("");
   }
 
   if (accessState === "checking") {
@@ -345,8 +428,8 @@ export function PickupScanner() {
           <p className="eyebrow">ICHIGO ICHIE · RETRAIT</p>
           <h1>Scanner boutique</h1>
           <p>
-            Cet espace permet uniquement de vérifier un QR de retrait et de
-            confirmer la remise.
+            Cet espace permet uniquement de préparer les retraits, prévenir le
+            client quand la commande est prête et confirmer la remise.
           </p>
 
           <form onSubmit={login}>
@@ -382,7 +465,7 @@ export function PickupScanner() {
     );
   }
 
-  const copy = scanResult ? stateCopy(scanResult.state) : null;
+  const copy = scanResult ? stateCopy(scanResult.state, scanResult.workflowStatus) : null;
 
   return (
     <section className="pickup-staff-page-v444">
@@ -449,6 +532,7 @@ export function PickupScanner() {
         )}
 
         {scanError && <p className="pickup-staff-error-v444">{scanError}</p>}
+        {actionNotice && <p className="pickup-staff-notice-v446">{actionNotice}</p>}
 
         {scanResult && copy && (
           <article className={`pickup-scan-result-v444 ${copy.tone}`}>
@@ -498,6 +582,29 @@ export function PickupScanner() {
               </div>
             )}
 
+
+            {scanResult.canPrepare && (
+              <button
+                type="button"
+                className="button primary pickup-workflow-action-v446"
+                onClick={() => advancePickupWorkflow("preparing")}
+                disabled={busy}
+              >
+                {busy ? "Mise à jour…" : "Commencer la préparation"}
+              </button>
+            )}
+
+            {scanResult.canMarkReady && (
+              <button
+                type="button"
+                className="button primary pickup-workflow-action-v446"
+                onClick={() => advancePickupWorkflow("ready")}
+                disabled={busy}
+              >
+                {busy ? "Mise à jour…" : "Marquer comme prête"}
+              </button>
+            )}
+
             {scanResult.canHandoff && (
               <button
                 type="button"
@@ -509,7 +616,9 @@ export function PickupScanner() {
               </button>
             )}
 
-            {!scanResult.canHandoff && (
+            {!scanResult.canPrepare &&
+              !scanResult.canMarkReady &&
+              !scanResult.canHandoff && (
               <button
                 type="button"
                 className="button ghost"

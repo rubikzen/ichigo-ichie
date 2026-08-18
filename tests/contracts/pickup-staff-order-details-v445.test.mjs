@@ -89,12 +89,19 @@ test("handoff completion preserves the scanned operational details on screen", (
 });
 
 test("V445 pickup details are compact and collapse to one column on mobile", () => {
-  assert.ok(css.includes("Ichigo Ichie V4.45 — Pickup staff order details"));
-  assert.ok(css.includes(".pickup-order-details-v445"));
-  assert.ok(css.includes("@media (max-width: 720px)"));
+  const v445Start = css.indexOf(
+    "/* Ichigo Ichie V4.45 — Pickup staff order details */"
+  );
+  const v446Start = css.indexOf(
+    "/* Ichigo Ichie V4.46 — Pickup staff workflow */",
+    v445Start
+  );
 
-  const mobileStart = css.lastIndexOf("@media (max-width: 720px)");
-  const mobileCss = css.slice(mobileStart);
-  assert.ok(mobileCss.includes(".pickup-order-details-v445"));
-  assert.ok(mobileCss.includes("grid-template-columns: 1fr"));
+  assert.ok(v445Start >= 0);
+  assert.ok(v446Start > v445Start);
+
+  const v445Css = css.slice(v445Start, v446Start);
+  assert.ok(v445Css.includes(".pickup-order-details-v445"));
+  assert.ok(v445Css.includes("@media (max-width: 720px)"));
+  assert.ok(v445Css.includes("grid-template-columns: 1fr"));
 });
