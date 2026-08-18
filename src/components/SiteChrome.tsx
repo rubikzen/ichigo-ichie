@@ -12,8 +12,11 @@ export function SiteChrome({
   const pathname = usePathname();
 
   const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isPickupStaff =
+    pathname === "/retrait" || pathname.startsWith("/retrait/");
+  const isStandaloneApp = isAdmin || isPickupStaff;
 
-  if (isAdmin) {
+  if (isStandaloneApp) {
     return <main>{children}</main>;
   }
 
