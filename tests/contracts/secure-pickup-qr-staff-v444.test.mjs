@@ -51,16 +51,13 @@ test("customer QR endpoint accepts a public tracking token but encodes only the 
   assert.doesNotMatch(qrRoute, /order_items/);
 });
 
-test("scan API requires pickup-staff authorization and returns only minimal operational fields", () => {
+test("scan API requires pickup-staff authorization and never exposes customer contact or accounting data", () => {
   assert.match(scanRoute, /requirePickupStaff\(request\)/);
-  assert.match(
-    scanRoute,
-    /\.select\("order_number,status,payment_status,order_type"\)/
-  );
+  assert.match(scanRoute, /verifyPickupQrPayload\(body\.qr\)/);
   assert.match(scanRoute, /canHandoff: state === "ready"/);
-  assert.doesNotMatch(scanRoute, /order_items/);
-  assert.doesNotMatch(scanRoute, /customer_email/);
-  assert.doesNotMatch(scanRoute, /subtotal|shipping_fee|total/);
+  assert.doesNotMatch(scanRoute, /customer_email|customer_phone/);
+  assert.doesNotMatch(scanRoute, /subtotal|shipping_fee|total|unit_price|line_total/);
+  assert.doesNotMatch(scanRoute, /invoices|promo_code|tracking_number/);
 });
 
 test("scan state permits handoff only when pickup is ready and already paid", () => {
@@ -97,12 +94,13 @@ test("pickup ready email now directs customers to the QR without removing order-
   assert.match(email, />Voir ma commande<\/a>/);
 });
 
-test("scanner UI has camera and keyboard-scanner fallback but no order catalogue or product details", () => {
+test("scanner UI keeps camera and keyboard-scanner fallback without exposing a searchable order catalogue", () => {
   assert.match(scanner, /BrowserQRCodeReader/);
   assert.match(scanner, /decodeFromVideoDevice/);
   assert.match(scanner, /Scanner USB \/ code QR/);
   assert.match(scanner, /Confirmer la remise/);
-  assert.doesNotMatch(scanner, /order_items|product_name|line_total|customer_email/);
+  assert.doesNotMatch(scanner, /customer_email|customer_phone|line_total|unit_price/);
+  assert.doesNotMatch(scanner, /Liste des commandes|Rechercher une commande/);
 });
 
 test("staff route is private/noindex and dependencies are declared", () => {

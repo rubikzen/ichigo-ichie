@@ -15,11 +15,19 @@ type ScanState =
   | "invalid"
   | "refresh_required";
 
+type PickupItem = {
+  name: string;
+  quantity: number;
+  choices: string[];
+};
+
 type ScanResult = {
   orderNumber?: string;
   state: ScanState;
   canHandoff?: boolean;
   alreadyCompleted?: boolean;
+  customerName?: string;
+  items?: PickupItem[];
 };
 
 function stateCopy(state: ScanState) {
@@ -203,6 +211,9 @@ export function PickupScanner() {
         orderNumber: data.orderNumber,
         state: data.state,
         canHandoff: Boolean(data.canHandoff),
+        customerName:
+          typeof data.customerName === "string" ? data.customerName : undefined,
+        items: Array.isArray(data.items) ? data.items : undefined,
       });
     } catch (error) {
       const data = (error as { data?: ScanResult })?.data;
@@ -278,6 +289,8 @@ export function PickupScanner() {
         state: "completed",
         canHandoff: false,
         alreadyCompleted: Boolean(data.alreadyCompleted),
+        customerName: scanResult.customerName,
+        items: scanResult.items,
       });
     } catch (error) {
       const data = (error as { data?: ScanResult })?.data;
@@ -452,6 +465,38 @@ export function PickupScanner() {
               <h2>{copy.title}</h2>
               <p>{copy.description}</p>
             </div>
+
+            {(scanResult.customerName || scanResult.items?.length) && (
+              <div className="pickup-order-details-v445">
+                {scanResult.customerName && (
+                  <section className="pickup-order-customer-v445">
+                    <span>CLIENT</span>
+                    <strong>{scanResult.customerName}</strong>
+                  </section>
+                )}
+
+                {Boolean(scanResult.items?.length) && (
+                  <section className="pickup-order-items-v445">
+                    <span>ARTICLES À REMETTRE</span>
+                    <div className="pickup-order-items-list-v445">
+                      {scanResult.items?.map((item, index) => (
+                        <div
+                          className="pickup-order-item-v445"
+                          key={`${item.name}-${index}`}
+                        >
+                          <strong>
+                            {item.quantity} × {item.name}
+                          </strong>
+                          {Boolean(item.choices?.length) && (
+                            <small>{item.choices.join(" · ")}</small>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
 
             {scanResult.canHandoff && (
               <button

@@ -5920,3 +5920,76 @@
     min-height: 48px;
   }
 }
+
+
+/* Ichigo Ichie V4.45 — Pickup staff order details */
+.pickup-order-details-v445 {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(150px,.65fr) minmax(0,1.35fr);
+  gap: 10px;
+}
+.pickup-order-details-v445 > section {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #d9e2d7;
+  border-radius: 15px;
+  background: rgba(255,255,255,.72);
+}
+.pickup-order-details-v445 > section > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #5f7565;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+.pickup-order-customer-v445 > strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--ink,#244336);
+  font-size: 18px;
+  line-height: 1.25;
+}
+.pickup-order-items-list-v445 {
+  display: grid;
+  gap: 7px;
+}
+.pickup-order-item-v445 {
+  min-width: 0;
+  padding: 8px 9px;
+  border-radius: 10px;
+  background: #f6f8f4;
+}
+.pickup-order-item-v445 strong,
+.pickup-order-item-v445 small {
+  display: block;
+}
+.pickup-order-item-v445 strong {
+  color: var(--ink,#244336);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.pickup-order-item-v445 small {
+  margin-top: 3px;
+  color: #6c776f;
+  font-size: 10px;
+  line-height: 1.35;
+}
+@media (max-width: 720px) {
+  .pickup-order-details-v445 {
+    grid-template-columns: 1fr;
+  }
+  .pickup-order-details-v445 > section {
+    padding: 12px;
+  }
+  .pickup-order-customer-v445 > strong {
+    font-size: 17px;
+  }
+  .pickup-order-item-v445 strong {
+    font-size: 14px;
+  }
+  .pickup-order-item-v445 small {
+    font-size: 11px;
+  }
+}
