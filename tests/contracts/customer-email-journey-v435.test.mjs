@@ -58,8 +58,9 @@ test("completed pickup email directs customers to tracking where the invoice rem
 test("admin still retains an explicit manual invoice resend escape hatch", () => {
   assert.match(adminInvoiceApi, /action === "email"/);
   assert.match(adminInvoiceApi, /sendInvoiceDocumentEmail\(supabase, document, order, resendOptions\)/);
-  assert.match(admin, /Renvoyer la facture/);
   assert.match(admin, /invoiceAction\(order, "email"\)/);
+  assert.match(admin, /emailActionLabel\(invoiceDoc\.email_sent_at\)/);
+  assert.match(admin, /order-email-recovery-v373/);
 });
 
 test("invoice settings explain silent invoice availability and reserve auto-email for credit notes", () => {

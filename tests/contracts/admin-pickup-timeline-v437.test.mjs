@@ -40,8 +40,10 @@ test("timeline explains the next pickup action without changing status actions",
   assert.match(admin, /Prochaine action : préparer la commande/);
   assert.match(admin, /confirmer Remise — l’e-mail final sera envoyé/);
   assert.match(admin, /Retrait terminé/);
-  assert.match(admin, /updateOrder\(order\.id, "preparing"\)/);
-  assert.match(admin, /updateOrder\(order\.id, "ready"\)/);
+  assert.match(admin, /target: "preparing"/);
+  assert.match(admin, /target: "ready"/);
+  assert.match(admin, /runQuickStatusAction\(order, quickAction\.target\)/);
+  assert.match(admin, /await updateOrder\(order\.id, target\)/);
 });
 
 test("production guidance distinguishes pickup from shipping flow", () => {

@@ -59,7 +59,7 @@ export function AdminOrders({
     number: "",
     url: "",
   });
-  const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
+  const [statusEditOrderId, setStatusEditOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
   const [emailActionKey, setEmailActionKey] = useState("");
   const [quickActionConfirmKey, setQuickActionConfirmKey] = useState("");
@@ -890,6 +890,59 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
         const quickActionLocked = Boolean(quickActionBusyKey);
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
         const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
+        const railStatusLabel =
+          order.status === "pending"
+            ? "Nouvelle"
+            : order.status === "preparing"
+              ? "En préparation"
+              : order.status === "ready"
+                ? order.order_type === "shipping"
+                  ? "Prête à expédier"
+                  : "Prête au retrait"
+                : order.status === "completed"
+                  ? order.order_type === "shipping"
+                    ? "Expédiée"
+                    : "Terminée"
+                  : order.status === "cancelled"
+                    ? "Annulée"
+                    : order.status === "refunded"
+                      ? "Remboursée"
+                      : order.status;
+
+        const railStatusDetail =
+          order.status === "pending"
+            ? "Commande à prendre en charge."
+            : order.status === "preparing"
+              ? "Préparation en cours."
+              : order.status === "ready"
+                ? order.order_type === "shipping"
+                  ? "Colis prêt pour l’expédition."
+                  : "Commande prête pour le client."
+                : order.status === "completed"
+                  ? order.order_type === "shipping"
+                    ? "Expédition terminée."
+                    : "Retrait terminé."
+                  : order.status === "cancelled"
+                    ? "Commande sortie du flux de production."
+                    : order.status === "refunded"
+                      ? "Commande remboursée et clôturée."
+                      : "Consulter la commande.";
+
+        const railStatusTone =
+          ["completed", "refunded"].includes(order.status)
+            ? "done"
+            : order.status === "cancelled"
+              ? "closed"
+              : orderPriority.tone === "alert"
+                ? "alert"
+                : orderPriority.tone === "waiting"
+                  ? "waiting"
+                  : "active";
+
+        const canEditStatus =
+          order.status !== "refunded" &&
+          order.payment_status !== "refund_pending";
+
         const invoiceDoc = order.invoices?.find((doc) => doc.document_type === "invoice");
         const creditNoteDoc = order.invoices?.find((doc) => doc.document_type === "credit_note");
         const confirmationEmailEligible = ["paid", "refunded"].includes(order.payment_status);
@@ -1482,111 +1535,218 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
             </div>
           )}
           <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
-          <aside className="order-actions"><label>Statut<select value={order.status} disabled={order.status === "refunded" || order.payment_status === "refund_pending"} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="pending">Nouvelle</option><option value="preparing">En préparation</option><option value="ready">{order.order_type === "shipping" ? "Prête à expédier" : "Prête"}</option><option value="completed">{order.order_type === "shipping" ? "Expédiée" : "Terminée"}</option><option value="cancelled">Annulée</option>{order.status === "refunded" && <option value="refunded">Remboursée</option>}</select></label>
-            {order.status === "cancelled" && (
-              <div className="payment-blocked-admin">
-                <strong>Commande annulée</strong>
-                <small>
-                  {order.payment_status === "paid"
-                    ? "Paiement encaissé : vérifiez la commande avant toute action."
-                    : "Aucun paiement encaissé. Cette commande est sortie du flux de préparation."}
-                </small>
+          <aside className="order-actions order-action-rail-v442">
+            <section className="order-action-section-v442 order-action-status-v442">
+              <div className="order-action-section-head-v442">
+                <span>STATUT</span>
+                <small>État actuel</small>
               </div>
-            )}
-            {paymentBlocked ? <div className="payment-blocked-admin"><strong>{order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : "Paiement requis"}</strong><small>{order.payment_status === "refund_pending" ? "Stripe traite le remboursement." : order.payment_status === "refund_failed" ? "Vérifiez Stripe avant toute nouvelle action." : "La préparation est bloquée jusqu’à confirmation Stripe."}</small>{!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && <button type="button" className="button ghost small" onClick={() => updateOrder(order.id, "cancelled")}>Annuler la commande</button>}</div> : <>{order.status === "pending" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "preparing")}>Préparer</button>}{order.status === "preparing" && <button className="button primary order-next-action" onClick={() => updateOrder(order.id, "ready")}>{order.order_type === "shipping" ? "Colis prêt" : "Prête"}</button>}{order.status === "ready" && <button className="button primary order-next-action" onClick={() => markOrderCompleted(order)}>{order.order_type === "shipping" ? (order.tracking_number ? "Marquer expédiée" : "Ajouter suivi & expédier") : "Remise"}</button>}</>}
-            
-            {order.payment_status === "paid" && !order.invoices?.some((doc) => doc.document_type === "invoice") && <button type="button" className="button ghost small invoice-admin-action-v245" onClick={() => invoiceAction(order, "issue")}>Créer la facture</button>}
-            {order.public_token && order.invoices?.some((doc) => doc.document_type === "invoice") && <a className="button ghost small invoice-admin-action-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}>Facture PDF ↓</a>}
-            <div className="order-more-menu-v249">
-              <button
-                type="button"
-                className="button ghost small order-more-button-v249"
-                onClick={() =>
-                  setMoreActionsOrderId((current) =>
-                    current === order.id ? null : order.id
-                  )
-                }
-                aria-expanded={moreActionsOrderId === order.id}
-                aria-label="Plus d’actions"
-              >
-                •••
-              </button>
 
-              {moreActionsOrderId === order.id && (
-                <div className="order-more-popover-v249">
-                  {order.invoices?.some(
-                    (doc) => doc.document_type === "invoice"
-                  ) && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setMoreActionsOrderId(null);
-                        await invoiceAction(order, "email");
-                      }}
-                    >
-                      Renvoyer la facture
-                    </button>
-                  )}
+              <div className={`order-status-card-v442 ${railStatusTone}`}>
+                <span className="order-status-symbol-v442" aria-hidden="true">
+                  {["completed", "refunded"].includes(order.status)
+                    ? "✓"
+                    : order.status === "cancelled"
+                      ? "×"
+                      : "•"}
+                </span>
+                <div>
+                  <strong>{railStatusLabel}</strong>
+                  <small>{railStatusDetail}</small>
+                </div>
+              </div>
 
-                  {order.public_token && (
-                    <a
-                      href={`/commande/${order.public_token}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Vue client ↗
-                    </a>
-                  )}
-
-                  {order.payment_status === "refunded" &&
-                    !order.invoices?.some(
-                      (doc) => doc.document_type === "credit_note"
-                    ) && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setMoreActionsOrderId(null);
-                          await invoiceAction(order, "credit_note");
+              {canEditStatus && (
+                statusEditOrderId === order.id ? (
+                  <div className="order-status-editor-v442">
+                    <label>
+                      Modifier le statut
+                      <select
+                        value={order.status}
+                        onChange={(e) => {
+                          const nextStatus = e.target.value;
+                          setStatusEditOrderId(null);
+                          void updateOrder(order.id, nextStatus);
                         }}
                       >
-                        Créer l’avoir
-                      </button>
-                    )}
-
-                  {order.public_token &&
-                    order.invoices?.some(
-                      (doc) => doc.document_type === "credit_note"
-                    ) && (
-                      <a
-                        href={`/api/invoices/${order.id}?token=${encodeURIComponent(
-                          order.public_token
-                        )}&type=credit_note`}
-                      >
-                        Avoir PDF ↓
-                      </a>
-                    )}
-
-                  {canRefund && (
+                        <option value="pending">Nouvelle</option>
+                        <option value="preparing">En préparation</option>
+                        <option value="ready">
+                          {order.order_type === "shipping" ? "Prête à expédier" : "Prête"}
+                        </option>
+                        <option value="completed">
+                          {order.order_type === "shipping" ? "Expédiée" : "Terminée"}
+                        </option>
+                        <option value="cancelled">Annulée</option>
+                      </select>
+                    </label>
                     <button
                       type="button"
-                      className="danger"
-                      onClick={() => {
-                        setMoreActionsOrderId(null);
-                        if (
-                          window.confirm(
-                            `Rembourser ${order.order_number} via Stripe ?`
-                          )
-                        ) {
-                          void updateOrder(order.id, "refunded");
-                        }
-                      }}
+                      className="button ghost small"
+                      onClick={() => setStatusEditOrderId(null)}
                     >
-                      Rembourser via Stripe
+                      Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="button ghost small order-status-edit-trigger-v442"
+                    onClick={() => setStatusEditOrderId(order.id)}
+                  >
+                    Modifier le statut
+                  </button>
+                )
+              )}
+
+              {quickAction && (
+                <small className="order-action-hint-v442">
+                  L’action principale reste disponible en haut de la commande.
+                </small>
+              )}
+            </section>
+
+            {order.status === "cancelled" && (
+              <section className="order-action-section-v442">
+                <div className="payment-blocked-admin">
+                  <strong>Commande annulée</strong>
+                  <small>
+                    {order.payment_status === "paid"
+                      ? "Paiement encaissé : vérifiez la commande avant toute action."
+                      : "Aucun paiement encaissé. Cette commande est sortie du flux de préparation."}
+                  </small>
+                </div>
+              </section>
+            )}
+
+            {paymentBlocked && (
+              <section className="order-action-section-v442">
+                <div className="order-action-section-head-v442">
+                  <span>PAIEMENT</span>
+                  <small>Action requise</small>
+                </div>
+                <div className="payment-blocked-admin">
+                  <strong>
+                    {order.payment_status === "refund_pending"
+                      ? "Remboursement en cours"
+                      : order.payment_status === "refund_failed"
+                        ? "Remboursement à vérifier"
+                        : "Paiement requis"}
+                  </strong>
+                  <small>
+                    {order.payment_status === "refund_pending"
+                      ? "Stripe traite le remboursement."
+                      : order.payment_status === "refund_failed"
+                        ? "Vérifiez Stripe avant toute nouvelle action."
+                        : "La préparation est bloquée jusqu’à confirmation Stripe."}
+                  </small>
+                  {!["refund_pending", "refund_failed", "refunded"].includes(order.payment_status) && (
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      onClick={() => updateOrder(order.id, "cancelled")}
+                    >
+                      Annuler la commande
                     </button>
                   )}
                 </div>
-              )}
-            </div>
+              </section>
+            )}
+
+            {(order.payment_status === "paid" || invoiceDoc || order.payment_status === "refunded" || creditNoteDoc) && (
+              <section className="order-action-section-v442">
+                <div className="order-action-section-head-v442">
+                  <span>DOCUMENTS</span>
+                  <small>Facture & avoir</small>
+                </div>
+
+                <div className="order-action-stack-v442">
+                  {order.payment_status === "paid" && !invoiceDoc && (
+                    <button
+                      type="button"
+                      className="button ghost small invoice-admin-action-v245"
+                      onClick={() => invoiceAction(order, "issue")}
+                    >
+                      Créer la facture
+                    </button>
+                  )}
+
+                  {order.public_token && invoiceDoc && (
+                    <a
+                      className="button ghost small invoice-admin-action-v245"
+                      href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}`}
+                    >
+                      Facture PDF ↓
+                    </a>
+                  )}
+
+                  {order.payment_status === "refunded" && !creditNoteDoc && (
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      onClick={() => invoiceAction(order, "credit_note")}
+                    >
+                      Créer l’avoir
+                    </button>
+                  )}
+
+                  {order.public_token && creditNoteDoc && (
+                    <a
+                      className="button ghost small"
+                      href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}&type=credit_note`}
+                    >
+                      Avoir PDF ↓
+                    </a>
+                  )}
+                </div>
+
+                {invoiceDoc && order.customer_email && (
+                  <small className="order-action-hint-v442">
+                    Le renvoi de facture reste dans « E-mails client » pour éviter les doublons.
+                  </small>
+                )}
+              </section>
+            )}
+
+            {order.public_token && (
+              <section className="order-action-section-v442">
+                <div className="order-action-section-head-v442">
+                  <span>CLIENT</span>
+                  <small>Vue publique</small>
+                </div>
+                <a
+                  className="button ghost small order-client-view-v442"
+                  href={`/commande/${order.public_token}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Voir la commande client ↗
+                </a>
+              </section>
+            )}
+
+            {canRefund && (
+              <section className="order-action-section-v442 order-danger-zone-v442">
+                <div className="order-action-section-head-v442">
+                  <span>ACTION SENSIBLE</span>
+                  <small>Remboursement</small>
+                </div>
+                <p>
+                  Le remboursement passe par Stripe. Vérifiez le montant et la commande avant de continuer.
+                </p>
+                <button
+                  type="button"
+                  className="button small order-refund-button-v442"
+                  onClick={() => {
+                    if (window.confirm(`Rembourser ${order.order_number} via Stripe ?`)) {
+                      void updateOrder(order.id, "refunded");
+                    }
+                  }}
+                >
+                  Rembourser via Stripe
+                </button>
+              </section>
+            )}
           </aside>
 </div>
 )}

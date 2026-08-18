@@ -5184,3 +5184,173 @@
   }
 }
 
+
+
+/* Ichigo Ichie V4.42 — Admin order action rail */
+.order-action-rail-v442 {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+.order-action-section-v442 {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line,#dfe3d8);
+  border-radius: 18px;
+  background: #fff;
+}
+.order-action-section-head-v442 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.order-action-section-head-v442 > span {
+  color: #657168;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .09em;
+}
+.order-action-section-head-v442 > small {
+  color: #909790;
+  font-size: 9px;
+  font-weight: 650;
+}
+.order-status-card-v442 {
+  display: grid;
+  grid-template-columns: 32px minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 11px 12px;
+  border-radius: 15px;
+  background: #f5f7f3;
+}
+.order-status-symbol-v442 {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e7ece6;
+  color: #4f6256;
+  font-size: 17px;
+  font-weight: 900;
+}
+.order-status-card-v442 strong,
+.order-status-card-v442 small { display:block; }
+.order-status-card-v442 strong {
+  color: var(--ink,#244336);
+  font-size: 14px;
+  line-height: 1.25;
+}
+.order-status-card-v442 small {
+  margin-top: 3px;
+  color: #727c75;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.order-status-card-v442.done { background:#eef5ed; }
+.order-status-card-v442.done .order-status-symbol-v442 {
+  background:#dbead9;
+  color:#42694a;
+}
+.order-status-card-v442.closed { background:#f4f4f1; }
+.order-status-card-v442.alert { background:#fff3ef; }
+.order-status-card-v442.alert .order-status-symbol-v442 {
+  background:#f4ddd7;
+  color:#9a4f43;
+}
+.order-status-card-v442.waiting { background:#fff8e8; }
+.order-status-card-v442.waiting .order-status-symbol-v442 {
+  background:#f5e8c5;
+  color:#856422;
+}
+.order-status-edit-trigger-v442 { width:100%; }
+.order-status-editor-v442 { display:grid; gap:8px; }
+.order-status-editor-v442 label {
+  display:grid;
+  gap:6px;
+  color:#68736b;
+  font-size:10px;
+  font-weight:750;
+}
+.order-status-editor-v442 select {
+  width:100%;
+  min-height:42px;
+  padding:0 12px;
+  border:1px solid var(--line,#dfe3d8);
+  border-radius:12px;
+  background:#fff;
+  color:var(--ink,#244336);
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+}
+.order-action-stack-v442 { display:grid; gap:8px; }
+.order-action-stack-v442 > .button,
+.order-client-view-v442 {
+  width:100%;
+  min-height:42px;
+  justify-content:center;
+  text-align:center;
+  white-space:normal;
+  line-height:1.25;
+}
+.order-action-hint-v442 {
+  display:block;
+  color:#7a837d;
+  font-size:9px;
+  line-height:1.45;
+}
+.order-danger-zone-v442 {
+  border-color:#e8c8c1;
+  background:#fff8f6;
+}
+.order-danger-zone-v442 .order-action-section-head-v442 > span { color:#a04f42; }
+.order-danger-zone-v442 p {
+  margin:0;
+  color:#825f58;
+  font-size:10px;
+  line-height:1.5;
+}
+.order-refund-button-v442 {
+  width:100%;
+  min-height:42px;
+  border:1px solid #d79d92;
+  background:#fff;
+  color:#a14437;
+  font-weight:850;
+}
+.order-refund-button-v442:hover { background:#fff0ec; }
+.order-action-rail-v442 .payment-blocked-admin { margin:0; }
+
+@media (max-width:980px) {
+  .order-action-rail-v442 {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .order-action-status-v442 { grid-column:1 / -1; }
+}
+@media (max-width:720px) {
+  .order-action-rail-v442 {
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .order-action-section-v442 {
+    padding:13px;
+    border-radius:16px;
+  }
+  .order-action-section-head-v442 {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+  .order-action-stack-v442 > .button,
+  .order-client-view-v442,
+  .order-status-edit-trigger-v442,
+  .order-refund-button-v442 {
+    min-height:44px;
+  }
+}
