@@ -35,14 +35,15 @@ test("confirmation now tells pickup customers that preparation happens before a 
   assert.match(email, /Merci d’attendre cette confirmation avant de vous déplacer/);
 });
 
-test("ready pickup email contains invitation address and configured opening hours", () => {
+test("ready pickup email contains pickup QR guidance, address and configured opening hours", () => {
   assert.match(email, /\["brand_name", "support_email", "store_address", "opening_hours"\]/);
   assert.match(email, /Votre commande est prête à retirer/);
   assert.match(email, /Vous pouvez venir récupérer votre commande/);
   assert.match(email, /Horaires d’ouverture/);
   assert.match(email, /settings\.opening_hours/);
   assert.match(email, /settings\.store_address/);
-  assert.match(email, /Présentez simplement le numéro de commande/);
+  assert.match(email, /QR de retrait/);
+  assert.match(email, /reste disponible en secours/);
 });
 
 test("completed pickup email confirms handoff and points to the order where invoice is available", () => {

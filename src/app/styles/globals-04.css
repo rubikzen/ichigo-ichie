@@ -5661,3 +5661,262 @@
     padding: 11px;
   }
 }
+
+
+/* Ichigo Ichie V4.44 — Secure pickup QR & staff scanner */
+.pickup-customer-qr-v444 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 22px;
+  margin: 18px 0;
+  padding: 20px;
+  border: 1px solid #d8e3d6;
+  border-radius: 22px;
+  background: #f4f8f1;
+}
+.pickup-customer-qr-copy-v444 h2 {
+  margin: 5px 0 8px;
+  font-family: var(--serif,Georgia,serif);
+  font-size: clamp(24px,3vw,34px);
+  color: var(--ink,#244336);
+}
+.pickup-customer-qr-copy-v444 > p:last-child {
+  max-width: 520px;
+  margin: 0;
+  color: #5f6c64;
+  line-height: 1.55;
+}
+.pickup-customer-qr-image-v444 {
+  display: grid;
+  place-items: center;
+  min-width: 238px;
+  padding: 9px;
+  border: 1px solid #d7dfd3;
+  border-radius: 18px;
+  background: #fffdf8;
+}
+.pickup-customer-qr-image-v444 img {
+  display: block;
+  width: 220px;
+  height: 220px;
+}
+.pickup-customer-qr-image-v444 small {
+  margin-top: 5px;
+  color: #657168;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.pickup-staff-page-v444 {
+  min-height: 100dvh;
+  padding: 24px;
+  background: #f3f1e8;
+  color: var(--ink,#244336);
+}
+.pickup-staff-shell-v444,
+.pickup-staff-login-v444 {
+  width: min(680px,100%);
+  margin: 0 auto;
+  padding: 22px;
+  border: 1px solid #dde1d8;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(35,55,44,.08);
+}
+.pickup-staff-login-v444 {
+  margin-top: min(12vh,100px);
+}
+.pickup-staff-login-v444 h1,
+.pickup-staff-head-v444 h1 {
+  margin: 5px 0 6px;
+  font-family: var(--serif,Georgia,serif);
+  font-size: clamp(36px,7vw,58px);
+}
+.pickup-staff-login-v444 > p,
+.pickup-staff-head-v444 p {
+  color: #68736c;
+  line-height: 1.5;
+}
+.pickup-staff-login-v444 form {
+  display: grid;
+  gap: 13px;
+  margin-top: 22px;
+}
+.pickup-staff-login-v444 label,
+.pickup-manual-scan-v444 label {
+  display: grid;
+  gap: 6px;
+  color: #657168;
+  font-size: 11px;
+  font-weight: 800;
+}
+.pickup-staff-login-v444 input,
+.pickup-manual-scan-v444 input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid #d9ded6;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink,#244336);
+  font: inherit;
+  font-size: 16px;
+}
+.pickup-staff-loading-v444 {
+  margin-top: 18vh;
+  text-align: center;
+  font-weight: 800;
+}
+.pickup-staff-head-v444 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.pickup-camera-v444 {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #15201a;
+}
+.pickup-camera-v444 video {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  max-height: 62vh;
+  object-fit: cover;
+}
+.pickup-camera-start-v444 {
+  position: absolute;
+  z-index: 2;
+}
+.pickup-camera-guide-v444 {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(58vw,250px);
+  aspect-ratio: 1;
+  transform: translate(-50%,-50%);
+  border: 3px solid rgba(255,255,255,.88);
+  border-radius: 20px;
+  box-shadow: 0 0 0 999px rgba(0,0,0,.18);
+  pointer-events: none;
+}
+.pickup-manual-scan-v444 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.pickup-manual-scan-v444 .button {
+  min-height: 48px;
+}
+.pickup-staff-error-v444 {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: #fff0ec;
+  color: #9a473a;
+  font-size: 12px;
+  font-weight: 750;
+}
+.pickup-scan-result-v444 {
+  display: grid;
+  grid-template-columns: 46px minmax(0,1fr);
+  gap: 14px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #dbe2d8;
+  border-radius: 20px;
+  background: #f7f9f5;
+}
+.pickup-scan-result-v444.ready {
+  border-color: #c7ddc7;
+  background: #eef6ec;
+}
+.pickup-scan-result-v444.done {
+  border-color: #d2dfd1;
+  background: #f0f5ef;
+}
+.pickup-scan-result-v444.waiting {
+  border-color: #eadbb4;
+  background: #fff9e9;
+}
+.pickup-scan-result-v444.blocked {
+  border-color: #ebcbc3;
+  background: #fff3f0;
+}
+.pickup-scan-result-icon-v444 {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 22px;
+  font-weight: 900;
+}
+.pickup-scan-result-copy-v444 strong {
+  display: block;
+  margin: 2px 0 8px;
+  font-size: 18px;
+}
+.pickup-scan-result-copy-v444 h2 {
+  margin: 0 0 5px;
+  font-family: var(--serif,Georgia,serif);
+  font-size: 28px;
+}
+.pickup-scan-result-copy-v444 > p:last-child {
+  margin: 0;
+  color: #657168;
+  line-height: 1.45;
+}
+.pickup-scan-result-v444 > .button {
+  grid-column: 1 / -1;
+  min-height: 54px;
+  font-size: 14px;
+  font-weight: 850;
+}
+.pickup-confirm-handoff-v444 {
+  font-size: 16px !important;
+}
+@media (max-width: 720px) {
+  .pickup-customer-qr-v444 {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    text-align: center;
+  }
+  .pickup-customer-qr-image-v444 {
+    justify-self: center;
+  }
+  .pickup-staff-page-v444 {
+    padding: 10px;
+  }
+  .pickup-staff-shell-v444,
+  .pickup-staff-login-v444 {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .pickup-staff-head-v444 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pickup-staff-head-v444 .button {
+    min-height: 44px;
+  }
+  .pickup-camera-v444,
+  .pickup-camera-v444 video {
+    min-height: 58vh;
+  }
+  .pickup-manual-scan-v444 {
+    grid-template-columns: 1fr;
+  }
+  .pickup-manual-scan-v444 .button {
+    min-height: 48px;
+  }
+}

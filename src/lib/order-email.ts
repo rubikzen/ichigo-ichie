@@ -179,7 +179,7 @@ export async function sendOrderEmail(
         <div style="margin-top:12px"><strong>Adresse</strong><br>${escapeHtml(storeAddress)}</div>
         <div style="margin-top:12px"><strong>Horaires d’ouverture</strong><br>${escapeHtml(openingHours)}</div>
       </div>
-      <p style="line-height:1.6;color:#59665f">Présentez simplement le numéro de commande <strong>${escapeHtml(order.order_number)}</strong> lors de votre arrivée.</p>
+      <p style="line-height:1.6;color:#59665f">Ouvrez le suivi de votre commande et présentez le <strong>QR de retrait</strong> affiché à l’écran. Le numéro <strong>${escapeHtml(order.order_number)}</strong> reste disponible en secours.</p>
       <p style="margin-top:24px"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Voir ma commande</a></p>`
     );
   } else if (kind === "pickup_completed") {

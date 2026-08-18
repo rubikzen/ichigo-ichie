@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useCart } from "@/components/CartProvider";
@@ -352,6 +353,39 @@ const canDownloadInvoice =
 
   return <section className="tracking-page"><div className="tracking-card">
     <div className="tracking-head"><div><p className="eyebrow">ICHIGO ICHIE</p><h1>{title}</h1><p>{language === "fr" ? "Commande" : "Order"} <strong>{order.order_number}</strong></p></div><div className={`tracking-status ${order.status}`}>{statusLabel(order.status, language, order.order_type)}</div></div>
+
+    {order.order_type === "pickup" &&
+      order.status === "ready" &&
+      !isStopped && (
+        <section className="pickup-customer-qr-v444" aria-labelledby="pickup-qr-title-v444">
+          <div className="pickup-customer-qr-copy-v444">
+            <p className="eyebrow">RETRAIT BOUTIQUE</p>
+            <h2 id="pickup-qr-title-v444">
+              {language === "fr" ? "Votre QR de retrait" : "Your pickup QR"}
+            </h2>
+            <p>
+              {language === "fr"
+                ? "Présentez ce QR à l’équipe lorsque vous arrivez en boutique. Il sert uniquement à confirmer la remise de cette commande."
+                : "Show this QR to the team when you arrive at the boutique. It is used only to confirm handoff of this order."}
+            </p>
+          </div>
+          <div className="pickup-customer-qr-image-v444">
+            <Image
+              src={`/api/orders/${encodeURIComponent(token)}/pickup-qr`}
+              alt={
+                language === "fr"
+                  ? `QR de retrait ${order.order_number}`
+                  : `Pickup QR ${order.order_number}`
+              }
+              width={220}
+              height={220}
+              sizes="220px"
+              unoptimized
+            />
+            <small>{order.order_number}</small>
+          </div>
+        </section>
+      )}
 
     <div className={`payment-tracking-banner ${order.payment_status} ${paymentSyncPending ? "payment-sync-pending-v407" : ""}`}>
       <div className="payment-tracking-icon">{order.status === "cancelled" ? "×" : paymentPaid ? "✓" : paymentSyncPending ? <span className="payment-sync-spinner-v407" aria-hidden="true" /> : order.payment_method === "pickup" ? "€" : paymentNeedsAction ? "!" : "…"}</div>
