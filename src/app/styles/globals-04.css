@@ -5095,3 +5095,92 @@
   }
 }
 
+/* Ichigo Ichie V4.40 — Safe admin quick actions */
+.order-compact-summary-v248 {
+  flex-wrap: wrap;
+}
+
+.order-quick-action-v440 {
+  flex: 0 1 210px;
+  min-width: 160px;
+  display: grid;
+  gap: 4px;
+  align-content: center;
+}
+
+.order-quick-action-v440 > .button {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 999px;
+}
+
+.order-quick-action-v440 > small {
+  color: #727c75;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.order-quick-action-v440.confirming {
+  flex-basis: 310px;
+  padding: 9px;
+  border: 1px solid #dfcda2;
+  border-radius: 14px;
+  background: #fff9eb;
+}
+
+.order-quick-warning-v440 {
+  color: #765c22 !important;
+  text-align: left !important;
+}
+
+.order-quick-confirm-actions-v440 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 6px;
+}
+
+.order-quick-confirm-actions-v440 .button {
+  min-height: 36px;
+  padding-inline: 11px;
+  white-space: nowrap;
+}
+
+.order-quick-action-v440 .button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
+@media (max-width: 1080px) {
+  .order-quick-action-v440 {
+    flex-basis: 190px;
+  }
+
+  .order-quick-action-v440.confirming {
+    flex-basis: 280px;
+  }
+}
+
+@media (max-width: 720px) {
+  .order-quick-action-v440,
+  .order-quick-action-v440.confirming {
+    width: 100%;
+    min-width: 0;
+    flex-basis: auto;
+  }
+
+  .order-quick-action-v440 > small {
+    text-align: left;
+  }
+
+  .order-quick-confirm-actions-v440 {
+    grid-template-columns: 1fr;
+  }
+
+  .order-quick-confirm-actions-v440 .button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+

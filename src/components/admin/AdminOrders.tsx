@@ -7,6 +7,21 @@ import { OrderStatistics } from "../OrderStatistics";
 type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; confirmation_email_sent_at?: string | null; shipping_email_sent_at?: string | null; refund_email_sent_at?: string | null; pickup_ready_email_sent_at?: string | null; pickup_completed_email_sent_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string; email_sent_at?: string | null }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
 type TrackingDraft = { carrier: string; number: string; url: string };
+type QuickOrderAction =
+  | {
+      kind: "status";
+      target: "preparing" | "ready" | "completed";
+      label: string;
+      note: string;
+      confirm: boolean;
+      confirmLabel?: string;
+    }
+  | {
+      kind: "tracking";
+      label: string;
+      note: string;
+      confirm: false;
+    };
 const TRACKING_CARRIERS = ["Colissimo", "Chronopost", "Mondial Relay", "DHL", "UPS", "Autre"] as const;
 
 function buildTrackingUrl(carrier: string, trackingNumber: string) {
@@ -47,6 +62,8 @@ export function AdminOrders({
   const [moreActionsOrderId, setMoreActionsOrderId] = useState<string | null>(null);
   const [orderActionMessage, setOrderActionMessage] = useState("");
   const [emailActionKey, setEmailActionKey] = useState("");
+  const [quickActionConfirmKey, setQuickActionConfirmKey] = useState("");
+  const [quickActionBusyKey, setQuickActionBusyKey] = useState("");
   const [orderSoundEnabled, setOrderSoundEnabled] = useState(false);
   const orderSoundEnabledRef = useRef(false);
   const seenPendingOrders = useRef<Set<string> | null>(null);
@@ -315,6 +332,44 @@ async function updateOrder(id: string, status: string) {
 
     await updateOrder(order.id, "completed");
   }
+
+  function quickStatusKey(
+    order: OrderRow,
+    target: "preparing" | "ready" | "completed"
+  ) {
+    return `${order.id}:${target}`;
+  }
+
+  async function runQuickStatusAction(
+    order: OrderRow,
+    target: "preparing" | "ready" | "completed"
+  ) {
+    if (quickActionBusyKey) return;
+
+    const key = quickStatusKey(order, target);
+    setQuickActionConfirmKey("");
+    setQuickActionBusyKey(key);
+
+    try {
+      if (target === "completed") {
+        await markOrderCompleted(order);
+      } else {
+        await updateOrder(order.id, target);
+      }
+    } finally {
+      setQuickActionBusyKey("");
+    }
+  }
+
+  function openQuickTracking(order: OrderRow) {
+    setQuickActionConfirmKey("");
+    setExpandedOrderId(order.id);
+
+    if (trackingEditOrderId !== order.id) {
+      toggleTrackingEditor(order);
+    }
+  }
+
   async function invoiceAction(order: OrderRow, action: "issue" | "email" | "credit_note" | "credit_note_email") {
     if (!supabase) return;
     const actionKey = `${order.id}:${action}`;
@@ -768,6 +823,71 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           order.payment_method === "online" &&
           order.payment_status !== "paid";
         const orderPriority = orderPriorityMeta(order);
+        const quickAction: QuickOrderAction | null =
+          orderPriority.tone !== "action" || !orderReadyForProduction(order)
+            ? null
+            : order.status === "pending"
+              ? {
+                  kind: "status",
+                  target: "preparing",
+                  label: "Préparer",
+                  note: "Passe la commande en préparation.",
+                  confirm: false,
+                }
+              : order.status === "preparing"
+                ? order.order_type === "pickup"
+                  ? {
+                      kind: "status",
+                      target: "ready",
+                      label: "Prête",
+                      note: "Enverra l’e-mail « prête au retrait » au client.",
+                      confirm: true,
+                      confirmLabel: "Confirmer Prête + e-mail",
+                    }
+                  : {
+                      kind: "status",
+                      target: "ready",
+                      label: "Colis prêt",
+                      note: "Aucun e-mail client à cette étape.",
+                      confirm: false,
+                    }
+                : order.status === "ready"
+                  ? order.order_type === "pickup"
+                    ? {
+                        kind: "status",
+                        target: "completed",
+                        label: "Remise",
+                        note: "Confirme la remise et enverra l’e-mail final au client.",
+                        confirm: true,
+                        confirmLabel: "Confirmer Remise + e-mail",
+                      }
+                    : order.tracking_number
+                      ? {
+                          kind: "status",
+                          target: "completed",
+                          label: "Expédier",
+                          note: "Confirme l’expédition et enverra l’e-mail de suivi.",
+                          confirm: true,
+                          confirmLabel: "Confirmer Expédiée + e-mail",
+                        }
+                      : {
+                          kind: "tracking",
+                          label: "Ajouter suivi",
+                          note: "Le suivi est requis avant l’expédition.",
+                          confirm: false,
+                        }
+                  : null;
+        const quickActionKey =
+          quickAction?.kind === "status"
+            ? quickStatusKey(order, quickAction.target)
+            : "";
+        const quickConfirmArmed =
+          Boolean(quickActionKey) &&
+          quickActionConfirmKey === quickActionKey;
+        const quickBusy =
+          Boolean(quickActionKey) &&
+          quickActionBusyKey === quickActionKey;
+        const quickActionLocked = Boolean(quickActionBusyKey);
         const paymentLabel = order.payment_status === "paid" ? "Payée" : order.payment_status === "refunded" ? "Remboursée" : order.payment_status === "refund_pending" ? "Remboursement en cours" : order.payment_status === "refund_failed" ? "Remboursement à vérifier" : order.payment_status === "pending" ? "En attente Stripe" : order.payment_status === "failed" ? "Échec paiement" : order.payment_status === "expired" ? "Paiement expiré" : order.payment_method === "pickup" ? "Au retrait" : "À payer";
         const canRefund = order.payment_method === "online" && Number(order.total) > 0 && ["paid", "refund_failed"].includes(order.payment_status) && order.status !== "refunded";
         const invoiceDoc = order.invoices?.find((doc) => doc.document_type === "invoice");
@@ -916,6 +1036,75 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
     <span>{orderPriority.label}</span>
     <small>{orderPriority.detail}</small>
   </div>
+
+  {quickAction && (
+    <div
+      className={`order-quick-action-v440${quickConfirmArmed ? " confirming" : ""}`}
+    >
+      {quickAction.kind === "tracking" ? (
+        <>
+          <button
+            type="button"
+            className="button primary small"
+            disabled={quickActionLocked}
+            onClick={() => openQuickTracking(order)}
+          >
+            Ajouter suivi
+          </button>
+          <small>{quickAction.note}</small>
+        </>
+      ) : quickAction.confirm && quickConfirmArmed ? (
+        <>
+          <small className="order-quick-warning-v440">
+            {quickAction.note}
+          </small>
+          <div className="order-quick-confirm-actions-v440">
+            <button
+              type="button"
+              className="button primary small"
+              disabled={quickActionLocked}
+              onClick={() =>
+                void runQuickStatusAction(order, quickAction.target)
+              }
+            >
+              {quickBusy
+                ? "Enregistrement…"
+                : quickAction.confirmLabel || quickAction.label}
+            </button>
+            <button
+              type="button"
+              className="button ghost small"
+              disabled={quickActionLocked}
+              onClick={() => setQuickActionConfirmKey("")}
+            >
+              Annuler
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="button primary small"
+            disabled={quickActionLocked}
+            onClick={() => {
+              if (quickAction.confirm) {
+                setQuickActionConfirmKey(
+                  quickStatusKey(order, quickAction.target)
+                );
+                return;
+              }
+
+              void runQuickStatusAction(order, quickAction.target);
+            }}
+          >
+            {quickBusy ? "Enregistrement…" : quickAction.label}
+          </button>
+          <small>{quickAction.note}</small>
+        </>
+      )}
+    </div>
+  )}
 
   <button
     type="button"
