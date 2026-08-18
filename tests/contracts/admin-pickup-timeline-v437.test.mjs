@@ -12,7 +12,7 @@ test("V437 renders a dedicated four-step pickup timeline only for active pickup 
   for (const label of ["Confirmée", "En préparation", "Prête", "Remise"]) {
     assert.ok(admin.includes(`label: "${label}"`), `missing pickup step ${label}`);
   }
-  assert.match(admin, /className="pickup-admin-timeline-v437"/);
+  assert.match(admin, /className="pickup-admin-timeline-v437(?: [^"]*)?"/);
 });
 
 test("pickup progress is derived from status without inventing a preparation timestamp", () => {

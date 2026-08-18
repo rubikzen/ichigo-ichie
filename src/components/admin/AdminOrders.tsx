@@ -964,6 +964,18 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           pickupReadyEmailEligible ||
           pickupCompletedEmailEligible ||
           Boolean(creditNoteDoc);
+
+        const lifecycleEmailNeedsAttention =
+          Boolean(order.customer_email) &&
+          ((confirmationEmailEligible &&
+            !order.confirmation_email_sent_at) ||
+            (shippingEmailEligible && !order.shipping_email_sent_at) ||
+            (refundEmailEligible && !order.refund_email_sent_at) ||
+            (pickupReadyEmailEligible &&
+              !order.pickup_ready_email_sent_at) ||
+            (pickupCompletedEmailEligible &&
+              !order.pickup_completed_email_sent_at));
+
         const pickupStatusRank =
           order.status === "completed"
             ? 3
@@ -1173,10 +1185,10 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
 </div>
           <div className="order-card-top"><div><span className={`order-status-dot ${order.status}`}></span><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><span className="channel-pill shop">Boutique</span>{order.environment && <span className={`order-env-pill-v246 ${order.environment}`}>{order.environment === "live" ? "LIVE" : order.environment === "test" ? "TEST" : "LEGACY"}</span>}</div><div><span className={`payment-pill ${order.payment_status}`}>{paymentLabel}</span><strong>{Number(order.total).toFixed(2)} €</strong></div></div>
           {expandedOrderId === order.id && (
-  <div className="order-body"><div className="order-main"><div className="order-customer"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
+  <div className="order-body order-body-density-v443"><div className="order-main order-main-density-v443"><div className="order-customer order-customer-density-v443"><strong>{order.customer_first_name} {order.customer_last_name}</strong><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a>{order.customer_email && <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>}<span className="pickup-pill">{order.order_type === "shipping" ? `Livraison · ${order.package_weight_g || 0} g` : order.pickup_time ? `Retrait ${new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : "Retrait boutique"}</span></div>
           {order.order_type === "shipping" && (
   <>
-    <div className="order-shipping-box">
+    <div className="order-shipping-box order-shipping-box-density-v443">
       <strong>{order.shipping_method_name || "Livraison"}</strong>
 
       <span>
@@ -1199,7 +1211,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
       </small>
     </div>
 
-    <div className="tracking-compact-v249">
+    <div className="tracking-compact-v249 tracking-compact-density-v443">
       <div className="tracking-compact-head-v249">
         <div>
           <span className="tracking-label-v249">SUIVI</span>
@@ -1356,7 +1368,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
 )}
           {pickupFlowActive && (
             <section
-              className="pickup-admin-timeline-v437"
+              className="pickup-admin-timeline-v437 pickup-admin-timeline-density-v443"
               aria-label={`Parcours retrait ${order.order_number}`}
             >
               <div className="pickup-admin-timeline-head-v437">
@@ -1387,7 +1399,24 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
           )}
 
           {showEmailRecovery && (
-            <div className="order-email-recovery-v373">
+            <details
+              className={`order-email-recovery-disclosure-v443${lifecycleEmailNeedsAttention ? " attention" : ""}`}
+              open={lifecycleEmailNeedsAttention}
+            >
+              <summary className="order-email-recovery-summary-v443">
+                <span>
+                  <strong>E-mails client</strong>
+                  <small>
+                    {lifecycleEmailNeedsAttention
+                      ? "Un envoi est à vérifier"
+                      : "Suivi & renvoi à la demande"}
+                  </small>
+                </span>
+                <span className="order-email-recovery-summary-state-v443">
+                  {lifecycleEmailNeedsAttention ? "À vérifier" : "Ouvrir"}
+                </span>
+              </summary>
+              <div className="order-email-recovery-v373 order-email-recovery-density-v443">
               <div className="order-email-recovery-head-v373">
                 <div>
                   <span>E-MAILS CLIENT</span>
@@ -1533,9 +1562,10 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
                 )}
               </div>
             </div>
+            </details>
           )}
-          <div className="order-lines">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note"><strong>Note :</strong> {order.notes}</p>}</div>
-          <aside className="order-actions order-action-rail-v442">
+          <div className="order-lines order-lines-density-v443">{order.order_items?.map((item) => <p key={item.id}><span><strong>{item.quantity} × {item.product_name}</strong>{item.choices?.length ? <small>{item.choices.map((choice) => choice.label).filter(Boolean).join(" · ")}</small> : null}</span>{typeof item.line_total === "number" && <strong>{Number(item.line_total).toFixed(2)} €</strong>}</p>)}</div>{Number(order.discount_amount || 0) > 0 && <div className="order-promo-v234 order-promo-density-v443"><span><strong>Code promo · {order.promo_code}</strong><small>Réduction appliquée à la commande</small></span><strong>− {Number(order.discount_amount || 0).toFixed(2)} €</strong></div>}{order.notes && <p className="order-note order-note-density-v443"><strong>Note :</strong> {order.notes}</p>}</div>
+          <aside className="order-actions order-action-rail-v442 order-action-rail-density-v443">
             <section className="order-action-section-v442 order-action-status-v442">
               <div className="order-action-section-head-v442">
                 <span>STATUT</span>
