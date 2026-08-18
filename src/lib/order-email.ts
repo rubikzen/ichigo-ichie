@@ -60,8 +60,48 @@ function orderLines(order: any) {
   }).join("");
 }
 
+function confirmationPaymentBadge(order: any) {
+  if (order.payment_status !== "paid") return "";
+
+  return `<div style="margin:14px 0 2px">
+    <span style="display:inline-block;background:#edf4e9;border:1px solid #d7e5d4;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:700;color:#365a3d">
+      Paiement confirmé
+    </span>
+  </div>`;
+}
+
+function confirmationSummary(order: any) {
+  const hasDiscount = Number(order.discount_amount || 0) > 0;
+  const pickup = order.order_type === "pickup";
+  const fulfilmentLabel = pickup ? "Retrait boutique" : "Livraison";
+  const fulfilmentValue = pickup
+    ? "Offert"
+    : Number(order.shipping_fee || 0) > 0
+      ? money(order.shipping_fee)
+      : "Offerte";
+
+  return `<table role="presentation" style="width:100%;border-collapse:collapse;margin-top:18px;border-top:1px solid #e7e2d8">
+    ${
+      hasDiscount
+        ? `<tr>
+            <td style="padding:18px 12px 0 0;color:#486a4b;line-height:1.4">Code promo ${escapeHtml(order.promo_code || "")}</td>
+            <td style="padding:18px 0 0 12px;text-align:right;color:#486a4b;font-weight:700;white-space:nowrap;line-height:1.4">− ${escapeHtml(money(order.discount_amount))}</td>
+          </tr>`
+        : ""
+    }
+    <tr>
+      <td style="padding:14px 12px 0 0;color:#59665f;line-height:1.4">${fulfilmentLabel}</td>
+      <td style="padding:14px 0 0 12px;text-align:right;font-weight:700;white-space:nowrap;line-height:1.4">${escapeHtml(fulfilmentValue)}</td>
+    </tr>
+    <tr>
+      <td style="padding:14px 12px 0 0;font-size:20px;font-weight:700;line-height:1.3">Total</td>
+      <td style="padding:14px 0 0 12px;text-align:right;font-size:20px;font-weight:700;white-space:nowrap;line-height:1.3">${escapeHtml(money(order.total))}</td>
+    </tr>
+  </table>`;
+}
+
 function shell(brand: string, title: string, intro: string, body: string) {
-  return `<!doctype html><html><body style="margin:0;background:#f5f2e8;color:#26362d;font-family:Arial,sans-serif"><div style="max-width:640px;margin:0 auto;padding:28px 18px"><div style="background:#fffdf8;border:1px solid #e7e2d8;border-radius:22px;padding:28px"><div style="font-size:12px;letter-spacing:.18em;font-weight:700;color:#486a4b">${escapeHtml(brand)}</div><h1 style="font-family:Georgia,serif;font-size:30px;line-height:1.1;margin:10px 0 12px">${escapeHtml(title)}</h1><p style="line-height:1.6;color:#59665f">${escapeHtml(intro)}</p>${body}</div></div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;background:#f5f2e8;color:#26362d;font-family:Arial,sans-serif;-webkit-text-size-adjust:100%"><div style="width:100%;max-width:640px;margin:0 auto;padding:28px 18px;box-sizing:border-box"><div style="width:100%;box-sizing:border-box;background:#fffdf8;border:1px solid #e7e2d8;border-radius:22px;padding:28px"><div style="font-size:12px;letter-spacing:.18em;font-weight:700;color:#486a4b">${escapeHtml(brand)}</div><h1 style="font-family:Georgia,serif;font-size:30px;line-height:1.1;margin:10px 0 12px">${escapeHtml(title)}</h1><p style="line-height:1.6;color:#59665f;margin:0 0 6px">${escapeHtml(intro)}</p>${body}</div></div></body></html>`;
 }
 
 export async function sendOrderEmail(
@@ -107,11 +147,12 @@ export async function sendOrderEmail(
         </div>`
       : "";
     html = shell(brand, "Votre commande est confirmée", `Bonjour ${order.customer_first_name || ""}, nous avons bien reçu votre commande ${order.order_number}.`, `
-      <table style="width:100%;border-collapse:collapse;margin:22px 0">${orderLines(order)}</table>
+      ${confirmationPaymentBadge(order)}
+      <table role="presentation" style="width:100%;border-collapse:collapse;margin:22px 0">${orderLines(order)}</table>
       ${destination}
       ${pickupPreparationNotice}
-      <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e7e2d8">${Number(order.discount_amount || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;color:#486a4b"><span>Code promo ${escapeHtml(order.promo_code || "")}</span><strong>− ${money(order.discount_amount)}</strong></div>` : ""}<div style="display:flex;justify-content:space-between"><span>Livraison</span><strong>${order.shipping_fee ? money(order.shipping_fee) : "Offerte / retrait"}</strong></div><div style="display:flex;justify-content:space-between;font-size:20px;margin-top:10px"><strong>Total</strong><strong>${money(order.total)}</strong></div></div>
-      <p style="margin-top:24px"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px">Suivre ma commande</a></p>`);
+      ${confirmationSummary(order)}
+      <p style="margin:24px 0 0"><a href="${escapeHtml(trackingPage)}" style="display:inline-block;background:#294237;color:white;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700">Voir ma commande</a></p>`);
   } else if (kind === "shipping") {
     subject = `${brand} · Votre commande ${order.order_number} a été expédiée`;
     const carrier = order.tracking_carrier || "Transporteur";
