@@ -6654,3 +6654,115 @@
     font-size: 12px !important;
   }
 }
+
+
+/* Ichigo Ichie V4.51 — Product content quality */
+.content-quality-summary-v451 {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.content-quality-summary-v451.needs-review,
+.content-quality-chip-v451 {
+  border: 1px solid rgba(178, 118, 20, 0.28);
+  background: rgba(197, 136, 33, 0.1);
+  color: #875b0d;
+}
+
+.content-quality-summary-v451.ready {
+  border: 1px solid rgba(52, 106, 76, 0.2);
+  background: rgba(52, 106, 76, 0.08);
+  color: var(--green, #264d3b);
+}
+
+.content-quality-chip-v451 {
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.content-quality-filter-v451.active {
+  border-color: rgba(178, 118, 20, 0.38) !important;
+  background: rgba(197, 136, 33, 0.12) !important;
+  color: #875b0d !important;
+}
+
+.content-quality-panel-v451 {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(280px, 1.2fr);
+  gap: 18px;
+  margin: 14px 0;
+  border: 1px solid rgba(40, 65, 52, 0.14);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: rgba(247, 246, 240, 0.76);
+}
+
+.content-quality-panel-v451.needs-review {
+  border-color: rgba(178, 118, 20, 0.28);
+  background: rgba(197, 136, 33, 0.07);
+}
+
+.content-quality-panel-v451.ready {
+  border-color: rgba(52, 106, 76, 0.2);
+  background: rgba(52, 106, 76, 0.06);
+}
+
+.content-quality-kicker-v451 {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.content-quality-panel-v451 strong {
+  display: block;
+  font-size: 15px;
+}
+
+.content-quality-panel-v451 p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  opacity: 0.74;
+}
+
+.content-quality-panel-v451 ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.content-quality-panel-v451 li {
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.content-quality-panel-v451 li.error {
+  color: #8a3029;
+}
+
+@media (max-width: 760px) {
+  .content-quality-summary-v451 {
+    width: fit-content;
+    margin-left: 0;
+  }
+
+  .content-quality-panel-v451 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Category, Variant } from "@/lib/types";
+import { normalizeEditorialText, normalizeIdealFor } from "@/lib/product-content";
 import {
   blankProduct,
   inferProductPreset,
@@ -156,26 +157,30 @@ export function useAdminCatalog(
     setSaving(true);
     setMessage("");
 
+    const cleanNameFr = productDraft.name_fr.trim();
+    const cleanNameEn = productDraft.name_en.trim();
+    const descriptionFr = normalizeEditorialText(productDraft.description_fr);
+    const descriptionEn = normalizeEditorialText(productDraft.description_en);
+    const longDescriptionFr = normalizeEditorialText(productDraft.long_description_fr);
+    const longDescriptionEn = normalizeEditorialText(productDraft.long_description_en);
+
     const payload = {
-      slug: productDraft.slug || slugify(productDraft.name_fr),
+      slug: productDraft.slug.trim() || slugify(cleanNameFr),
       category_id: productDraft.category_id,
       type: productDraft.type,
-      name_fr: productDraft.name_fr,
-      name_en: productDraft.name_en || productDraft.name_fr,
-      description_fr: productDraft.description_fr,
-      description_en: productDraft.description_en || productDraft.description_fr,
-      long_description_fr:
-        productDraft.long_description_fr?.trim() ||
-        productDraft.description_fr ||
-        null,
+      name_fr: cleanNameFr,
+      name_en: cleanNameEn || cleanNameFr,
+      description_fr: descriptionFr,
+      description_en: descriptionEn || descriptionFr,
+      long_description_fr: longDescriptionFr || descriptionFr || null,
       long_description_en:
-        productDraft.long_description_en?.trim() ||
-        productDraft.description_en ||
-        productDraft.description_fr ||
+        longDescriptionEn ||
+        descriptionEn ||
+        descriptionFr ||
         null,
-      origin: productDraft.origin || null,
-      cultivar: productDraft.cultivar || null,
-      badge: productDraft.badge || null,
+      origin: productDraft.origin?.trim() || null,
+      cultivar: productDraft.cultivar?.trim() || null,
+      badge: productDraft.badge?.trim() || null,
       base_price: Number(productDraft.base_price),
       stock: Number(productDraft.stock),
       pickup_only: productDraft.pickup_only,
@@ -183,7 +188,7 @@ export function useAdminCatalog(
       featured: productDraft.featured,
       sort_order: Number(productDraft.sort_order),
       image_url: productDraft.image_url || null,
-      ideal_for: productDraft.ideal_for.filter(Boolean),
+      ideal_for: normalizeIdealFor(productDraft.ideal_for),
       shipping_weight_g: Number(productDraft.shipping_weight_g || 0),
     };
 

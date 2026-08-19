@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ProductGalleryAdmin } from "../ProductGalleryAdmin";
 import { SafeImage } from "../SafeImage";
 import type { Category, ProductType } from "@/lib/types";
@@ -7,6 +8,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { VariantEditor } from "./AdminCatalogEditors";
 import { RestockWaitlistAdmin } from "./RestockWaitlistAdmin";
 import { inferProductPreset, type AdminProduct } from "./catalog-model";
+import { auditProductContent } from "@/lib/product-content";
 import { useAdminCatalog } from "./useAdminCatalog";
 
 export function AdminCatalog({
@@ -44,15 +46,24 @@ export function AdminCatalog({
     saveVariant,
     deleteVariant,
   } = useAdminCatalog(supabase, categories);
+  const [contentQualityOnly, setContentQualityOnly] = useState(false);
 
   const selectedVariants = variants.filter((variant) => variant.product_id === productDraft.id);
   const categoryById = new Map<string, Category>(categories.map((category) => [category.id, category]));
+  const productContentIssues = (product: AdminProduct) => auditProductContent({
+    ...product,
+    kind: categoryById.get(product.category_id)?.kind,
+  });
+  const shopProducts = products.filter((product) => categoryById.get(product.category_id)?.kind === "shop");
+  const shopContentReviewCount = shopProducts.filter((product) => productContentIssues(product).length > 0).length;
   const draftCategory = categoryById.get(productDraft.category_id);
   const draftPreset = !productDraft.id && draftCategory ? inferProductPreset(draftCategory, draftCategory.kind) : null;
+  const draftContentIssues = draftCategory?.kind === "shop" ? auditProductContent({ ...productDraft, kind: "shop" }) : [];
   const catalogCategories = categories.filter((category) => category.kind === catalogZone);
   const normalizedCatalogSearch = catalogSearch.trim().toLowerCase();
   const catalogProducts = products
     .filter((product) => categoryById.get(product.category_id)?.kind === catalogZone)
+    .filter((product) => catalogZone !== "shop" || !contentQualityOnly || productContentIssues(product).length > 0)
     .filter((product) => !normalizedCatalogSearch || `${product.name_fr} ${product.name_en} ${product.badge ?? ""} ${categoryById.get(product.category_id)?.name_fr ?? ""}`.toLowerCase().includes(normalizedCatalogSearch))
     .sort((a, b) => a.sort_order - b.sort_order || a.name_fr.localeCompare(b.name_fr));
   const catalogCounts = { menu: products.filter((product) => categoryById.get(product.category_id)?.kind === "menu").length, shop: products.filter((product) => categoryById.get(product.category_id)?.kind === "shop").length };
@@ -65,11 +76,12 @@ export function AdminCatalog({
   function renderQuickProductRow(product: AdminProduct, index: number, orderedProducts: AdminProduct[]) {
     const productVariants = variants.filter((variant) => variant.product_id === product.id);
     const totalVariantStock = productVariants.filter((variant) => variant.active).reduce((sum, variant) => sum + Math.max(0, Number(variant.stock)), 0);
+    const contentIssues = catalogZone === "shop" ? productContentIssues(product) : [];
     return <article className={`quick-product-row zone-${catalogZone} ${!product.active ? "is-hidden" : ""}`} key={product.id}>
       <div className="quick-product-image"><SafeImage src={product.image_url || "/product-placeholder.svg"} alt="" width={128} height={128} sizes="(max-width: 1280px) 58px, 64px" /><button type="button" className={product.featured ? "featured active" : "featured"} title="Mettre en avant" onClick={() => quickPatchProduct(product.id, { featured: !product.featured })}>★</button></div>
       <div className="quick-product-main">
         <div className="quick-name-line"><input aria-label="Nom du produit" value={product.name_fr} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, name_fr: e.target.value } : item))} onBlur={() => quickPatchProduct(product.id, { name_fr: product.name_fr, name_en: product.name_en || product.name_fr })} /><span className={`visibility-dot ${product.active ? "on" : "off"}`}></span></div>
-        <div className="quick-meta-line"><select aria-label="Catégorie" value={product.category_id} onChange={(e) => quickPatchProduct(product.id, { category_id: e.target.value })}>{catalogCategories.map((item) => <option key={item.id} value={item.id}>{item.name_fr}</option>)}</select>{productVariants.length ? <button type="button" className="mini-chip" onClick={() => chooseProduct(product)}>{productVariants.length} format{productVariants.length > 1 ? "s" : ""}</button> : <span className="mini-chip subtle">Sans variante</span>}{product.badge && <span className="mini-chip">{product.badge}</span>}</div>
+        <div className="quick-meta-line"><select aria-label="Catégorie" value={product.category_id} onChange={(e) => quickPatchProduct(product.id, { category_id: e.target.value })}>{catalogCategories.map((item) => <option key={item.id} value={item.id}>{item.name_fr}</option>)}</select>{productVariants.length ? <button type="button" className="mini-chip" onClick={() => chooseProduct(product)}>{productVariants.length} format{productVariants.length > 1 ? "s" : ""}</button> : <span className="mini-chip subtle">Sans variante</span>}{product.badge && <span className="mini-chip">{product.badge}</span>}{contentIssues.length > 0 && <button type="button" className="content-quality-chip-v451" title={contentIssues.map((issue) => issue.label).join(" · ")} onClick={() => chooseProduct(product)}>Contenu {contentIssues.length}</button>}</div>
       </div>
       <label className="quick-field"><span>Prix</span><div><input type="number" min="0" step="0.01" value={product.base_price} onChange={(e) => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, base_price: Number(e.target.value) } : item))} onBlur={() => quickPatchProduct(product.id, { base_price: product.base_price })} /><b>€</b></div></label>
       {catalogZone === "shop" ? <>
@@ -88,9 +100,9 @@ export function AdminCatalog({
           <button type="button" className={catalogZone === "menu" ? "active" : ""} onClick={() => { setCatalogZone("menu"); setAdvancedOpen(false); }}><span>Menu</span><strong>{catalogCounts.menu}</strong></button>
           <button type="button" className={catalogZone === "shop" ? "active" : ""} onClick={() => { setCatalogZone("shop"); setAdvancedOpen(false); }}><span>Boutique</span><strong>{catalogCounts.shop}</strong></button>
         </div>
-        <div className="quick-catalog-actions"><input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder={`Rechercher dans ${catalogZone === "menu" ? "le menu" : "la boutique"}…`} /><button className="button primary small" type="button" onClick={() => chooseProduct(undefined, catalogZone)}>+ Ajouter</button></div>
+        <div className="quick-catalog-actions"><input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder={`Rechercher dans ${catalogZone === "menu" ? "le menu" : "la boutique"}…`} />{catalogZone === "shop" && <button className={`button ghost small content-quality-filter-v451 ${contentQualityOnly ? "active" : ""}`} type="button" aria-pressed={contentQualityOnly} onClick={() => setContentQualityOnly((current) => !current)}>{contentQualityOnly ? "Afficher tout" : `À revoir · ${shopContentReviewCount}`}</button>}<button className="button primary small" type="button" onClick={() => chooseProduct(undefined, catalogZone)}>+ Ajouter</button></div>
       </div>
-      <div className="quick-admin-hint"><strong>Modification rapide</strong><span>Prix, stock, poids, visibilité et ordre se modifient directement ici. Ouvrez “Détails” uniquement pour les descriptions, images, options ou variantes.</span>{quickSavingId && <em>Enregistrement…</em>}</div>
+      <div className="quick-admin-hint"><strong>Modification rapide</strong><span>Prix, stock, poids, visibilité et ordre se modifient directement ici. Ouvrez “Détails” uniquement pour les descriptions, images, options ou variantes.</span>{catalogZone === "shop" && <span className={`content-quality-summary-v451 ${shopContentReviewCount ? "needs-review" : "ready"}`}>{shopContentReviewCount ? `${shopContentReviewCount} produit${shopContentReviewCount > 1 ? "s" : ""} à revoir` : "Contenu Boutique prêt ✓"}</span>}{quickSavingId && <em>Enregistrement…</em>}</div>
       {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
       <div className={`quick-catalog-category-list zone-${catalogZone}`}>
         {catalogCategoryGroups.length ? catalogCategoryGroups.map(({ category, products: categoryProducts, totalCount }) => {
@@ -130,6 +142,7 @@ export function AdminCatalog({
           <form onSubmit={saveProduct}>
             <div className="editor-head sticky-editor-head"><div><p className="eyebrow">{productDraft.id ? "DÉTAILS" : "NOUVEAU"}</p><h2>{productDraft.name_fr || (catalogZone === "menu" ? "Nouvel article du menu" : "Nouveau produit boutique")}</h2></div><div><button type="button" className="button ghost small" onClick={() => setAdvancedOpen(false)}>Fermer</button>{productDraft.id && <button type="button" className="button danger small" onClick={() => deleteProduct(productDraft.id)}>Supprimer</button>}<button className="button primary small" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button></div></div>
             {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
+            {draftCategory?.kind === "shop" && <div className={`content-quality-panel-v451 ${draftContentIssues.length ? "needs-review" : "ready"}`}><div><span className="content-quality-kicker-v451">QUALITÉ DU CONTENU</span><strong>{draftContentIssues.length ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier` : "Contenu prêt ✓"}</strong><p>{draftContentIssues.length ? "Corrigez les points signalés avant de publier ou lors de la prochaine mise à jour." : "Descriptions et informations essentielles sont cohérentes."}</p></div>{draftContentIssues.length > 0 && <ul>{draftContentIssues.map((issue) => <li key={issue.code} className={issue.level}>{issue.label}</li>)}</ul>}</div>}
             {!productDraft.id && draftPreset && <div className="smart-add-banner">
               <div><span className="smart-add-kicker">Préconfiguration automatique</span><strong>{draftCategory?.name_fr}</strong><p>{draftPreset.note}</p></div>
               <div className="smart-add-chips"><span>{draftPreset.title}</span><span>{draftPreset.fulfillment}</span><span>{catalogZone === "menu" ? "Sans stock" : "Stock à renseigner"}</span><span className="draft-chip">Brouillon masqué</span></div>
