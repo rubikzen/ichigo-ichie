@@ -6,7 +6,6 @@ import type { Category, Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { HomeFeatured } from "./HomeFeatured";
-import { ProductCard } from "./ProductCard";
 import { UnifiedCatalogSections } from "./UnifiedCatalogSections";
 import { settingEnabled } from "@/lib/settings";
 import { ContactSection } from "./ContactSection";
@@ -42,9 +41,6 @@ export function HomePageContent({
         ritualText: "À préparer selon votre moment, sans complication.",
         nice: "Maison à Nice",
         niceText: "Retrait boutique ou livraison en France métropolitaine.",
-        featuredEyebrow: "LA SÉLECTION",
-        featuredTitle: "Nos matchas à découvrir",
-        featuredText: "Commencez par une sélection courte, puis explorez toute la Boutique.",
         trustTitle: "Commander simplement",
         secure: "Paiement sécurisé",
         secureText: "Paiement en ligne via Stripe.",
@@ -52,9 +48,6 @@ export function HomePageContent({
         deliveryText: "Suivi colis disponible après expédition.",
         pickup: "Retrait à Nice",
         pickupText: "Commandez en ligne et récupérez à la boutique.",
-        ctaEyebrow: "ICHIGO ICHIE",
-        ctaTitle: "Trouvez le matcha qui vous ressemble.",
-        ctaText: "Découvrez tous les formats, profils et accessoires disponibles.",
         cta: "Découvrir la Boutique",
         menuCta: "Voir la carte",
       }
@@ -69,9 +62,6 @@ export function HomePageContent({
         ritualText: "Prepare it for your moment, without complication.",
         nice: "A house in Nice",
         niceText: "Store pickup or delivery across metropolitan France.",
-        featuredEyebrow: "THE SELECTION",
-        featuredTitle: "Matchas to discover",
-        featuredText: "Start with a short selection, then explore the full Shop.",
         trustTitle: "Order with confidence",
         secure: "Secure payment",
         secureText: "Online payment powered by Stripe.",
@@ -79,9 +69,6 @@ export function HomePageContent({
         deliveryText: "Parcel tracking available after shipment.",
         pickup: "Pickup in Nice",
         pickupText: "Order online and collect from the shop.",
-        ctaEyebrow: "ICHIGO ICHIE",
-        ctaTitle: "Find the matcha that suits you.",
-        ctaText: "Discover every available format, profile and accessory.",
         cta: "Explore the Shop",
         menuCta: "View the menu",
       };
@@ -131,7 +118,22 @@ export function HomePageContent({
         </section>
       )}
 
-      <section className="mobile-home-flow-v260" aria-label={mobile.introTitle}>
+
+      {settingEnabled(settings.home_featured_visible) && (
+        <HomeFeatured products={shopFeatured} />
+      )}
+
+      <UnifiedCatalogSections
+        menuCategories={menuCategories}
+        menuProducts={menuProducts}
+        shopCategories={shopCategories}
+        shopProducts={shopProducts}
+      />
+
+      <section
+        className="mobile-home-flow-v260 mobile-home-after-catalog-v4491"
+        aria-label={mobile.introTitle}
+      >
         <div className="mobile-matcha-intro-v260">
           <p className="eyebrow">{mobile.introEyebrow}</p>
           <h2>{mobile.introTitle}</h2>
@@ -162,27 +164,6 @@ export function HomePageContent({
           </div>
         </div>
 
-        {shopFeatured.length > 0 && (
-          <section className="mobile-shop-featured-v260">
-            <div className="mobile-section-heading-v260">
-              <div>
-                <p className="eyebrow">{mobile.featuredEyebrow}</p>
-                <h2>{mobile.featuredTitle}</h2>
-                <p>{mobile.featuredText}</p>
-              </div>
-              <Link href="/#boutique" aria-label={mobile.cta}>→</Link>
-            </div>
-
-            <div className="mobile-featured-scroll-v260">
-              {shopFeatured.map((product) => (
-                <div className="mobile-featured-item-v260" key={product.id}>
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         <section className="mobile-trust-v260">
           <p className="eyebrow">{mobile.trustTitle}</p>
           <div className="mobile-trust-grid-v260">
@@ -204,26 +185,7 @@ export function HomePageContent({
           </div>
         </section>
 
-        <section className="mobile-shop-cta-v260">
-          <p className="eyebrow">{mobile.ctaEyebrow}</p>
-          <h2>{mobile.ctaTitle}</h2>
-          <p>{mobile.ctaText}</p>
-          <Link className="button primary full" href="/#boutique">
-            {mobile.cta}
-          </Link>
-        </section>
       </section>
-
-      {settingEnabled(settings.home_featured_visible) && (
-        <HomeFeatured products={shopFeatured} />
-      )}
-
-      <UnifiedCatalogSections
-        menuCategories={menuCategories}
-        menuProducts={menuProducts}
-        shopCategories={shopCategories}
-        shopProducts={shopProducts}
-      />
 
       {settingEnabled(settings.home_story_visible) && (
         <section className="house-section-v226" id="maison">
