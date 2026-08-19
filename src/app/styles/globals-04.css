@@ -6406,3 +6406,251 @@
     font-size: 8.5px !important;
   }
 }
+
+
+/* Ichigo Ichie V4.49.2 — Mobile Boutique density polish */
+@media (max-width: 760px) {
+  .hero-mobile-v260 {
+    gap: 15px !important;
+    padding: 18px 16px 24px !important;
+  }
+
+  .hero-mobile-v260 .hero-visual-v224 {
+    height: min(46dvh, 410px) !important;
+    min-height: 290px !important;
+    max-height: 410px !important;
+  }
+
+  .hero-mobile-v260 .hero-copy-v224 {
+    padding-top: 1px !important;
+  }
+
+  .hero-mobile-v260 .eyebrow {
+    margin-bottom: 7px !important;
+  }
+
+  .hero-mobile-v260 h1 {
+    font-size: clamp(39px, 11.8vw, 52px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .hero-mobile-v260 .hero-text {
+    margin: 13px 0 16px !important;
+    line-height: 1.55 !important;
+  }
+
+  .site-header-v261.is-scrolled {
+    min-height: 62px !important;
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 {
+    gap: 7px !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 > img {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 strong {
+    font-size: 15px !important;
+    line-height: 1 !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 small {
+    display: none !important;
+  }
+
+  .site-header-v261.is-scrolled
+    .language-switch-mobile-visible-v261
+    button {
+    min-width: 30px !important;
+    min-height: 30px !important;
+    padding: 3px 6px !important;
+  }
+
+  .site-header-v261.is-scrolled .account-link-v243 {
+    width: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    height: 34px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact {
+    border-radius: 22px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-image-button {
+    display: block !important;
+    width: 100% !important;
+    height: clamp(245px, 67vw, 300px) !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    overflow: hidden !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-image {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .badge {
+    top: 12px !important;
+    left: 12px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .photo-count {
+    right: 12px !important;
+    bottom: 12px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-copy {
+    gap: 0 !important;
+    padding: 15px 16px 17px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-title-row {
+    gap: 10px !important;
+    margin: 0 0 8px !important;
+    align-items: flex-start !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-title-row h3 {
+    margin: 0 !important;
+    font-size: clamp(22px, 6.4vw, 27px) !important;
+    line-height: 1.06 !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-price {
+    padding-top: 2px !important;
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-description {
+    display: -webkit-box !important;
+    margin: 0 0 5px !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-permalink-v431 {
+    min-height: 28px !important;
+    margin: 0 !important;
+    gap: 7px !important;
+    font-size: 10px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-meta {
+    gap: 7px !important;
+    margin-top: 8px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-chips {
+    gap: 6px !important;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-chips span {
+    min-height: 28px !important;
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-stock-card,
+  .onepage-catalog-shop .product-card-compact .product-cart-stock-note {
+    margin: 7px 0 0 !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-card-cta {
+    min-height: 50px !important;
+    margin-top: 12px !important;
+    padding-block: 10px !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+  }
+
+  .onepage-catalog-shop .product-grid {
+    gap: 14px !important;
+  }
+
+  .onepage-catalog-shop .onepage-category-group {
+    margin-top: 24px !important;
+  }
+
+  .onepage-catalog-shop .onepage-category-heading {
+    margin-bottom: 13px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .hero-mobile-v260 .hero-visual-v224 {
+    height: min(44dvh, 360px) !important;
+    min-height: 270px !important;
+    max-height: 360px !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-image-button {
+    height: clamp(230px, 65vw, 275px) !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-copy {
+    padding-inline: 14px !important;
+  }
+}
+
+
+/* Ichigo Ichie V4.49.2a — Mobile visual safety fix */
+@media (max-width: 760px) {
+  .onepage-catalog-shop .product-card-compact .product-image-button {
+    background: #f5f4ee !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-image {
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+}
+
+
+/* Ichigo Ichie V4.49.2b — Sticky header wordmark fix */
+@media (max-width: 760px) {
+  .site-header-v261.is-scrolled .brand-v224 {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 > span {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: max-content !important;
+    overflow: visible !important;
+  }
+
+  .site-header-v261.is-scrolled .brand-v224 strong {
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    letter-spacing: 0.01em !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .site-header-v261.is-scrolled .brand-v224 strong {
+    font-size: 12px !important;
+  }
+}

@@ -237,10 +237,11 @@ export function SiteHeader() {
 
           .site-header-v261 .brand strong {
             display: block;
-            max-width: 118px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: none;
+            overflow: visible;
+            text-overflow: clip;
             white-space: nowrap;
+            font-size: 13px;
           }
 
           .site-header-v261 .header-actions {
@@ -258,8 +259,8 @@ export function SiteHeader() {
 
         @media (max-width: 370px) {
           .site-header-v261 .brand strong {
-            max-width: 94px;
-            font-size: 12px;
+            max-width: none;
+            font-size: 11.5px;
           }
 
           .site-header-v261 .language-switch-mobile-visible-v261 button {
