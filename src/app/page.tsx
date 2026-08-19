@@ -20,13 +20,11 @@ export default async function Home() {
     getCachedCatalog("menu"),
     getCachedCatalog("shop"),
   ]);
-  const featured = menu.products.filter((product) => product.featured).slice(0, 4);
   const highlightedShopProducts = shop.products.filter((product) => product.featured);
   const shopFeatured = (highlightedShopProducts.length ? highlightedShopProducts : shop.products).slice(0, 3);
 
   return (
     <HomePageContent
-      featured={featured}
       shopFeatured={shopFeatured}
       menuCategories={menu.categories}
       menuProducts={menu.products}

@@ -96,8 +96,8 @@ export function SiteHeader() {
           className="desktop-nav desktop-nav-v219 desktop-nav-v224"
           aria-label="Navigation principale"
         >
-          <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
           <Link href="/#boutique">{t("nav_shop_fr", "nav_shop_en")}</Link>
+          <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
           <Link href="/#maison">{t("nav_house_fr", "nav_house_en")}</Link>
           <Link href="/#contact">{t("nav_contact_fr", "nav_contact_en")}</Link>
         </nav>

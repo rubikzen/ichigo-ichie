@@ -13,14 +13,12 @@ import { ContactSection } from "./ContactSection";
 import { SafeImage } from "./SafeImage";
 
 export function HomePageContent({
-  featured,
   shopFeatured,
   menuCategories,
   menuProducts,
   shopCategories,
   shopProducts,
 }: {
-  featured: Product[];
   shopFeatured: Product[];
   menuCategories: Category[];
   menuProducts: Product[];
@@ -217,7 +215,7 @@ export function HomePageContent({
       </section>
 
       {settingEnabled(settings.home_featured_visible) && (
-        <HomeFeatured products={featured} />
+        <HomeFeatured products={shopFeatured} />
       )}
 
       <UnifiedCatalogSections

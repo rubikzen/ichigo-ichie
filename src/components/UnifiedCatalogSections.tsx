@@ -95,11 +95,16 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
   ), [categories, filtered, sortProducts]);
 
   const renderProduct = (product: Product) => kind === "menu"
-    ? <MenuInfoCard key={product.id} product={product} />
+    ? <MenuInfoCard key={product.id} product={product} compact />
     : <ProductCard key={product.id} product={product} />;
 
   return (
-    <section className={`onepage-catalog onepage-catalog-${kind}`} id={id}>
+    <section
+      className={`onepage-catalog onepage-catalog-${kind}${
+        kind === "menu" ? " onepage-catalog-menu-compact-v449" : ""
+      }`}
+      id={id}
+    >
       <div className="onepage-section-heading">
         <div>
           <p className="eyebrow">{val("eyebrow")}</p>
@@ -120,17 +125,19 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
           ))}
         </div>
 
-        <label className="catalog-sort-v221">
-          <span>{labels.sort}</span>
-          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label={labels.sort}>
-            <option value="recommended">{labels.recommended}</option>
-            <option value="price-asc">{labels.priceAsc}</option>
-            <option value="price-desc">{labels.priceDesc}</option>
-            <option value="name-asc">{labels.nameAsc}</option>
-            <option value="name-desc">{labels.nameDesc}</option>
-          </select>
-          <span className="catalog-sort-chevron-v221" aria-hidden="true">⌄</span>
-        </label>
+        {kind === "shop" && (
+          <label className="catalog-sort-v221">
+            <span>{labels.sort}</span>
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label={labels.sort}>
+              <option value="recommended">{labels.recommended}</option>
+              <option value="price-asc">{labels.priceAsc}</option>
+              <option value="price-desc">{labels.priceDesc}</option>
+              <option value="name-asc">{labels.nameAsc}</option>
+              <option value="name-desc">{labels.nameDesc}</option>
+            </select>
+            <span className="catalog-sort-chevron-v221" aria-hidden="true">⌄</span>
+          </label>
+        )}
       </div>
 
       {filtered.length === 0 ? <div className="empty-state">{val("empty")}</div> : (
@@ -141,14 +148,14 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
                 <h3>{language === "fr" ? category.name_fr : category.name_en || category.name_fr}</h3>
                 <span>{categoryProducts.length}</span>
               </div>
-              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""} ${kind === "shop" && categoryProducts.length < 4 ? "product-grid-sparse-v412" : ""}`}>
+              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid menu-compact-grid-v449" : ""} ${kind === "shop" && categoryProducts.length < 4 ? "product-grid-sparse-v412" : ""}`}>
                 {categoryProducts.map(renderProduct)}
               </div>
             </section>
           ))}
           {uncategorized.length > 0 && (
             <section className="onepage-category-group">
-              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid" : ""} ${kind === "shop" && uncategorized.length < 4 ? "product-grid-sparse-v412" : ""}`}>
+              <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid menu-compact-grid-v449" : ""} ${kind === "shop" && uncategorized.length < 4 ? "product-grid-sparse-v412" : ""}`}>
                 {uncategorized.map(renderProduct)}
               </div>
             </section>
@@ -170,11 +177,38 @@ export function UnifiedCatalogSections({
   shopCategories: Category[];
   shopProducts: Product[];
 }) {
+  const { language } = useLanguage();
+  const tasting = language === "fr"
+    ? {
+        eyebrow: "DÉGUSTER SUR PLACE",
+        title: "Vous souhaitez goûter avant de choisir ?",
+        text: "Découvrez nos boissons et desserts préparés à Nice, puis retrouvez vos matchas préférés dans la Boutique.",
+        cta: "Découvrir la carte",
+      }
+    : {
+        eyebrow: "TASTE IN STORE",
+        title: "Would you like to taste before choosing?",
+        text: "Discover our drinks and desserts prepared in Nice, then find your favourite matchas in the Shop.",
+        cta: "Explore the menu",
+      };
+
   return (
     <>
-      <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />
-      <div className="onepage-divider"><span>一期一会</span></div>
       <CatalogBlock id="boutique" kind="shop" categories={shopCategories} products={shopProducts} />
+
+      <section className="boutique-menu-bridge-v449" aria-labelledby="tasting-title-v449">
+        <div>
+          <p className="eyebrow">{tasting.eyebrow}</p>
+          <h2 id="tasting-title-v449">{tasting.title}</h2>
+          <p>{tasting.text}</p>
+        </div>
+        <a className="button ghost boutique-menu-bridge-cta-v449" href="#menu">
+          {tasting.cta}
+          <span aria-hidden="true">↓</span>
+        </a>
+      </section>
+
+      <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />
     </>
   );
 }

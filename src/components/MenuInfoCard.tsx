@@ -17,7 +17,13 @@ function badgeLengthClass(value: string) {
   return "badge-xlong-v385";
 }
 
-export function MenuInfoCard({ product }: { product: Product }) {
+export function MenuInfoCard({
+  product,
+  compact = false,
+}: {
+  product: Product;
+  compact?: boolean;
+}) {
   const { language } = useLanguage();
   const name = (language === "fr" ? product.name_fr : product.name_en) || product.name_fr;
   const description = (language === "fr" ? product.description_fr : product.description_en) || product.description_fr || "";
@@ -25,14 +31,20 @@ export function MenuInfoCard({ product }: { product: Product }) {
   const image = gallery[0]?.url || product.image_url || "/product-placeholder.svg";
 
   return (
-    <article className="menu-info-card">
+    <article
+      className={`menu-info-card${compact ? " menu-info-card-compact-v449" : ""}`}
+    >
       <div className="menu-info-media">
         <SafeImage
           src={image}
           alt={name}
           width={800}
           height={640}
-          sizes="(max-width: 720px) calc(100vw - 32px), (max-width: 1100px) 45vw, 360px"
+          sizes={
+            compact
+              ? "(max-width: 900px) 96px, 104px"
+              : "(max-width: 720px) calc(100vw - 32px), (max-width: 1100px) 45vw, 360px"
+          }
         />
         {product.badge && <span className={`menu-info-badge ${badgeLengthClass(product.badge)}`}>{product.badge}</span>}
       </div>
