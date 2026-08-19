@@ -25,9 +25,11 @@ const header = readFileSync(
 test("SafeImage optimizes local and Supabase media while preserving arbitrary CMS URLs", () => {
   assert.match(safeImage, /src\.startsWith\("\/"\)/);
   assert.match(safeImage, /url\.hostname\.endsWith\("\.supabase\.co"\)/);
-  assert.match(safeImage, /loader=\{passthroughLoader\} unoptimized/);
-  assert.match(safeImage, /src=\{src\} alt=\{alt\}/);
-  assert.match(safeImage, /return <Image \{\.\.\.props\} src=\{src\} alt=\{alt\} \/>;/);
+  assert.match(safeImage, /loader=\{passthroughLoader\}/);
+  assert.match(safeImage, /unoptimized/);
+  assert.match(safeImage, /src=\{src\}/);
+  assert.match(safeImage, /alt=\{alt\}/);
+  assert.match(safeImage, /onError=\{handleError\}/);
 });
 
 test("ProductCard storefront images use SafeImage with responsive sizing", () => {

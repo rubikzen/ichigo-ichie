@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { SafeImage } from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
+import { sanitizeStorefrontProductText } from "@/lib/product-content";
 
 export function ProductPageContent({
   product,
@@ -21,14 +22,15 @@ export function ProductPageContent({
 
   const name =
     (language === "fr" ? product.name_fr : product.name_en) || product.name_fr;
-  const description =
+  const description = sanitizeStorefrontProductText(
     (language === "fr" ? product.description_fr : product.description_en) ||
-    product.description_fr ||
-    "";
+      product.description_fr ||
+      "",
+  );
   const longDescription =
-    (language === "fr"
-      ? product.long_description_fr
-      : product.long_description_en) || description;
+    sanitizeStorefrontProductText(
+      language === "fr" ? product.long_description_fr : product.long_description_en,
+    ) || description;
   const categoryName =
     (language === "fr" ? categoryNameFr : categoryNameEn) || categoryNameFr;
 

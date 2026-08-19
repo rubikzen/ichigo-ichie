@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { createPortal } from "react-dom";
 import type { CartChoice, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, packagingLabel, productVariantLabel, variantLabel } from "@/lib/product-label";
+import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
@@ -87,8 +88,15 @@ function ProductCardStateful({ product }: { product: Product }) {
   }, [open, gallery.length]);
 
   const name = language === "fr" ? product.name_fr : product.name_en;
-  const shortDescription = (language === "fr" ? product.description_fr : product.description_en) || product.description_fr || "";
-  const fullDescription = (language === "fr" ? product.long_description_fr : product.long_description_en) || shortDescription;
+  const shortDescription = sanitizeStorefrontProductText(
+    (language === "fr" ? product.description_fr : product.description_en) ||
+      product.description_fr ||
+      "",
+  );
+  const fullDescription =
+    sanitizeStorefrontProductText(
+      language === "fr" ? product.long_description_fr : product.long_description_en,
+    ) || shortDescription;
   const variant = selectableVariants.find((item) => item.id === variantId) ?? firstAvailable;
 
   const packageOptions = useMemo(() => {

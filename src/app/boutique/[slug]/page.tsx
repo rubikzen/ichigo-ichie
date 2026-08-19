@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCachedCatalog } from "@/lib/catalog-server";
 import { ProductPageContent } from "@/components/ProductPageContent";
 import type { Product, Variant } from "@/lib/types";
+import { sanitizeStorefrontProductText } from "@/lib/product-content";
 
 export const revalidate = 30;
 
@@ -45,13 +46,17 @@ async function getProductContext(slug: string) {
 }
 
 function productDescription(product: Product) {
-  return (
-    product.description_fr ||
-    product.description_en ||
-    product.long_description_fr ||
-    product.long_description_en ||
-    `${product.name_fr} — sélection Ichigo Ichie.`
-  );
+  for (const candidate of [
+    product.description_fr,
+    product.description_en,
+    product.long_description_fr,
+    product.long_description_en,
+  ]) {
+    const sanitized = sanitizeStorefrontProductText(candidate);
+    if (sanitized) return sanitized;
+  }
+
+  return `${product.name_fr} — sélection Ichigo Ichie.`;
 }
 
 function offerForVariant(product: Product, variant: Variant) {

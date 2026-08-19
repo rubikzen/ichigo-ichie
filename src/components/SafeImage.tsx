@@ -17,10 +17,32 @@ function canUseNextImageOptimizer(src: SafeImageProps["src"]) {
 
 const passthroughLoader = ({ src }: { src: string }) => src;
 
-export function SafeImage({ src, alt, ...props }: SafeImageProps) {
+const fallbackImage = "/product-placeholder.svg";
+
+export function SafeImage({ src, alt, onError, ...props }: SafeImageProps) {
+  const handleError: NonNullable<SafeImageProps["onError"]> = (event) => {
+    onError?.(event);
+
+    const image = event.currentTarget;
+    if (image.dataset.safeImageFallback === "true") return;
+
+    image.dataset.safeImageFallback = "true";
+    image.srcset = "";
+    image.src = fallbackImage;
+  };
+
   if (!canUseNextImageOptimizer(src)) {
-    return <Image {...props} src={src} alt={alt} loader={passthroughLoader} unoptimized />;
+    return (
+      <Image
+        {...props}
+        src={src}
+        alt={alt}
+        loader={passthroughLoader}
+        unoptimized
+        onError={handleError}
+      />
+    );
   }
 
-  return <Image {...props} src={src} alt={alt} />;
+  return <Image {...props} src={src} alt={alt} onError={handleError} />;
 }
