@@ -20,7 +20,11 @@ const header = readFileSync(
 const marker = "/* Ichigo Ichie V4.49.2 — Mobile Boutique density polish */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V449.2 CSS marker must exist");
-const v4492 = css.slice(start);
+const nextMarker = css.indexOf(
+  "/* Ichigo Ichie V4.49.2a — Mobile visual safety fix */",
+  start + marker.length
+);
+const v4492 = css.slice(start, nextMarker >= 0 ? nextMarker : undefined);
 
 test("V449.2 remains mobile-only and Shop-scoped for product density", () => {
   assert.ok(v4492.includes("@media (max-width: 760px)"));

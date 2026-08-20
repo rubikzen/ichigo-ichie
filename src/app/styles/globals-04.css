@@ -6922,3 +6922,135 @@
     gap: 4px;
   }
 }
+
+
+/* Ichigo Ichie V4.57 — Product sellability preflight */
+.sellability-card-v457 {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(32, 67, 49, 0.13);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.sellability-card-v457.blocked {
+  border-color: rgba(181, 78, 38, 0.24);
+  background: rgba(255, 249, 246, 0.82);
+}
+
+.sellability-head-v457 {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sellability-head-v457 > div {
+  display: grid;
+  gap: 3px;
+}
+
+.sellability-head-v457 span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.sellability-head-v457 em {
+  font-size: 11px;
+  font-style: normal;
+  opacity: 0.68;
+}
+
+.sellability-checks-v457 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.sellability-check-v457 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(32, 67, 49, 0.11);
+  border-radius: 11px;
+  background: rgba(248, 249, 246, 0.76);
+}
+
+.sellability-check-v457 > span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  border-radius: 999px;
+  background: rgba(32, 67, 49, 0.09);
+  font-weight: 800;
+}
+
+.sellability-check-v457 > div {
+  display: grid;
+  min-width: 0;
+}
+
+.sellability-check-v457 strong,
+.sellability-check-v457 small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sellability-check-v457 strong {
+  font-size: 11px;
+}
+
+.sellability-check-v457 small {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.sellability-check-v457.blocker {
+  border-color: rgba(181, 78, 38, 0.25);
+  background: rgba(255, 242, 237, 0.75);
+}
+
+.sellability-check-v457.warning {
+  border-color: rgba(181, 123, 18, 0.25);
+  background: rgba(255, 248, 234, 0.78);
+}
+
+.sellability-issues-v457 {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 11px;
+}
+
+.sellability-issues-v457 .warning {
+  opacity: 0.72;
+}
+
+.quick-visibility.blocked-by-sellability-v457 {
+  border-style: dashed;
+}
+
+@media (max-width: 900px) {
+  .sellability-checks-v457 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sellability-head-v457 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sellability-checks-v457 {
+    grid-template-columns: 1fr;
+  }
+}

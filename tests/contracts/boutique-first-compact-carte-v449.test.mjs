@@ -97,8 +97,11 @@ test("compact Carte uses two-column rows on desktop and one column on smaller sc
       "@media (max-width: 900px) {\n  .boutique-menu-bridge-v449"
     )
   );
-  const media900 = css.lastIndexOf("@media (max-width: 900px)");
-  const media760 = css.lastIndexOf("@media (max-width: 760px)");
+  const v449Marker = css.indexOf(
+    "/* Ichigo Ichie V4.49 — Boutique-first homepage & compact carte */"
+  );
+  const media900 = css.indexOf("@media (max-width: 900px)", v449Marker);
+  const media760 = css.indexOf("@media (max-width: 760px)", media900);
   const responsive = css.slice(media900, media760);
   assert.ok(responsive.includes(".menu-compact-grid-v449"));
   assert.ok(responsive.includes("grid-template-columns: 1fr"));

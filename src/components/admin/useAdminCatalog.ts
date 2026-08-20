@@ -8,6 +8,7 @@ import {
   normalizeEditorialText,
   normalizeIdealFor,
 } from "@/lib/product-content";
+import { productSellabilityPreflight } from "@/lib/product-sellability";
 import {
   blankProduct,
   inferProductPreset,
@@ -214,6 +215,19 @@ export function useAdminCatalog(
         setSaving(false);
         setMessage(
           `Publication bloquée · ${publicationIssues.length} point${publicationIssues.length > 1 ? "s" : ""} de contenu à corriger.`,
+        );
+        return null;
+      }
+
+      const sellability = productSellabilityPreflight(
+        { ...productDraft, ...payload },
+        variants.filter((variant) => variant.product_id === productDraft.id),
+      );
+
+      if (sellability.blockers.length > 0) {
+        setSaving(false);
+        setMessage(
+          `Publication bloquée · ${sellability.blockers.length} point${sellability.blockers.length > 1 ? "s" : ""} de vente à corriger.`,
         );
         return null;
       }

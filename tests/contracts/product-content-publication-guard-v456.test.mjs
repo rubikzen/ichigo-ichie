@@ -28,7 +28,10 @@ test("V456 hidden incomplete Boutique products remain editable because the guard
 
 test("V456 quick activation opens Details instead of publishing an incomplete Boutique item", () => {
   assert.match(admin, /function toggleQuickVisibility/);
-  assert.match(admin, /!product\.active && kind === "shop" && productContentIssues\(product\)\.length > 0/);
+  assert.match(
+    admin,
+    /!product\.active[\s\S]{0,120}kind === "shop"[\s\S]{0,180}productContentIssues\(product\)\.length > 0/,
+  );
   assert.match(admin, /chooseProduct\(product\);\s*return;/);
 });
 
@@ -41,7 +44,10 @@ test("V456 quick visibility keeps normal hide and clean-publish behavior", () =>
 test("V456 drawer explains why publication is locked and disables first activation while issues remain", () => {
   assert.match(admin, /publish-guard-banner-v456/);
   assert.match(admin, /Publication verrouillée/);
-  assert.match(admin, /disabled=\{!productDraft\.active && draftCategory\?\.kind === "shop" && draftContentIssues\.length > 0\}/);
+  assert.match(
+    admin,
+    /disabled=\{!productDraft\.active && draftCategory\?\.kind === "shop" && \(draftContentIssues\.length > 0 \|\| draftSellabilityBlockers\.length > 0\)\}/,
+  );
   assert.match(admin, /Contenu à corriger avant publication/);
 });
 
