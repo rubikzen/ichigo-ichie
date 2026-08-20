@@ -6766,3 +6766,32 @@
     gap: 12px;
   }
 }
+
+
+/* Ichigo Ichie V4.52 — Editorial safe fixes */
+.content-quality-actions-v452 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.content-quality-actions-v452 .button {
+  min-height: 34px;
+}
+
+.content-quality-actions-v452 small {
+  flex-basis: 100%;
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.7;
+}
+
+@media (max-width: 760px) {
+  .content-quality-actions-v452 .button {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+}

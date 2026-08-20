@@ -220,20 +220,22 @@ export function auditProductContent(
   }
 
   if (product.kind === "shop") {
-    if (!String(product.origin ?? "").trim()) {
-      add("origin_missing", "warning", "Origine manquante");
-    }
+    if (product.type === "product") {
+      if (!String(product.origin ?? "").trim()) {
+        add("origin_missing", "warning", "Origine manquante");
+      }
 
-    if (!idealFor.length) {
-      add("ideal_for_missing", "warning", "Usage « Idéal pour » manquant");
-    }
+      if (!idealFor.length) {
+        add("ideal_for_missing", "warning", "Usage « Idéal pour » manquant");
+      }
 
-    if (product.type === "product" && (!longFr || longFr === shortFr)) {
-      add(
-        "long_fr_missing",
-        "warning",
-        "Description complète FR à enrichir",
-      );
+      if (!longFr || longFr === shortFr) {
+        add(
+          "long_fr_missing",
+          "warning",
+          "Description complète FR à enrichir",
+        );
+      }
     }
 
     if ((product.ideal_for ?? []).length !== idealFor.length) {
@@ -246,4 +248,42 @@ export function auditProductContent(
   }
 
   return issues;
+}
+
+
+const SAFE_CONTENT_FIX_CODES = new Set([
+  "supplier_boilerplate",
+  "ideal_for_cleanup",
+  "long_en_likely_fr",
+]);
+
+export function safeContentFixCount(
+  product: ProductContentQualityInput,
+) {
+  return auditProductContent(product).filter((issue) =>
+    SAFE_CONTENT_FIX_CODES.has(issue.code),
+  ).length;
+}
+
+export function applySafeContentQualityFixes(
+  product: ProductContentQualityInput,
+) {
+  const issueCodes = new Set(
+    auditProductContent(product).map((issue) => issue.code),
+  );
+
+  const shortFr = normalizeEditorialText(product.description_fr);
+  const shortEn = normalizeEditorialText(product.description_en);
+  const longFr = normalizeEditorialText(product.long_description_fr);
+  const longEn = normalizeEditorialText(product.long_description_en);
+
+  return {
+    description_fr: shortFr,
+    description_en: shortEn,
+    long_description_fr: longFr,
+    long_description_en: issueCodes.has("long_en_likely_fr")
+      ? shortEn || shortFr
+      : longEn,
+    ideal_for: normalizeIdealFor(product.ideal_for),
+  };
 }

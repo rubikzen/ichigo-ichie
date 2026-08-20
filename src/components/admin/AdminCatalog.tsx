@@ -8,7 +8,11 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { VariantEditor } from "./AdminCatalogEditors";
 import { RestockWaitlistAdmin } from "./RestockWaitlistAdmin";
 import { inferProductPreset, type AdminProduct } from "./catalog-model";
-import { auditProductContent } from "@/lib/product-content";
+import {
+  applySafeContentQualityFixes,
+  auditProductContent,
+  safeContentFixCount,
+} from "@/lib/product-content";
 import { useAdminCatalog } from "./useAdminCatalog";
 
 export function AdminCatalog({
@@ -59,6 +63,8 @@ export function AdminCatalog({
   const draftCategory = categoryById.get(productDraft.category_id);
   const draftPreset = !productDraft.id && draftCategory ? inferProductPreset(draftCategory, draftCategory.kind) : null;
   const draftContentIssues = draftCategory?.kind === "shop" ? auditProductContent({ ...productDraft, kind: "shop" }) : [];
+  const draftSafeFixCount = draftCategory?.kind === "shop" ? safeContentFixCount({ ...productDraft, kind: "shop" }) : 0;
+  const draftHasShortEnLanguageWarning = draftContentIssues.some((issue) => issue.code === "short_en_likely_fr");
   const catalogCategories = categories.filter((category) => category.kind === catalogZone);
   const normalizedCatalogSearch = catalogSearch.trim().toLowerCase();
   const catalogProducts = products
@@ -72,6 +78,23 @@ export function AdminCatalog({
     products: catalogProducts.filter((product) => product.category_id === category.id),
     totalCount: products.filter((product) => product.category_id === category.id).length,
   })).filter((group) => !normalizedCatalogSearch || group.products.length > 0);
+
+  function applySafeEditorialFixes() {
+    setProductDraft((current) => ({
+      ...current,
+      ...applySafeContentQualityFixes({
+        ...current,
+        kind: categoryById.get(current.category_id)?.kind,
+      }),
+    }));
+  }
+
+  function useFrenchFallbackForShortEnglish() {
+    setProductDraft((current) => ({
+      ...current,
+      description_en: current.description_fr,
+    }));
+  }
 
   function renderQuickProductRow(product: AdminProduct, index: number, orderedProducts: AdminProduct[]) {
     const productVariants = variants.filter((variant) => variant.product_id === product.id);
@@ -142,7 +165,7 @@ export function AdminCatalog({
           <form onSubmit={saveProduct}>
             <div className="editor-head sticky-editor-head"><div><p className="eyebrow">{productDraft.id ? "DÉTAILS" : "NOUVEAU"}</p><h2>{productDraft.name_fr || (catalogZone === "menu" ? "Nouvel article du menu" : "Nouveau produit boutique")}</h2></div><div><button type="button" className="button ghost small" onClick={() => setAdvancedOpen(false)}>Fermer</button>{productDraft.id && <button type="button" className="button danger small" onClick={() => deleteProduct(productDraft.id)}>Supprimer</button>}<button className="button primary small" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button></div></div>
             {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
-            {draftCategory?.kind === "shop" && <div className={`content-quality-panel-v451 ${draftContentIssues.length ? "needs-review" : "ready"}`}><div><span className="content-quality-kicker-v451">QUALITÉ DU CONTENU</span><strong>{draftContentIssues.length ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier` : "Contenu prêt ✓"}</strong><p>{draftContentIssues.length ? "Corrigez les points signalés avant de publier ou lors de la prochaine mise à jour." : "Descriptions et informations essentielles sont cohérentes."}</p></div>{draftContentIssues.length > 0 && <ul>{draftContentIssues.map((issue) => <li key={issue.code} className={issue.level}>{issue.label}</li>)}</ul>}</div>}
+            {draftCategory?.kind === "shop" && <div className={`content-quality-panel-v451 ${draftContentIssues.length ? "needs-review" : "ready"}`}><div><span className="content-quality-kicker-v451">QUALITÉ DU CONTENU</span><strong>{draftContentIssues.length ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier` : "Contenu prêt ✓"}</strong><p>{draftContentIssues.length ? "Corrigez les points signalés avant de publier ou lors de la prochaine mise à jour." : "Descriptions et informations essentielles sont cohérentes."}</p>{draftContentIssues.length > 0 && <div className="content-quality-actions-v452">{draftSafeFixCount > 0 && <button type="button" className="button ghost small" onClick={applySafeEditorialFixes}>Appliquer {draftSafeFixCount} correction{draftSafeFixCount > 1 ? "s" : ""} sûre{draftSafeFixCount > 1 ? "s" : ""}</button>}{draftHasShortEnLanguageWarning && <button type="button" className="button ghost small" onClick={useFrenchFallbackForShortEnglish}>Utiliser le fallback FR pour EN</button>}<small>Le brouillon est seulement prérempli : vérifiez les champs puis cliquez sur Enregistrer.</small></div>}</div>{draftContentIssues.length > 0 && <ul>{draftContentIssues.map((issue) => <li key={issue.code} className={issue.level}>{issue.label}</li>)}</ul>}</div>}
             {!productDraft.id && draftPreset && <div className="smart-add-banner">
               <div><span className="smart-add-kicker">Préconfiguration automatique</span><strong>{draftCategory?.name_fr}</strong><p>{draftPreset.note}</p></div>
               <div className="smart-add-chips"><span>{draftPreset.title}</span><span>{draftPreset.fulfillment}</span><span>{catalogZone === "menu" ? "Sans stock" : "Stock à renseigner"}</span><span className="draft-chip">Brouillon masqué</span></div>
