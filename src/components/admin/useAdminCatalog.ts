@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Category, Variant } from "@/lib/types";
-import { normalizeEditorialText, normalizeIdealFor } from "@/lib/product-content";
+import {
+  auditProductContent,
+  normalizeEditorialText,
+  normalizeIdealFor,
+} from "@/lib/product-content";
 import {
   blankProduct,
   inferProductPreset,
@@ -194,6 +198,26 @@ export function useAdminCatalog(
       ideal_for: normalizeIdealFor(productDraft.ideal_for),
       shipping_weight_g: Number(productDraft.shipping_weight_g || 0),
     };
+
+    const draftKind = categories.find(
+      (category) => category.id === productDraft.category_id,
+    )?.kind;
+
+    if (draftKind === "shop" && payload.active) {
+      const publicationIssues = auditProductContent({
+        ...productDraft,
+        ...payload,
+        kind: "shop",
+      });
+
+      if (publicationIssues.length > 0) {
+        setSaving(false);
+        setMessage(
+          `Publication bloquée · ${publicationIssues.length} point${publicationIssues.length > 1 ? "s" : ""} de contenu à corriger.`,
+        );
+        return null;
+      }
+    }
 
     if (productDraft.id) {
       const { error } = await supabase
