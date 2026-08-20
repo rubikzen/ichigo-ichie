@@ -6854,3 +6854,26 @@
     justify-content: center;
   }
 }
+
+
+/* Ichigo Ichie V4.55 — Review finish state */
+.content-quality-filter-v455-ready {
+  opacity: 0.82;
+  cursor: default;
+}
+
+.content-quality-filter-v455-ready:disabled {
+  border-color: rgba(32, 67, 49, 0.14);
+  background: rgba(239, 246, 239, 0.82);
+  color: inherit;
+}
+
+.drawer-save-actions-v455-finish .button.primary {
+  min-width: 205px;
+}
+
+@media (max-width: 640px) {
+  .drawer-save-actions-v455-finish .button.primary {
+    min-width: 0;
+  }
+}
