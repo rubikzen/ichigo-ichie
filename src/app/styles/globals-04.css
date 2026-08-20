@@ -6795,3 +6795,31 @@
     min-height: 42px;
   }
 }
+
+
+/* Ichigo Ichie V4.53 — Product content completion */
+.content-completion-overview-v453 { display:grid; grid-template-columns:minmax(170px,auto) minmax(180px,1fr) auto; align-items:center; gap:14px; padding:10px 14px; margin:0 0 12px; border:1px solid rgba(32,67,49,.12); border-radius:14px; background:rgba(246,248,243,.82); }
+.content-completion-overview-v453 > div:first-child { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+.content-completion-overview-v453 span,.content-completion-overview-v453 b { font-size:12px; }
+.content-completion-overview-v453 > div:first-child span { opacity:.68; }
+.content-completion-track-v453 { height:7px; overflow:hidden; border-radius:999px; background:rgba(32,67,49,.09); }
+.content-completion-track-v453 > span { display:block; height:100%; border-radius:inherit; background:currentColor; transition:width 180ms ease; }
+.content-completion-card-v453 { padding:14px 16px; margin-bottom:10px; border:1px solid rgba(32,67,49,.12); border-radius:16px; background:#fff; }
+.content-completion-head-v453 { display:flex; justify-content:space-between; align-items:end; gap:12px; margin-bottom:10px; }
+.content-completion-head-v453 > div { display:grid; gap:3px; }
+.content-completion-head-v453 span,.content-review-nav-v453 span { font-size:10px; font-weight:800; letter-spacing:.14em; }
+.content-completion-head-v453 > b { font-size:20px; }
+.content-completion-steps-v453 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.content-completion-step-v453 { display:flex; align-items:center; gap:8px; min-width:0; padding:9px 10px; border:1px solid rgba(32,67,49,.11); border-radius:11px; background:rgba(248,249,246,.75); }
+.content-completion-step-v453 > span { display:grid; place-items:center; width:23px; height:23px; flex:0 0 23px; border-radius:999px; background:rgba(32,67,49,.09); font-weight:800; }
+.content-completion-step-v453 > div { display:grid; min-width:0; }
+.content-completion-step-v453 strong { overflow:hidden; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.content-completion-step-v453 small { font-size:10px; opacity:.66; }
+.content-completion-step-v453.review { border-color:rgba(181,123,18,.28); background:rgba(255,248,234,.78); }
+.content-completion-step-v453.fallback { border-style:dashed; }
+.content-review-nav-v453 { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0 15px; border-bottom:1px solid rgba(32,67,49,.1); }
+.content-review-nav-v453 > div:first-child { display:grid; gap:3px; }
+.content-review-nav-v453 > div:last-child { display:flex; gap:7px; }
+@media (max-width:900px) { .content-completion-steps-v453 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:640px) { .content-completion-overview-v453 { grid-template-columns:1fr auto; } .content-completion-track-v453 { grid-column:1/-1; grid-row:2; } .content-completion-steps-v453 { grid-template-columns:1fr; } .content-review-nav-v453 { align-items:stretch; flex-direction:column; } .content-review-nav-v453 > div:last-child { display:grid; grid-template-columns:1fr 1fr; } .content-review-nav-v453 .button { min-height:42px; } }
+@media (prefers-reduced-motion:reduce) { .content-completion-track-v453 > span { transition:none; } }

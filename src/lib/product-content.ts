@@ -287,3 +287,95 @@ export function applySafeContentQualityFixes(
     ideal_for: normalizeIdealFor(product.ideal_for),
   };
 }
+
+
+export type ProductContentCompletionStatus = "ready" | "fallback" | "review";
+
+export type ProductContentCompletionStep = {
+  id: string;
+  label: string;
+  status: ProductContentCompletionStatus;
+  detail: string;
+};
+
+export function productContentCompletion(
+  product: ProductContentQualityInput,
+) {
+  const issues = auditProductContent(product);
+  const issueCodes = new Set(issues.map((issue) => issue.code));
+  const shortEn = normalizeEditorialText(product.description_en);
+  const longFr = normalizeEditorialText(product.long_description_fr);
+  const longEn = normalizeEditorialText(product.long_description_en);
+  const isMatchaProduct = product.kind === "shop" && product.type === "product";
+  const steps: ProductContentCompletionStep[] = [];
+
+  const addStep = (
+    id: string,
+    label: string,
+    status: ProductContentCompletionStatus,
+    detail: string,
+  ) => steps.push({ id, label, status, detail });
+
+  addStep(
+    "short_fr",
+    "Texte court FR",
+    issueCodes.has("short_fr_missing") || issueCodes.has("short_fr_likely_en") ? "review" : "ready",
+    "Texte principal de la carte Boutique.",
+  );
+
+  addStep(
+    "short_en",
+    "Texte court EN",
+    issueCodes.has("short_en_likely_fr") ? "review" : shortEn ? "ready" : "fallback",
+    shortEn ? "Version anglaise renseignée." : "Fallback FR accepté si EN reste vide.",
+  );
+
+  if (isMatchaProduct) {
+    addStep(
+      "long_fr",
+      "Fiche complète FR",
+      issueCodes.has("long_fr_missing") || issueCodes.has("long_fr_likely_en") ? "review" : "ready",
+      "Description enrichie de la fiche produit.",
+    );
+    addStep(
+      "long_en",
+      "Fiche complète EN",
+      issueCodes.has("long_en_likely_fr") ? "review" : longEn ? "ready" : "fallback",
+      longEn ? "Version anglaise renseignée." : "Fallback du texte court accepté.",
+    );
+    addStep(
+      "origin",
+      "Origine",
+      issueCodes.has("origin_missing") ? "review" : "ready",
+      "Origine commerciale vérifiée du matcha.",
+    );
+    addStep(
+      "ideal_for",
+      "Idéal pour",
+      issueCodes.has("ideal_for_missing") || issueCodes.has("ideal_for_cleanup") ? "review" : "ready",
+      "Usages recommandés renseignés sans doublon.",
+    );
+  } else {
+    if (longFr && issueCodes.has("long_fr_likely_en")) {
+      addStep("long_fr", "Texte long FR", "review", "Le texte long FR semble être en anglais.");
+    }
+    if (longEn && issueCodes.has("long_en_likely_fr")) {
+      addStep("long_en", "Texte long EN", "review", "Le texte long EN semble être en français.");
+    }
+  }
+
+  if (issueCodes.has("supplier_boilerplate")) {
+    addStep(
+      "supplier_cleanup",
+      "Nettoyage fournisseur",
+      "review",
+      "Retirer les mentions fournisseur ou livraison internationale.",
+    );
+  }
+
+  const completedCount = steps.filter((step) => step.status !== "review").length;
+  const totalCount = steps.length;
+  const percent = totalCount ? Math.round((completedCount / totalCount) * 100) : 100;
+
+  return { steps, completedCount, totalCount, percent, issueCount: issues.length };
+}

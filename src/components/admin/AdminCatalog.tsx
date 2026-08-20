@@ -11,6 +11,7 @@ import { inferProductPreset, type AdminProduct } from "./catalog-model";
 import {
   applySafeContentQualityFixes,
   auditProductContent,
+  productContentCompletion,
   safeContentFixCount,
 } from "@/lib/product-content";
 import { useAdminCatalog } from "./useAdminCatalog";
@@ -58,13 +59,34 @@ export function AdminCatalog({
     ...product,
     kind: categoryById.get(product.category_id)?.kind,
   });
+  const productCompletion = (product: AdminProduct) => productContentCompletion({
+    ...product,
+    kind: categoryById.get(product.category_id)?.kind,
+  });
   const shopProducts = products.filter((product) => categoryById.get(product.category_id)?.kind === "shop");
-  const shopContentReviewCount = shopProducts.filter((product) => productContentIssues(product).length > 0).length;
+  const shopReviewProducts = shopProducts
+    .filter((product) => productContentIssues(product).length > 0)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name_fr.localeCompare(b.name_fr));
+  const shopContentReviewCount = shopReviewProducts.length;
+  const shopContentReadyCount = Math.max(0, shopProducts.length - shopContentReviewCount);
+  const shopContentProgress = shopProducts.length
+    ? Math.round((shopContentReadyCount / shopProducts.length) * 100)
+    : 100;
   const draftCategory = categoryById.get(productDraft.category_id);
   const draftPreset = !productDraft.id && draftCategory ? inferProductPreset(draftCategory, draftCategory.kind) : null;
   const draftContentIssues = draftCategory?.kind === "shop" ? auditProductContent({ ...productDraft, kind: "shop" }) : [];
+  const draftCompletion = draftCategory?.kind === "shop"
+    ? productContentCompletion({ ...productDraft, kind: "shop" })
+    : null;
   const draftSafeFixCount = draftCategory?.kind === "shop" ? safeContentFixCount({ ...productDraft, kind: "shop" }) : 0;
   const draftHasShortEnLanguageWarning = draftContentIssues.some((issue) => issue.code === "short_en_likely_fr");
+  const currentReviewIndex = productDraft.id
+    ? shopReviewProducts.findIndex((product) => product.id === productDraft.id)
+    : -1;
+  const previousReviewProduct = currentReviewIndex > 0 ? shopReviewProducts[currentReviewIndex - 1] : null;
+  const nextReviewProduct = currentReviewIndex >= 0
+    ? shopReviewProducts[currentReviewIndex + 1] ?? null
+    : shopReviewProducts[0] ?? null;
   const catalogCategories = categories.filter((category) => category.kind === catalogZone);
   const normalizedCatalogSearch = catalogSearch.trim().toLowerCase();
   const catalogProducts = products
@@ -126,6 +148,7 @@ export function AdminCatalog({
         <div className="quick-catalog-actions"><input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder={`Rechercher dans ${catalogZone === "menu" ? "le menu" : "la boutique"}…`} />{catalogZone === "shop" && <button className={`button ghost small content-quality-filter-v451 ${contentQualityOnly ? "active" : ""}`} type="button" aria-pressed={contentQualityOnly} onClick={() => setContentQualityOnly((current) => !current)}>{contentQualityOnly ? "Afficher tout" : `À revoir · ${shopContentReviewCount}`}</button>}<button className="button primary small" type="button" onClick={() => chooseProduct(undefined, catalogZone)}>+ Ajouter</button></div>
       </div>
       <div className="quick-admin-hint"><strong>Modification rapide</strong><span>Prix, stock, poids, visibilité et ordre se modifient directement ici. Ouvrez “Détails” uniquement pour les descriptions, images, options ou variantes.</span>{catalogZone === "shop" && <span className={`content-quality-summary-v451 ${shopContentReviewCount ? "needs-review" : "ready"}`}>{shopContentReviewCount ? `${shopContentReviewCount} produit${shopContentReviewCount > 1 ? "s" : ""} à revoir` : "Contenu Boutique prêt ✓"}</span>}{quickSavingId && <em>Enregistrement…</em>}</div>
+      {catalogZone === "shop" && <div className="content-completion-overview-v453" aria-label="Progression du contenu Boutique"><div><strong>{shopContentReadyCount}/{shopProducts.length} fiches prêtes</strong><span>{shopContentReviewCount ? `${shopContentReviewCount} à revoir` : "Tout le contenu est prêt ✓"}</span></div><div className="content-completion-track-v453" aria-hidden="true"><span style={{ width: `${shopContentProgress}%` }}></span></div><b>{shopContentProgress}%</b></div>}
       {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
       <div className={`quick-catalog-category-list zone-${catalogZone}`}>
         {catalogCategoryGroups.length ? catalogCategoryGroups.map(({ category, products: categoryProducts, totalCount }) => {
@@ -165,7 +188,9 @@ export function AdminCatalog({
           <form onSubmit={saveProduct}>
             <div className="editor-head sticky-editor-head"><div><p className="eyebrow">{productDraft.id ? "DÉTAILS" : "NOUVEAU"}</p><h2>{productDraft.name_fr || (catalogZone === "menu" ? "Nouvel article du menu" : "Nouveau produit boutique")}</h2></div><div><button type="button" className="button ghost small" onClick={() => setAdvancedOpen(false)}>Fermer</button>{productDraft.id && <button type="button" className="button danger small" onClick={() => deleteProduct(productDraft.id)}>Supprimer</button>}<button className="button primary small" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button></div></div>
             {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
+            {draftCategory?.kind === "shop" && draftCompletion && <div className="content-completion-card-v453"><div className="content-completion-head-v453"><div><span>FICHE PRODUIT</span><strong>{draftCompletion.completedCount}/{draftCompletion.totalCount} points prêts</strong></div><b>{draftCompletion.percent}%</b></div><div className="content-completion-steps-v453">{draftCompletion.steps.map((step) => <div className={`content-completion-step-v453 ${step.status}`} key={step.id} title={step.detail}><span>{step.status === "ready" ? "✓" : step.status === "fallback" ? "↳" : "!"}</span><div><strong>{step.label}</strong><small>{step.status === "ready" ? "Prêt" : step.status === "fallback" ? "Fallback accepté" : "À vérifier"}</small></div></div>)}</div></div>}
             {draftCategory?.kind === "shop" && <div className={`content-quality-panel-v451 ${draftContentIssues.length ? "needs-review" : "ready"}`}><div><span className="content-quality-kicker-v451">QUALITÉ DU CONTENU</span><strong>{draftContentIssues.length ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier` : "Contenu prêt ✓"}</strong><p>{draftContentIssues.length ? "Corrigez les points signalés avant de publier ou lors de la prochaine mise à jour." : "Descriptions et informations essentielles sont cohérentes."}</p>{draftContentIssues.length > 0 && <div className="content-quality-actions-v452">{draftSafeFixCount > 0 && <button type="button" className="button ghost small" onClick={applySafeEditorialFixes}>Appliquer {draftSafeFixCount} correction{draftSafeFixCount > 1 ? "s" : ""} sûre{draftSafeFixCount > 1 ? "s" : ""}</button>}{draftHasShortEnLanguageWarning && <button type="button" className="button ghost small" onClick={useFrenchFallbackForShortEnglish}>Utiliser le fallback FR pour EN</button>}<small>Le brouillon est seulement prérempli : vérifiez les champs puis cliquez sur Enregistrer.</small></div>}</div>{draftContentIssues.length > 0 && <ul>{draftContentIssues.map((issue) => <li key={issue.code} className={issue.level}>{issue.label}</li>)}</ul>}</div>}
+            {draftCategory?.kind === "shop" && productDraft.id && shopContentReviewCount > 0 && <div className="content-review-nav-v453"><div><span>FILE DE RÉVISION</span><strong>{currentReviewIndex >= 0 ? `Produit ${currentReviewIndex + 1} sur ${shopContentReviewCount}` : `${shopContentReviewCount} produit${shopContentReviewCount > 1 ? "s" : ""} restant${shopContentReviewCount > 1 ? "s" : ""}`}</strong></div><div><button type="button" className="button ghost small" disabled={!previousReviewProduct} onClick={() => previousReviewProduct && chooseProduct(previousReviewProduct)}>← Précédent</button><button type="button" className="button ghost small" disabled={!nextReviewProduct || nextReviewProduct.id === productDraft.id} onClick={() => nextReviewProduct && chooseProduct(nextReviewProduct)}>Suivant à revoir →</button></div></div>}
             {!productDraft.id && draftPreset && <div className="smart-add-banner">
               <div><span className="smart-add-kicker">Préconfiguration automatique</span><strong>{draftCategory?.name_fr}</strong><p>{draftPreset.note}</p></div>
               <div className="smart-add-chips"><span>{draftPreset.title}</span><span>{draftPreset.fulfillment}</span><span>{catalogZone === "menu" ? "Sans stock" : "Stock à renseigner"}</span><span className="draft-chip">Brouillon masqué</span></div>
