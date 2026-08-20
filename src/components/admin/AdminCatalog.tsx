@@ -87,6 +87,10 @@ export function AdminCatalog({
   const nextReviewProduct = currentReviewIndex >= 0
     ? shopReviewProducts[currentReviewIndex + 1] ?? null
     : shopReviewProducts[0] ?? null;
+  const reviewAdvanceProduct =
+    nextReviewProduct && nextReviewProduct.id !== productDraft.id
+      ? nextReviewProduct
+      : null;
   const catalogCategories = categories.filter((category) => category.kind === catalogZone);
   const normalizedCatalogSearch = catalogSearch.trim().toLowerCase();
   const catalogProducts = products
@@ -116,6 +120,25 @@ export function AdminCatalog({
       ...current,
       description_en: current.description_fr,
     }));
+  }
+
+  async function saveAndOpenNextReview() {
+    const target = reviewAdvanceProduct;
+    if (!target) return;
+
+    const savedProduct = await saveProduct();
+    if (!savedProduct) return;
+
+    const savedKind = categoryById.get(savedProduct.category_id)?.kind;
+    const remainingIssues =
+      savedKind === "shop"
+        ? auditProductContent({ ...savedProduct, kind: "shop" })
+        : [];
+
+    // Persisting is not enough: unresolved content must never be skipped.
+    if (remainingIssues.length > 0) return;
+
+    chooseProduct(target, "shop", undefined, true);
   }
 
   function renderQuickProductRow(product: AdminProduct, index: number, orderedProducts: AdminProduct[]) {
@@ -214,7 +237,7 @@ export function AdminCatalog({
             <details className="admin-details" open={categoryById.get(productDraft.category_id)?.kind === "menu"}><summary>Photos</summary><div className="editor-section"><ProductGalleryAdmin productId={productDraft.id} productName={productDraft.name_fr || "Produit"} catalogKind={categoryById.get(productDraft.category_id)?.kind ?? catalogZone} fallbackImageUrl={productDraft.image_url} onMainImageChange={(url) => setProductDraft((current) => ({ ...current, image_url: url }))} /></div></details>
             {categoryById.get(productDraft.category_id)?.kind === "shop" && <details className="admin-details" open={selectedVariants.length > 0}><summary>Formats / variantes {selectedVariants.length ? `(${selectedVariants.length})` : ""}</summary><div className="editor-section"><div className="section-inline"><div><p className="muted">Créez autant de modèles que nécessaire : Boîte 30 g, Sachet 30 g, Boîte 100 g… Chaque modèle a son prix, son stock et son poids d’expédition. Les 3 photos sont communes au produit.</p><small className="muted">Un nouveau format est créé masqué : complétez-le puis cochez « Actif ».</small></div><button type="button" onClick={addVariant}>+ Ajouter un modèle</button></div>{!productDraft.id ? <p className="muted">Enregistrez d’abord le produit.</p> : selectedVariants.length ? <div className="variant-admin-list">{selectedVariants.map((variant) => <VariantEditor key={variant.id} variant={variant} onChange={(next) => setVariants((current) => current.map((v) => v.id === next.id ? next : v))} onSave={saveVariant} onDelete={deleteVariant} />)}</div> : <p className="muted">Aucun modèle. Le prix de base sera utilisé.</p>}</div></details>}
             <details className="admin-details"><summary>Affichage avancé</summary><div className="editor-section"><div className="form-grid three"><label>Ordre<input type="number" value={productDraft.sort_order} onChange={(e) => setProductDraft({ ...productDraft, sort_order: Number(e.target.value) })} /></label><label>Slug<input value={productDraft.slug} onChange={(e) => setProductDraft({ ...productDraft, slug: e.target.value })} placeholder="automatique si vide" /></label></div></div></details>
-            <div className="drawer-save-bar"><span>{message || "Les changements rapides de la liste sont sauvegardés automatiquement."}</span><button className="button primary" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer et continuer"}</button></div>
+            <div className="drawer-save-bar"><span>{message || "Les changements rapides de la liste sont sauvegardés automatiquement."}</span>{draftCategory?.kind === "shop" && productDraft.id && reviewAdvanceProduct ? <div className="drawer-save-actions-v454"><button type="submit" className="button ghost" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button><button type="button" className="button primary" disabled={saving || draftContentIssues.length > 0} title={draftContentIssues.length > 0 ? "Corrigez les points à vérifier avant de passer automatiquement au suivant." : `Enregistrer puis ouvrir ${reviewAdvanceProduct.name_fr}`} onClick={() => void saveAndOpenNextReview()}>{saving ? "Enregistrement…" : "Enregistrer et suivant →"}</button></div> : <button className="button primary" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer et continuer"}</button>}</div>
           </form>
         </div>
       </div>}

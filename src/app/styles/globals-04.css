@@ -6823,3 +6823,34 @@
 @media (max-width:900px) { .content-completion-steps-v453 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:640px) { .content-completion-overview-v453 { grid-template-columns:1fr auto; } .content-completion-track-v453 { grid-column:1/-1; grid-row:2; } .content-completion-steps-v453 { grid-template-columns:1fr; } .content-review-nav-v453 { align-items:stretch; flex-direction:column; } .content-review-nav-v453 > div:last-child { display:grid; grid-template-columns:1fr 1fr; } .content-review-nav-v453 .button { min-height:42px; } }
 @media (prefers-reduced-motion:reduce) { .content-completion-track-v453 > span { transition:none; } }
+
+
+/* Ichigo Ichie V4.54 — Review productivity */
+.drawer-save-actions-v454 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.drawer-save-actions-v454 .button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.drawer-save-actions-v454 .button:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .drawer-save-actions-v454 {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .drawer-save-actions-v454 .button {
+    width: 100%;
+    justify-content: center;
+  }
+}

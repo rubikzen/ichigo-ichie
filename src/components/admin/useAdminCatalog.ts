@@ -85,8 +85,9 @@ export function useAdminCatalog(
     product?: AdminProduct,
     zone: "menu" | "shop" = catalogZone,
     preferredCategoryId?: string,
+    preserveMessage = false,
   ) {
-    setMessage("");
+    if (!preserveMessage) setMessage("");
     setAdvancedOpen(true);
 
     if (!product) {
@@ -151,9 +152,11 @@ export function useAdminCatalog(
     }));
   }
 
-  async function saveProduct(event: FormEvent) {
-    if (!supabase) return;
-    event.preventDefault();
+  async function saveProduct(
+    event?: FormEvent,
+  ): Promise<AdminProduct | null> {
+    if (!supabase) return null;
+    event?.preventDefault();
     setSaving(true);
     setMessage("");
 
@@ -199,13 +202,17 @@ export function useAdminCatalog(
         .eq("id", productDraft.id);
 
       setSaving(false);
-      if (error) return setMessage(error.message);
+      if (error) {
+        setMessage(error.message);
+        return null;
+      }
 
       const restock = await processRestock(productDraft.id);
       setMessage(savedWithRestock(restock?.sent ?? 0));
       await loadProducts();
-      setProductDraft((current) => ({ ...current, ...payload }));
-      return;
+      const savedProduct = { ...productDraft, ...payload } as AdminProduct;
+      setProductDraft(savedProduct);
+      return savedProduct;
     }
 
     const { data, error } = await supabase
@@ -216,12 +223,15 @@ export function useAdminCatalog(
 
     setSaving(false);
     if (error || !data) {
-      return setMessage(error?.message ?? "Création impossible.");
+      setMessage(error?.message ?? "Création impossible.");
+      return null;
     }
 
+    const createdProduct = data as AdminProduct;
     setMessage("Enregistré ✓");
     await loadProducts();
-    chooseProduct(data as AdminProduct);
+    chooseProduct(createdProduct, catalogZone, undefined, true);
+    return createdProduct;
   }
 
   async function deleteProduct(id: string) {
