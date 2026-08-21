@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { SafeImage } from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
+import { trackConversion } from "@/lib/conversion-analytics";
 
 export function ProductPageContent({
   product,
@@ -19,6 +20,19 @@ export function ProductPageContent({
 }) {
   const { language } = useLanguage();
   const [imageIndex, setImageIndex] = useState(0);
+
+  useEffect(() => {
+    trackConversion(
+      "product_view",
+      {
+        product_id: product.id,
+        value: product.base_price,
+        currency: "EUR",
+        source: "product_page",
+      },
+      { dedupeKey: `product_view:page:${product.id}` },
+    );
+  }, [product.id, product.base_price]);
 
   const name =
     (language === "fr" ? product.name_fr : product.name_en) || product.name_fr;

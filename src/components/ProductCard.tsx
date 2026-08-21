@@ -10,6 +10,7 @@ import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
+import { trackConversion } from "@/lib/conversion-analytics";
 import { matchaFinderLabel, productMatchaFinderTags } from "@/lib/product-merchandising";
 
 const moneyFormatters = {
@@ -66,6 +67,16 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const openProductDetails = (opener: HTMLElement) => {
     openerRef.current = opener;
+    trackConversion(
+      "product_view",
+      {
+        product_id: product.id,
+        value: product.base_price,
+        currency: "EUR",
+        source: "product_modal",
+      },
+      { dedupeKey: `product_view:modal:${product.id}` },
+    );
     setOpen(true);
   };
 
@@ -188,6 +199,14 @@ function ProductCardStateful({ product }: { product: Product }) {
       unitPrice: price,
       pickupOnly: product.pickup_only,
       choices,
+    });
+    trackConversion("add_to_cart", {
+      product_id: product.id,
+      variant_id: variant?.id,
+      value: price,
+      quantity: 1,
+      item_count: 1,
+      currency: "EUR",
     });
     setJustAdded(true);
     window.setTimeout(() => setJustAdded(false), 1200);

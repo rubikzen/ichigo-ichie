@@ -7,6 +7,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { useCart } from "@/components/CartProvider";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
+import { trackConversion } from "@/lib/conversion-analytics";
 
 type PublicOrder = {
   id: string;
@@ -140,6 +141,25 @@ export function OrderTracker({ token }: { token: string }) {
     clear();
   }
 }, [paymentReturn, paymentConfirmed, clear]);
+
+  useEffect(() => {
+    if (paymentReturn !== "success" || !paymentConfirmed || !order) return;
+
+    trackConversion(
+      "purchase",
+      {
+        transaction_id: order.order_number,
+        value: Number(order.total || 0),
+        item_count: (order.order_items ?? []).reduce(
+          (sum, item) => sum + Math.max(0, Number(item.quantity || 0)),
+          0,
+        ),
+        currency: "EUR",
+        order_type: order.order_type,
+      },
+      { dedupeKey: `purchase:${order.order_number}`, persistent: true },
+    );
+  }, [paymentReturn, paymentConfirmed, order]);
 
   useEffect(() => {
     let active = true;

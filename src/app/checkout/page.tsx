@@ -9,6 +9,7 @@ import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
+import { trackConversion } from "@/lib/conversion-analytics";
 
 type OrderResult = {
   orderNumber: string;
@@ -115,6 +116,7 @@ export default function CheckoutPage() {
   const [orderType, setOrderType] = useState<"pickup" | "shipping">(mustPickup ? "pickup" : "shipping");
   const [pickupMode, setPickupMode] = useState<"asap" | "scheduled">("asap");
   const clientReferenceRef = useRef<string | null>(null);
+  const beginCheckoutTracked = useRef(false);
   const [quote, setQuote] = useState<ShippingQuoteResult | null>(null);
   const [quoteError, setQuoteError] = useState("");
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -146,6 +148,17 @@ export default function CheckoutPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerPrefilled, setCustomerPrefilled] = useState(false);
   const money = useMemo(() => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }), [language]);
+
+  useEffect(() => {
+    if (beginCheckoutTracked.current || !items.length) return;
+    beginCheckoutTracked.current = true;
+    trackConversion("begin_checkout", {
+      value: subtotal,
+      item_count: items.reduce((sum, item) => sum + item.quantity, 0),
+      currency: "EUR",
+      order_type: orderType,
+    });
+  }, [items, subtotal, orderType]);
 
   useEffect(() => {
     if (!mustPickup) return;
@@ -482,6 +495,18 @@ export default function CheckoutPage() {
         return;
       }
       if (data.paymentComplete || data.paymentStatus === "paid") {
+        const orderNumber = String(data.orderNumber || "");
+        trackConversion(
+          "purchase",
+          {
+            transaction_id: orderNumber,
+            value: Number(data.total ?? checkoutTotal),
+            item_count: items.reduce((sum, item) => sum + item.quantity, 0),
+            currency: "EUR",
+            order_type: data.orderType === "pickup" ? "pickup" : "shipping",
+          },
+          { dedupeKey: `purchase:${orderNumber}`, persistent: true },
+        );
         setResult(data);
         clear();
         return;
