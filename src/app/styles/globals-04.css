@@ -7358,3 +7358,228 @@
     grid-column: auto;
   }
 }
+
+
+/* Ichigo Ichie V4.60 — Cart & checkout trust polish */
+.cart-trust-v460 {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #dfe3d8);
+}
+
+.cart-trust-v460 span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted, #68736c);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cart-trust-v460 b {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 999px;
+  background: #edf4e9;
+  color: #315b43;
+  font-size: 10px;
+}
+
+.checkout-page-v460 .checkout-back-v460 {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-bottom: 14px;
+  color: var(--ink, #244336);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.checkout-page-v460 .checkout-back-v460:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.checkout-trust-strip-v460 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 760px;
+  margin: -8px 0 24px;
+}
+
+.checkout-trust-strip-v460 > span {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--line, #dfe3d8);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.checkout-trust-strip-v460 b {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #edf4e9;
+  color: #315b43;
+  font-size: 11px;
+}
+
+.checkout-trust-strip-v460 small,
+.checkout-trust-strip-v460 strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-trust-strip-v460 small {
+  color: var(--muted, #68736c);
+  font-size: 9px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.checkout-trust-strip-v460 strong {
+  color: var(--ink, #244336);
+  font-size: 12px;
+}
+
+.checkout-summary-head-v460 {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.checkout-summary-head-v460 h2 {
+  margin-bottom: 0;
+}
+
+.checkout-summary-head-v460 > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line, #dfe3d8);
+  border-radius: 999px;
+  color: var(--ink, #244336);
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.checkout-summary-trust-v460 {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 13px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: #f4f7f1;
+}
+
+.checkout-summary-trust-v460 > span {
+  line-height: 1.2;
+}
+
+.checkout-summary-trust-v460 p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.checkout-summary-trust-v460 strong {
+  font-size: 11px;
+}
+
+.checkout-summary-trust-v460 small {
+  color: var(--muted, #68736c);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .cart-trust-v460 {
+    display: none;
+  }
+
+  .checkout-page-v460 {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .checkout-page-v460 .checkout-back-v460 {
+    min-height: 32px;
+    margin-bottom: 8px;
+  }
+
+  .checkout-trust-strip-v460 {
+    gap: 6px;
+    margin: -4px 0 16px;
+  }
+
+  .checkout-trust-strip-v460 > span {
+    grid-template-columns: 18px minmax(0, 1fr);
+    column-gap: 6px;
+    padding: 9px 8px;
+    border-radius: 13px;
+  }
+
+  .checkout-trust-strip-v460 b {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+
+  .checkout-trust-strip-v460 small {
+    font-size: 8px;
+  }
+
+  .checkout-trust-strip-v460 strong {
+    font-size: 10px;
+  }
+
+  .checkout-summary-head-v460 > a {
+    min-height: 36px;
+  }
+
+  .checkout-summary-trust-v460 {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 390px) {
+  .checkout-trust-strip-v460 {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-trust-strip-v460 > span {
+    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+
+  .checkout-trust-strip-v460 b {
+    grid-row: auto;
+  }
+
+  .checkout-trust-strip-v460 small,
+  .checkout-trust-strip-v460 strong {
+    display: inline;
+    white-space: normal;
+  }
+}

@@ -215,6 +215,11 @@ export function CartPageClient({ products }: { products: Product[] }) {
           <strong>{money(subtotal, language)}</strong>
         </Link>
         <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>
+        <div className="cart-trust-v460" aria-label={language === "fr" ? "Informations de confiance" : "Trust information"}>
+          <span><b aria-hidden="true">✓</b>{language === "fr" ? "Paiement sécurisé par Stripe" : "Secure Stripe payment"}</span>
+          <span><b aria-hidden="true">✓</b>{language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice"}</span>
+          <span><b aria-hidden="true">✓</b>{language === "fr" ? "Livraison suivie en France" : "Tracked delivery in France"}</span>
+        </div>
       </aside>
 
       <div

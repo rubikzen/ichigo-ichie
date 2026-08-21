@@ -534,8 +534,14 @@ export default function CheckoutPage() {
 
   if (!items.length) return <section className="checkout-page"><div className="empty-state"><h1>{language === "fr" ? "Votre panier est vide" : "Your cart is empty"}</h1><Link className="button primary" href="/#boutique">Boutique</Link></div></section>;
 
-  return <section className="checkout-page">
+  return <section className="checkout-page checkout-page-v460">
+    <Link className="checkout-back-v460" href="/panier">← {language === "fr" ? "Retour au panier" : "Back to cart"}</Link>
     <div className="page-heading"><p className="eyebrow">{cms("checkout_eyebrow_fr", "checkout_eyebrow_en", "ICHIGO ICHIE", "ICHIGO ICHIE")}</p><h1>{cms("checkout_title_fr", "checkout_title_en", "Finaliser la commande", "Complete order")}</h1><p>{cms("checkout_intro_fr", "checkout_intro_en", "Livraison en France métropolitaine ou retrait gratuit à Nice.", "Delivery in metropolitan France or free pickup in Nice.")}</p></div>
+    <div className="checkout-trust-strip-v460" aria-label={language === "fr" ? "Commande sécurisée" : "Secure order"}>
+      <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Paiement" : "Payment"}</small><strong>Stripe</strong></span>
+      <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Livraison" : "Delivery"}</small><strong>{language === "fr" ? "Suivie" : "Tracked"}</strong></span>
+      <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Retrait Nice" : "Nice pickup"}</small><strong>{language === "fr" ? "Gratuit" : "Free"}</strong></span>
+    </div>
     <div className="checkout-layout">
       <form className="checkout-form" onSubmit={submit}>
         <fieldset className="checkout-details-lock-v242" disabled={Boolean(paymentSession)}>
@@ -693,8 +699,13 @@ export default function CheckoutPage() {
       </form>
 
       <aside className="checkout-summary checkout-summary-v29 checkout-summary-v232 checkout-summary-v236">
-        <p className="checkout-summary-kicker">{language === "fr" ? "RÉCAPITULATIF" : "ORDER SUMMARY"}</p>
-        <h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>
+        <div className="checkout-summary-head-v460">
+          <div>
+            <p className="checkout-summary-kicker">{language === "fr" ? "RÉCAPITULATIF" : "ORDER SUMMARY"}</p>
+            <h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>
+          </div>
+          <Link href="/panier">{language === "fr" ? "Modifier" : "Edit"}</Link>
+        </div>
         <button type="button" className="mobile-summary-toggle-v236" onClick={() => setSummaryExpanded((value) => !value)} aria-expanded={summaryExpanded}>
           <span>{items.reduce((sum, item) => sum + item.quantity, 0)} {language === "fr" ? "article(s)" : "item(s)"}</span>
           <strong>{money.format(checkoutTotal)}</strong>
@@ -718,6 +729,10 @@ export default function CheckoutPage() {
               ? `${language === "fr" ? "Livraison vers" : "Delivery to"} ${[postalCode, city].filter(Boolean).join(" ")}.`
               : (language === "fr" ? "Livraison suivie en France métropolitaine." : "Tracked delivery in metropolitan France."))
           : (language === "fr" ? "Retrait : 14 rue Centrale, Nice." : "Pickup: 14 rue Centrale, Nice.")}</p>
+        <div className="checkout-summary-trust-v460">
+          <span aria-hidden="true">🔒</span>
+          <p><strong>{language === "fr" ? "Paiement sécurisé" : "Secure payment"}</strong><small>{language === "fr" ? "Aucun débit avant l’ouverture du formulaire Stripe." : "Nothing is charged before the Stripe payment form opens."}</small></p>
+        </div>
       </aside>
     </div>
   </section>;
