@@ -46,9 +46,10 @@ export function ProductPageContent({
 
   return (
     <main
-      className="product-page-v431 product-page-v432"
+      className="product-page-v431 product-page-v432 product-page-v459"
       data-product-page-v431
       data-product-page-v432
+      data-product-page-v459
     >
       <div className="product-page-shell-v431 product-page-shell-v432">
         <nav
@@ -79,6 +80,21 @@ export function ProductPageContent({
               {description}
             </p>
           )}
+          <a
+            className="product-page-mobile-buy-link-v459"
+            href="#product-purchase-v459"
+          >
+            <span>
+              {product.variants.filter((variant) => variant.active).length > 1
+                ? language === "fr"
+                  ? "Choisir mon format"
+                  : "Choose my format"
+                : language === "fr"
+                  ? "Acheter ce produit"
+                  : "Buy this product"}
+            </span>
+            <span aria-hidden="true">↓</span>
+          </a>
         </header>
 
         <section className="product-page-hero-v431 product-page-grid-v432">
@@ -160,7 +176,11 @@ export function ProductPageContent({
           </div>
 
           <aside className="product-page-side-v432">
-            <section className="product-page-buy-box-v432">
+            <section
+              id="product-purchase-v459"
+              className="product-page-buy-box-v432 product-page-buy-box-v459"
+              aria-label={language === "fr" ? "Acheter ce produit" : "Buy this product"}
+            >
               <div className="product-page-buy-intro-v432">
                 <span>
                   {language === "fr" ? "Commander en ligne" : "Order online"}

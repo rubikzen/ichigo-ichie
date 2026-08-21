@@ -7158,3 +7158,203 @@
     font-size: 8.2px !important;
   }
 }
+
+
+/* Ichigo Ichie V4.59 — Product detail conversion polish */
+.product-page-mobile-buy-link-v459 {
+  display: none;
+}
+
+.product-page-v459 .product-page-buy-box-v459 {
+  scroll-margin-top: 98px;
+}
+
+.product-page-v459 .product-page-purchase-v432 .product-card-cta,
+.product-page-v459 .product-page-purchase-v432 .restock-notify-v425 {
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .product-page-v459 {
+    padding-top: 18px;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .product-page-v459 .product-page-shell-v432 {
+    width: 100%;
+  }
+
+  .product-page-v459 .product-page-breadcrumb-v431 {
+    margin-bottom: 10px;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .product-page-v459 .product-page-story-v431 {
+    padding-top: 0;
+  }
+
+  .product-page-v459 .product-page-story-v431 .eyebrow {
+    margin-bottom: 7px;
+  }
+
+  .product-page-v459 .product-page-story-v431 h1 {
+    margin-bottom: 10px;
+    font-size: clamp(34px, 10.8vw, 46px);
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+
+  .product-page-v459 .product-page-lead-v432 {
+    margin-bottom: 13px;
+    font-size: 14px;
+    line-height: 1.52;
+  }
+
+  .product-page-mobile-buy-link-v459 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line, #dfe3d8);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .82);
+    color: var(--ink, #244336);
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .product-page-v459 .product-page-grid-v432 {
+    gap: 14px;
+  }
+
+  .product-page-v459 .product-page-gallery-stage-v432 {
+    aspect-ratio: 1 / 1;
+    max-height: 390px;
+    border-radius: 22px;
+  }
+
+  .product-page-v459 .product-page-gallery-stage-v432 img {
+    padding: clamp(8px, 2.8vw, 14px);
+    object-fit: contain;
+  }
+
+  .product-page-v459 .product-page-gallery-arrow-v432 {
+    width: 40px;
+    height: 40px;
+  }
+
+  .product-page-v459 .product-page-thumbnails-v432 {
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .product-page-v459 .product-page-thumbnails-v432 button {
+    min-height: 58px;
+    border-radius: 12px;
+  }
+
+  .product-page-v459 .product-page-side-v432 {
+    gap: 10px;
+  }
+
+  .product-page-v459 .product-page-buy-box-v459 {
+    scroll-margin-top: 82px;
+    padding: 14px;
+    border-radius: 18px;
+    box-shadow: 0 12px 34px rgba(38, 54, 45, .05);
+  }
+
+  .product-page-v459 .product-page-buy-intro-v432 {
+    margin-bottom: 10px;
+  }
+
+  .product-page-v459 .product-page-buy-intro-v432 span {
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+
+  .product-page-v459 .product-page-buy-intro-v432 strong {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .product-page-v459 .product-page-purchase-v432 .product-title-row {
+    margin-bottom: 5px;
+  }
+
+  .product-page-v459 .product-page-purchase-v432 .product-card-price {
+    font-size: clamp(24px, 7.5vw, 30px);
+  }
+
+  .product-page-v459 .product-page-purchase-v432 .product-card-meta {
+    margin-bottom: 8px;
+  }
+
+  .product-page-v459 .product-page-purchase-v432 .product-card-cta {
+    min-height: 56px;
+    margin-top: 8px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+
+  .product-page-v459 .product-page-service-v432 {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .product-page-v459 .product-page-service-v432 span {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .product-page-v459 .product-page-facts-v432 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .product-page-v459 .product-page-facts-v432 > div {
+    min-width: 0;
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  .product-page-v459 .product-page-ideal-v432 {
+    grid-column: 1 / -1;
+  }
+
+  .product-page-v459 .product-page-description-v432 {
+    margin-top: 30px;
+    padding-top: 24px;
+  }
+
+  .product-page-v459 .product-page-description-v432 h2 {
+    font-size: clamp(30px, 9vw, 40px);
+  }
+
+  .product-page-v459 .product-page-back-v432 {
+    margin-top: 28px;
+  }
+}
+
+@media (max-width: 430px) {
+  .product-page-v459 .product-page-gallery-stage-v432 {
+    max-height: none;
+  }
+
+  .product-page-v459 .product-page-service-v432,
+  .product-page-v459 .product-page-facts-v432 {
+    grid-template-columns: 1fr;
+  }
+
+  .product-page-v459 .product-page-ideal-v432 {
+    grid-column: auto;
+  }
+}

@@ -6,7 +6,8 @@ const css = readFileSync(resolve(process.cwd(), "src/app/styles/globals-04.css")
 const marker = "/* Ichigo Ichie V4.49.2a — Mobile visual safety fix */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0);
-const block = css.slice(start);
+const nextMarker = css.indexOf("/* Ichigo Ichie V", start + marker.length);
+const block = css.slice(start, nextMarker >= 0 ? nextMarker : undefined);
 test("V449.2a is mobile-scoped", () => assert.ok(block.includes("@media (max-width: 760px)")));
 test("V449.2a prevents destructive packaging crop", () => assert.ok(block.includes("object-fit: contain !important;")));
 test("V449.2a centers packaging", () => assert.ok(block.includes("object-position: center center !important;")));

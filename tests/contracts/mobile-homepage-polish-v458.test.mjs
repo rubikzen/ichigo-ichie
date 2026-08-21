@@ -11,7 +11,8 @@ const mobileNav = readFileSync(resolve(root, "src/components/MobileBottomNav.tsx
 const marker = "/* Ichigo Ichie V4.58 — Mobile homepage polish */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V458 CSS marker must exist");
-const v458 = css.slice(start);
+const nextMarker = css.indexOf("/* Ichigo Ichie V", start + marker.length);
+const v458 = css.slice(start, nextMarker >= 0 ? nextMarker : undefined);
 
 test("V458 mobile hero has dedicated compact responsive treatment", () => {
   assert.ok(v458.includes("@media (max-width: 760px)"));
