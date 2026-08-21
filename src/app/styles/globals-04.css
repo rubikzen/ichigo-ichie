@@ -7587,11 +7587,6 @@
 
 /* Ichigo Ichie V4.61 — Storefront performance pass */
 @supports (content-visibility: auto) {
-  .premium-home-v224 .onepage-category-group {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 620px;
-  }
-
   .premium-home-v224 .boutique-menu-bridge-v449 {
     content-visibility: auto;
     contain-intrinsic-size: auto 280px;
@@ -7610,5 +7605,146 @@
   .premium-home-v224 .contact-section-v228 {
     content-visibility: auto;
     contain-intrinsic-size: auto 760px;
+  }
+}
+
+
+/* Ichigo Ichie V4.62 — Matcha finder merchandising */
+.shop-matcha-finder-v462 {
+  margin: 12px 0 22px;
+  padding: 13px 14px;
+  border: 1px solid var(--line, #dfe3d8);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .66);
+}
+.shop-matcha-finder-v462 > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--muted, #68736c);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.shop-matcha-finder-options-v462 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.shop-matcha-finder-options-v462::-webkit-scrollbar { width: 0; height: 0; }
+.shop-matcha-finder-options-v462 button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 0 13px;
+  border: 1px solid var(--line, #dfe3d8);
+  border-radius: 999px;
+  background: var(--paper, #fffdf8);
+  color: var(--ink, #244336);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.shop-matcha-finder-options-v462 button[aria-pressed="true"] {
+  border-color: var(--moss-dark, #294237);
+  background: var(--moss-dark, #294237);
+  color: #fff;
+}
+.product-merchandising-v462 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 1px 0 9px;
+}
+.product-merchandising-v462 > small {
+  margin-right: 2px;
+  color: var(--muted, #68736c);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.product-merchandising-v462 > span {
+  padding: 4px 7px;
+  border: 1px solid var(--line, #dfe3d8);
+  border-radius: 999px;
+  background: #f7f7f2;
+  color: var(--ink, #244336);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
+}
+@media (max-width: 760px) {
+  .shop-matcha-finder-v462 { margin: 9px 0 16px; padding: 11px 12px; border-radius: 16px; }
+  .shop-matcha-finder-v462 > span { margin-bottom: 7px; font-size: 9px; }
+  .shop-matcha-finder-options-v462 { margin-right: -12px; padding-right: 12px; }
+  .shop-matcha-finder-options-v462 button { min-height: 40px; padding: 0 12px; font-size: 10px; }
+  .product-merchandising-v462 { gap: 4px; margin-bottom: 8px; }
+  .product-merchandising-v462 > span { padding: 4px 6px; }
+}
+
+/* Ichigo Ichie V4.62.1 — Storefront paint stability */
+@media (max-width: 760px) {
+  .onepage-catalog-shop .onepage-catalog-toolbar-v225,
+  .onepage-catalog-shop .shop-matcha-finder-v462 {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact,
+  .onepage-catalog-shop .product-copy {
+    min-width: 0;
+  }
+
+  .onepage-catalog-shop .product-copy {
+    overflow: hidden;
+  }
+
+  .onepage-catalog-shop .product-card-description {
+    display: -webkit-box;
+    max-width: 100%;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+  }
+
+  .onepage-catalog-shop .product-card-cta {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Ichigo Ichie V4.62.2 — Mobile product media centering */
+@media (max-width: 760px) {
+  .onepage-catalog-shop .product-card-compact .product-image-button {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    isolation: isolate;
+  }
+
+  .onepage-catalog-shop .product-card-compact .product-image {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+
+  .onepage-catalog-shop .product-card-compact .badge,
+  .onepage-catalog-shop .product-card-compact .photo-count {
+    z-index: 2;
   }
 }

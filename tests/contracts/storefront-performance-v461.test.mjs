@@ -56,13 +56,17 @@ test("V461 avoids repeated category membership scans for uncategorized products"
   assert.match(catalog, /!categoryIds\.has\(product\.category_id\)/);
 });
 
-test("V461 lets long offscreen storefront sections skip layout and paint progressively", () => {
+test("V461 limits content-visibility to stable offscreen homepage sections", () => {
   assert.match(v461, /@supports \(content-visibility: auto\)/);
-  assert.match(v461, /\.premium-home-v224 \.onepage-category-group/);
   assert.match(v461, /content-visibility: auto/);
-  assert.match(v461, /contain-intrinsic-size: auto 620px/);
+  assert.match(v461, /\.premium-home-v224 \.boutique-menu-bridge-v449/);
+  assert.match(v461, /\.premium-home-v224 \.mobile-home-after-catalog-v4491/);
   assert.match(v461, /\.premium-home-v224 \.house-section-v226/);
   assert.match(v461, /\.premium-home-v224 \.contact-section-v228/);
+  assert.doesNotMatch(
+    v461,
+    /\.premium-home-v224 \.onepage-category-group\s*\{[\s\S]*?content-visibility:\s*auto/,
+  );
 });
 
 test("V461 is performance-only and avoids commerce or schema mutations", () => {

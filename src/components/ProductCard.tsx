@@ -10,6 +10,7 @@ import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
+import { matchaFinderLabel, productMatchaFinderTags } from "@/lib/product-merchandising";
 
 const moneyFormatters = {
   fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
@@ -206,6 +207,7 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const isShopProduct = product.type === "product" || product.type === "accessory";
   const hasProductFacts = Boolean(product.origin || product.cultivar || product.ideal_for.length);
+  const merchandisingTags = productMatchaFinderTags(product);
   const isSoldOut = totalStock <= 0;
 
   const modal = open && mounted ? createPortal(
@@ -427,6 +429,15 @@ const requiresChoice = selectableVariants.length > 1;
           <span>{language === "fr" ? "Voir la page produit" : "View product page"}</span>
           <span aria-hidden="true">→</span>
         </Link>
+
+        {merchandisingTags.length > 0 && (
+          <div className="product-merchandising-v462" aria-label={language === "fr" ? "Idéal pour" : "Best for"}>
+            <small>{language === "fr" ? "Idéal pour" : "Best for"}</small>
+            {merchandisingTags.slice(0, 3).map((tag) => (
+              <span key={tag}>{matchaFinderLabel(tag, language)}</span>
+            ))}
+          </div>
+        )}
 
         <div className="product-card-meta">
           {packagingLabels.length > 1 && <div className="product-card-chips" aria-label={language === "fr" ? "Conditionnements disponibles" : "Available packaging"}>

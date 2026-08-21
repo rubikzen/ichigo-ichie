@@ -8,6 +8,7 @@ import { MenuInfoCard } from "./MenuInfoCard";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
+import { MATCHA_FINDER_TAGS, matchaFinderLabel, productMatchesFinderTag, productMatchaFinderTags, type MatchaFinderTag } from "@/lib/product-merchandising";
 
 type CatalogBlockProps = {
   id: "menu" | "boutique";
@@ -42,6 +43,7 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeFinderTag, setActiveFinderTag] = useState<"all" | MatchaFinderTag>("all");
   const [sortMode, setSortMode] = useState<SortMode>("recommended");
 
   const prefix = kind === "menu" ? "menu" : "shop";
@@ -57,9 +59,16 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     nameDesc: label("catalog_sort_name_desc", "Nom : Z → A", "Name: Z → A"),
   };
 
+  const availableFinderTags = useMemo(() => {
+    if (kind !== "shop") return [];
+    const available = new Set(products.flatMap(productMatchaFinderTags));
+    return MATCHA_FINDER_TAGS.filter((tag) => available.has(tag));
+  }, [kind, products]);
+
   const filtered = useMemo(() => products.filter((product) => (
-    activeCategory === "all" || product.category_id === activeCategory
-  )), [products, activeCategory]);
+    (activeCategory === "all" || product.category_id === activeCategory)
+    && (kind !== "shop" || productMatchesFinderTag(product, activeFinderTag))
+  )), [products, activeCategory, activeFinderTag, kind]);
 
   const sortProducts = useCallback((items: Product[]) => [...items].sort((a, b) => {
     // V4.24: in the Boutique, purchasable products always stay ahead of
@@ -141,6 +150,22 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
           </label>
         )}
       </div>
+
+      {kind === "shop" && availableFinderTags.length > 0 && (
+        <div className="shop-matcha-finder-v462">
+          <span>{language === "fr" ? "Trouver votre matcha" : "Find your matcha"}</span>
+          <div className="shop-matcha-finder-options-v462" aria-label={language === "fr" ? "Filtrer par usage" : "Filter by use"}>
+            <button type="button" aria-pressed={activeFinderTag === "all"} onClick={() => setActiveFinderTag("all")}>
+              {language === "fr" ? "Tous usages" : "All uses"}
+            </button>
+            {availableFinderTags.map((tag) => (
+              <button type="button" key={tag} aria-pressed={activeFinderTag === tag} onClick={() => setActiveFinderTag(tag)}>
+                {matchaFinderLabel(tag, language)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? <div className="empty-state">{val("empty")}</div> : (
         <div className="onepage-category-groups">
