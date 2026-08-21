@@ -11,7 +11,13 @@ import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
 
-const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency: "EUR" }).format(value);
+const moneyFormatters = {
+  fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
+  en: new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR" }),
+} as const;
+
+const money = (value: number, language: "fr" | "en") =>
+  moneyFormatters[language].format(value);
 
 type PackagingKey = "can" | "bag" | "other";
 
@@ -392,6 +398,7 @@ const requiresChoice = selectableVariants.length > 1;
           width={800}
           height={656}
           sizes="(max-width: 720px) calc(100vw - 24px), (max-width: 1100px) 50vw, 33vw"
+          loading="lazy"
         />
         {product.badge && <span className="badge">{product.badge}</span>}
         {gallery.length > 1 && <span className="photo-count">{gallery.length} photos</span>}

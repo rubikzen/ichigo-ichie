@@ -200,6 +200,7 @@ export function HomePageContent({
                 alt={t("story_title_fr", "story_title_en")}
                 fill
                 sizes="(max-width: 980px) calc(100vw - 36px), 50vw"
+                loading="lazy"
               />
             ) : (
               <div className="house-media-fallback-v226">
@@ -210,6 +211,7 @@ export function HomePageContent({
                     width={86}
                     height={86}
                     sizes="86px"
+                    loading="lazy"
                   />
                 )}
                 <span>

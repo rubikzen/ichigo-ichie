@@ -41,11 +41,8 @@ function productPrice(product: Product) {
 function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
-  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("recommended");
-
-  useEffect(() => subscribeCatalogUpdate(() => router.refresh()), [router]);
 
   const prefix = kind === "menu" ? "menu" : "shop";
   const val = (suffix: string) => settings[`${prefix}_${suffix}_${language}`] || settings[`${prefix}_${suffix}_fr`] || "";
@@ -85,14 +82,19 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
   }), [kind, sortMode, language]);
 
+  const categoryIds = useMemo(
+    () => new Set(categories.map((category) => category.id)),
+    [categories],
+  );
+
   const groups = useMemo(() => categories.map((category) => ({
     category,
     products: sortProducts(filtered.filter((product) => product.category_id === category.id)),
   })).filter((group) => group.products.length > 0), [categories, filtered, sortProducts]);
 
   const uncategorized = useMemo(() => sortProducts(
-    filtered.filter((product) => !categories.some((category) => category.id === product.category_id)),
-  ), [categories, filtered, sortProducts]);
+    filtered.filter((product) => !categoryIds.has(product.category_id)),
+  ), [categoryIds, filtered, sortProducts]);
 
   const renderProduct = (product: Product) => kind === "menu"
     ? <MenuInfoCard key={product.id} product={product} compact />
@@ -178,6 +180,13 @@ export function UnifiedCatalogSections({
   shopProducts: Product[];
 }) {
   const { language } = useLanguage();
+  const router = useRouter();
+
+  useEffect(
+    () => subscribeCatalogUpdate(() => router.refresh()),
+    [router],
+  );
+
   const tasting = language === "fr"
     ? {
         eyebrow: "DÉGUSTER SUR PLACE",

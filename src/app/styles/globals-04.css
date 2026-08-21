@@ -7583,3 +7583,32 @@
     white-space: normal;
   }
 }
+
+
+/* Ichigo Ichie V4.61 — Storefront performance pass */
+@supports (content-visibility: auto) {
+  .premium-home-v224 .onepage-category-group {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 620px;
+  }
+
+  .premium-home-v224 .boutique-menu-bridge-v449 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 280px;
+  }
+
+  .premium-home-v224 .mobile-home-after-catalog-v4491 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 820px;
+  }
+
+  .premium-home-v224 .house-section-v226 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+  }
+
+  .premium-home-v224 .contact-section-v228 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 760px;
+  }
+}

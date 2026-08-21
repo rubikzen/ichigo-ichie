@@ -4,10 +4,13 @@ import type { Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { SafeImage } from "./SafeImage";
 
-const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
-  language === "fr" ? "fr-FR" : "en-GB",
-  { style: "currency", currency: "EUR" },
-).format(value);
+const moneyFormatters = {
+  fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
+  en: new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR" }),
+} as const;
+
+const money = (value: number, language: "fr" | "en") =>
+  moneyFormatters[language].format(value);
 
 function badgeLengthClass(value: string) {
   const length = value.trim().length;
@@ -45,6 +48,7 @@ export function MenuInfoCard({
               ? "(max-width: 900px) 96px, 104px"
               : "(max-width: 720px) calc(100vw - 32px), (max-width: 1100px) 45vw, 360px"
           }
+          loading="lazy"
         />
         {product.badge && <span className={`menu-info-badge ${badgeLengthClass(product.badge)}`}>{product.badge}</span>}
       </div>
