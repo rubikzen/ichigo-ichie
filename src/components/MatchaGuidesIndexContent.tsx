@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 import { MATCHA_GUIDE_SUMMARIES } from "@/lib/matcha-guide-index";
+import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
 
 export function MatchaGuidesIndexContent() {
   const { language } = useLanguage();
@@ -59,9 +60,16 @@ export function MatchaGuidesIndexContent() {
                 : "Our Shop already organises matcha by use: daily, ceremonial, usucha, koicha and latte."}
             </p>
           </div>
-          <Link className="button primary" href="/#boutique">
-            {language === "fr" ? "Découvrir les matchas" : "Explore matcha"}
-          </Link>
+          <div className="matcha-guide-intent-links-v470">
+            {MATCHA_INTENT_SUMMARIES.map((intent) => (
+              <Link key={intent.href} href={intent.href}>
+                {language === "fr" ? intent.labelFr : intent.labelEn}
+              </Link>
+            ))}
+            <Link className="button primary" href="/#boutique">
+              {language === "fr" ? "Toute la Boutique" : "Full Shop"}
+            </Link>
+          </div>
         </section>
       </div>
     </div>

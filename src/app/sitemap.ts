@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
+import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
 
 function siteUrl() {
   return (
@@ -41,10 +42,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  const intentPages: MetadataRoute.Sitemap =
+    MATCHA_INTENT_SUMMARIES.map((page) => ({
+      url: `${base}${page.href}`,
+      changeFrequency: "daily",
+      priority: 0.85,
+    }));
+
   return [
     { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
     ...productPages,
     ...guidePages,
+    ...intentPages,
     { url: `${base}/cgv`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/mentions-legales`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/confidentialite`, changeFrequency: "monthly", priority: 0.3 },
