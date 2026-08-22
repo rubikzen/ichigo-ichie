@@ -16,6 +16,55 @@ import {
 import { productSellabilityPreflight } from "@/lib/product-sellability";
 import { useAdminCatalog } from "./useAdminCatalog";
 
+type ProductEditorSection =
+  | "essential"
+  | "sale"
+  | "content"
+  | "photos"
+  | "quality"
+  | "advanced";
+
+const PRODUCT_EDITOR_SECTIONS: Array<{
+  id: ProductEditorSection;
+  label: string;
+}> = [
+  { id: "essential", label: "Essentiel" },
+  { id: "sale", label: "Vente" },
+  { id: "content", label: "Contenu" },
+  { id: "photos", label: "Photos" },
+  { id: "quality", label: "SEO & qualité" },
+  { id: "advanced", label: "Avancé" },
+];
+
+function productDraftFingerprint(product: AdminProduct) {
+  return JSON.stringify({
+    slug: product.slug.trim(),
+    category_id: product.category_id,
+    type: product.type,
+    name_fr: product.name_fr,
+    name_en: product.name_en,
+    description_fr: product.description_fr,
+    description_en: product.description_en,
+    long_description_fr: product.long_description_fr ?? "",
+    long_description_en: product.long_description_en ?? "",
+    origin: product.origin ?? "",
+    cultivar: product.cultivar ?? "",
+    badge: product.badge ?? "",
+    base_price: Number(product.base_price),
+    stock: Number(product.stock),
+    pickup_only: product.pickup_only,
+    active: product.active,
+    featured: product.featured,
+    sort_order: Number(product.sort_order),
+    image_url: product.image_url ?? "",
+    ideal_for: (product.ideal_for ?? []).map((value) =>
+      String(value).trim(),
+    ),
+    shipping_weight_g: Number(product.shipping_weight_g || 0),
+  });
+}
+
+
 export function AdminCatalog({
   supabase,
   categories,
@@ -111,6 +160,73 @@ export function AdminCatalog({
     products: catalogProducts.filter((product) => product.category_id === category.id),
     totalCount: products.filter((product) => product.category_id === category.id).length,
   })).filter((group) => !normalizedCatalogSearch || group.products.length > 0);
+
+  const savedDraft = productDraft.id
+    ? products.find((product) => product.id === productDraft.id) ?? null
+    : null;
+  const draftDirty = productDraft.id
+    ? Boolean(
+        savedDraft &&
+          productDraftFingerprint(savedDraft) !==
+            productDraftFingerprint(productDraft),
+      )
+    : Boolean(
+        productDraft.name_fr.trim() ||
+          productDraft.description_fr.trim() ||
+          productDraft.image_url,
+      );
+  const publicProductHref =
+    draftCategory?.kind === "shop" &&
+    productDraft.id &&
+    productDraft.slug.trim()
+      ? `/boutique/${encodeURIComponent(productDraft.slug.trim())}`
+      : null;
+
+  function editorFieldHint(
+    codes: string[],
+    readyLabel: string,
+  ) {
+    const matches = draftContentIssues.filter((issue) =>
+      codes.includes(issue.code),
+    );
+
+    if (!matches.length) {
+      return (
+        <small className="product-editor-field-hint-v477 ready">
+          ✓ {readyLabel}
+        </small>
+      );
+    }
+
+    const level = matches.some((issue) => issue.level === "error")
+      ? "error"
+      : "warning";
+
+    return (
+      <small className={`product-editor-field-hint-v477 ${level}`}>
+        ⚠ {matches.map((issue) => issue.label).join(" · ")}
+      </small>
+    );
+  }
+
+  function scrollEditorSection(section: ProductEditorSection) {
+    document
+      .getElementById(`product-editor-${section}-v477`)
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  function closeEditor() {
+    if (
+      draftDirty &&
+      !window.confirm(
+        "Fermer sans enregistrer les modifications de cette fiche ?",
+      )
+    ) {
+      return;
+    }
+
+    setAdvancedOpen(false);
+  }
 
   function applySafeEditorialFixes() {
     setProductDraft((current) => ({
@@ -251,43 +367,1128 @@ export function AdminCatalog({
       </div>
 
       {advancedOpen && selectedId && <div className="quick-detail-panel">
-        <div className="quick-detail-backdrop" onClick={() => setAdvancedOpen(false)}></div>
-        <div className="quick-detail-drawer" role="dialog" aria-modal="true" aria-label="Détails du produit">
+        <div className="quick-detail-backdrop" onClick={closeEditor}></div>
+        <div
+          className="quick-detail-drawer product-editor-drawer-v477"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Détails du produit"
+        >
           <form onSubmit={saveProduct}>
-            <div className="editor-head sticky-editor-head"><div><p className="eyebrow">{productDraft.id ? "DÉTAILS" : "NOUVEAU"}</p><h2>{productDraft.name_fr || (catalogZone === "menu" ? "Nouvel article du menu" : "Nouveau produit boutique")}</h2></div><div><button type="button" className="button ghost small" onClick={() => setAdvancedOpen(false)}>Fermer</button>{productDraft.id && <button type="button" className="button danger small" onClick={() => deleteProduct(productDraft.id)}>Supprimer</button>}<button className="button primary small" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button></div></div>
-            {message && <p className={message.includes("✓") ? "save-message success" : "save-message"}>{message}</p>}
-            {draftCategory?.kind === "shop" && !productDraft.active && (draftContentIssues.length > 0 || draftSellabilityBlockers.length > 0) && <div className="publish-guard-banner-v456" role="status"><strong>Publication verrouillée</strong><span>{draftContentIssues.length > 0 ? `Corrigez les ${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} de contenu signalé${draftContentIssues.length > 1 ? "s" : ""}.` : `Corrigez les ${draftSellabilityBlockers.length} point${draftSellabilityBlockers.length > 1 ? "s" : ""} de configuration de vente.`}</span></div>}
-            {draftCategory?.kind === "shop" && draftSellability && <div className={`sellability-card-v457 ${draftSellabilityBlockers.length ? "blocked" : "ready"}`}><div className="sellability-head-v457"><div><span>PRÊT À VENDRE</span><strong>{draftSellabilityBlockers.length ? `${draftSellabilityBlockers.length} blocage${draftSellabilityBlockers.length > 1 ? "s" : ""}` : "Configuration vendable ✓"}</strong></div>{draftSellabilityWarnings.length > 0 && <em>{draftSellabilityWarnings.length} avertissement{draftSellabilityWarnings.length > 1 ? "s" : ""}</em>}</div><div className="sellability-checks-v457">{draftSellability.checks.map((check) => <div className={`sellability-check-v457 ${check.status}`} key={check.id} title={check.detail}><span>{check.status === "ready" ? "✓" : check.status === "warning" ? "!" : "×"}</span><div><strong>{check.label}</strong><small>{check.status === "ready" ? "Prêt" : check.status === "warning" ? "À vérifier" : "Bloquant"}</small></div></div>)}</div>{draftSellability.issues.length > 0 && <ul className="sellability-issues-v457">{draftSellability.issues.map((issue) => <li className={issue.level} key={issue.code}>{issue.label}</li>)}</ul>}</div>}
-            {draftCategory?.kind === "shop" && draftCompletion && <div className="content-completion-card-v453"><div className="content-completion-head-v453"><div><span>FICHE PRODUIT</span><strong>{draftCompletion.completedCount}/{draftCompletion.totalCount} points prêts</strong></div><b>{draftCompletion.percent}%</b></div><div className="content-completion-steps-v453">{draftCompletion.steps.map((step) => <div className={`content-completion-step-v453 ${step.status}`} key={step.id} title={step.detail}><span>{step.status === "ready" ? "✓" : step.status === "fallback" ? "↳" : "!"}</span><div><strong>{step.label}</strong><small>{step.status === "ready" ? "Prêt" : step.status === "fallback" ? "Fallback accepté" : "À vérifier"}</small></div></div>)}</div></div>}
-            {draftCategory?.kind === "shop" && <div className={`content-quality-panel-v451 ${draftContentIssues.length ? "needs-review" : "ready"}`}><div><span className="content-quality-kicker-v451">QUALITÉ DU CONTENU</span><strong>{draftContentIssues.length ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier` : "Contenu prêt ✓"}</strong><p>{draftContentIssues.length ? "Corrigez les points signalés avant de publier ou lors de la prochaine mise à jour." : "Descriptions et informations essentielles sont cohérentes."}</p>{draftContentIssues.length > 0 && <div className="content-quality-actions-v452">{draftSafeFixCount > 0 && <button type="button" className="button ghost small" onClick={applySafeEditorialFixes}>Appliquer {draftSafeFixCount} correction{draftSafeFixCount > 1 ? "s" : ""} sûre{draftSafeFixCount > 1 ? "s" : ""}</button>}{draftHasShortEnLanguageWarning && <button type="button" className="button ghost small" onClick={useFrenchFallbackForShortEnglish}>Utiliser le fallback FR pour EN</button>}<small>Le brouillon est seulement prérempli : vérifiez les champs puis cliquez sur Enregistrer.</small></div>}</div>{draftContentIssues.length > 0 && <ul>{draftContentIssues.map((issue) => <li key={issue.code} className={issue.level}>{issue.label}</li>)}</ul>}</div>}
-            {draftCategory?.kind === "shop" && productDraft.id && shopContentReviewCount > 0 && <div className="content-review-nav-v453"><div><span>FILE DE RÉVISION</span><strong>{isFinalReviewProduct ? "Dernier produit à revoir" : currentReviewIndex >= 0 ? `Produit ${currentReviewIndex + 1} sur ${shopContentReviewCount}` : `${shopContentReviewCount} produit${shopContentReviewCount > 1 ? "s" : ""} restant${shopContentReviewCount > 1 ? "s" : ""}`}</strong></div><div><button type="button" className="button ghost small" disabled={!previousReviewProduct} onClick={() => previousReviewProduct && chooseProduct(previousReviewProduct)}>← Précédent</button><button type="button" className="button ghost small" disabled={!nextReviewProduct || nextReviewProduct.id === productDraft.id} onClick={() => nextReviewProduct && chooseProduct(nextReviewProduct)}>Suivant à revoir →</button></div></div>}
-            {!productDraft.id && draftPreset && <div className="smart-add-banner">
-              <div><span className="smart-add-kicker">Préconfiguration automatique</span><strong>{draftCategory?.name_fr}</strong><p>{draftPreset.note}</p></div>
-              <div className="smart-add-chips"><span>{draftPreset.title}</span><span>{draftPreset.fulfillment}</span><span>{catalogZone === "menu" ? "Sans stock" : "Stock à renseigner"}</span><span className="draft-chip">Brouillon masqué</span></div>
-            </div>}
-            <div className="editor-section compact-section"><h3>Essentiel</h3><div className="form-grid three"><label>Nom FR<input value={productDraft.name_fr} onChange={(e) => setProductDraft({ ...productDraft, name_fr: e.target.value })} required /></label><label>Nom EN <small>(facultatif, FR utilisé si vide)</small><input value={productDraft.name_en} onChange={(e) => setProductDraft({ ...productDraft, name_en: e.target.value })} /></label><label>Type {draftPreset && <small>(pré-rempli)</small>}<select value={productDraft.type} onChange={(e) => setProductDraft({ ...productDraft, type: e.target.value as ProductType })}><option value="drink">Boisson</option><option value="dessert">Dessert</option><option value="product">Matcha / produit</option><option value="accessory">Accessoire</option><option value="combo">Combo</option></select></label><label>Catégorie<select value={productDraft.category_id} onChange={(e) => changeDraftCategory(e.target.value)} required><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.kind === "menu" ? "Carte · " : "Boutique · "}{category.name_fr}</option>)}</select></label><label>Prix (€)<input type="number" min="0" step="0.01" value={productDraft.base_price} onChange={(e) => setProductDraft({ ...productDraft, base_price: Number(e.target.value) })} /></label>{categoryById.get(productDraft.category_id)?.kind === "shop" && selectedVariants.length === 0 && <label>Stock<input type="number" min="0" value={productDraft.stock} onChange={(e) => setProductDraft({ ...productDraft, stock: Number(e.target.value) })} /><small>Utilisé uniquement si le produit n’a pas de modèle.</small></label>}{categoryById.get(productDraft.category_id)?.kind === "shop" && <label>Poids expédition (g)<input type="number" min="0" value={productDraft.shipping_weight_g ?? 0} onChange={(e) => setProductDraft({ ...productDraft, shipping_weight_g: Number(e.target.value) })} /><small>Article seul, hors carton commun.</small></label>}<label>Badge<input value={productDraft.badge ?? ""} onChange={(e) => setProductDraft({ ...productDraft, badge: e.target.value })} placeholder="Signature, Nouveau…" /></label></div><div className="quick-boolean-grid"><label className="check-label"><input type="checkbox" checked={productDraft.active} disabled={!productDraft.active && draftCategory?.kind === "shop" && (draftContentIssues.length > 0 || draftSellabilityBlockers.length > 0)} onChange={(e) => setProductDraft({ ...productDraft, active: e.target.checked })} /> Visible{!productDraft.active && draftCategory?.kind === "shop" && (draftContentIssues.length > 0 || draftSellabilityBlockers.length > 0) && <small className="publish-guard-inline-v456">{draftContentIssues.length > 0 ? "Contenu à corriger avant publication" : "Configuration de vente à corriger avant publication"}</small>}</label><label className="check-label"><input type="checkbox" checked={productDraft.featured} onChange={(e) => setProductDraft({ ...productDraft, featured: e.target.checked })} /> Mis en avant</label>{categoryById.get(productDraft.category_id)?.kind === "shop" && <label className="check-label"><input type="checkbox" checked={productDraft.pickup_only} onChange={(e) => setProductDraft({ ...productDraft, pickup_only: e.target.checked })} /> Retrait uniquement</label>}</div>{categoryById.get(productDraft.category_id)?.kind === "menu" && <p className="menu-admin-note-v227">Article informatif uniquement : aucune option, aucun stock et aucune commande en ligne.</p>}</div>
-            <details className="admin-details" open={!productDraft.id}><summary>Descriptions & informations</summary><div className="editor-section description-editor-v27">
-              <div className="description-help"><div><strong>Texte court = carte</strong><span>{categoryById.get(productDraft.category_id)?.kind === "menu" ? "Gardez 1–3 phrases : c’est tout ce que le visiteur voit sur la carte." : "Gardez 1–3 phrases. Le texte long apparaît dans la fiche Boutique."}</span></div><span className={productDraft.description_fr.length > 180 ? "description-count warning" : "description-count"}>{productDraft.description_fr.length}/180 conseillé</span></div>
-              <div className="form-grid">
-                <label>Description courte FR<textarea rows={3} maxLength={260} value={productDraft.description_fr} onChange={(e) => setProductDraft({ ...productDraft, description_fr: e.target.value })} placeholder="Ex. Un matcha Uji doux, umami et équilibré, idéal en usucha ou latte." /><small>Utilisée sur la carte Boutique / Menu.</small></label>
-                <label>Description courte EN <small>(facultatif)</small><textarea rows={3} maxLength={260} value={productDraft.description_en} onChange={(e) => setProductDraft({ ...productDraft, description_en: e.target.value })} placeholder="Short description shown on product cards." /><small>Si vide, le français est utilisé.</small></label>
-              </div>
-              {categoryById.get(productDraft.category_id)?.kind === "shop" && <>
-                <div className="form-grid long-description-grid">
-                  <label>Description complète FR<textarea rows={7} value={productDraft.long_description_fr ?? ""} onChange={(e) => setProductDraft({ ...productDraft, long_description_fr: e.target.value })} placeholder="Histoire du produit, profil aromatique, conseils, détails de préparation…" /><small>Visible uniquement dans la fiche produit.</small></label>
-                  <label>Description complète EN <small>(facultatif)</small><textarea rows={7} value={productDraft.long_description_en ?? ""} onChange={(e) => setProductDraft({ ...productDraft, long_description_en: e.target.value })} placeholder="Full product description." /><small>Si vide, le texte court EN/FR est utilisé.</small></label>
+            <div className="editor-head sticky-editor-head product-editor-head-v477">
+              <div>
+                <p className="eyebrow">
+                  {productDraft.id ? "PRODUIT" : "NOUVEAU"}
+                </p>
+                <h2>
+                  {productDraft.name_fr ||
+                    (catalogZone === "menu"
+                      ? "Nouvel article du menu"
+                      : "Nouveau produit boutique")}
+                </h2>
+                <div className="product-editor-head-meta-v477">
+                  <span>
+                    {draftCategory?.kind === "shop" ? "Boutique" : "Carte"}
+                  </span>
+                  {draftCategory && <span>{draftCategory.name_fr}</span>}
+                  {productDraft.id && (
+                    <span className={productDraft.active ? "ready" : ""}>
+                      {productDraft.active ? "Visible" : "Masqué"}
+                    </span>
+                  )}
                 </div>
-                <div className="description-actions"><button type="button" className="button ghost small" onClick={() => setProductDraft((current) => ({ ...current, long_description_fr: current.long_description_fr?.trim() ? current.long_description_fr : current.description_fr }))}>Utiliser le texte court comme base FR</button><button type="button" className="button ghost small" onClick={() => setProductDraft((current) => ({ ...current, long_description_en: current.long_description_en?.trim() ? current.long_description_en : (current.description_en || current.description_fr) }))}>Utiliser le texte court comme base EN</button></div>
-                <div className="form-grid three"><label>Origine<input value={productDraft.origin ?? ""} onChange={(e) => setProductDraft({ ...productDraft, origin: e.target.value })} /></label><label>Cultivar / base<input value={productDraft.cultivar ?? ""} onChange={(e) => setProductDraft({ ...productDraft, cultivar: e.target.value })} /></label><label>Idéal pour<input value={productDraft.ideal_for.join(", ")} onChange={(e) => setProductDraft({ ...productDraft, ideal_for: e.target.value.split(",").map((v) => v.trim()) })} placeholder="Usucha, latte…" /></label></div>
-              </>}
-            </div></details>
-            <details className="admin-details" open={categoryById.get(productDraft.category_id)?.kind === "menu"}><summary>Photos</summary><div className="editor-section"><ProductGalleryAdmin productId={productDraft.id} productName={productDraft.name_fr || "Produit"} catalogKind={categoryById.get(productDraft.category_id)?.kind ?? catalogZone} fallbackImageUrl={productDraft.image_url} onMainImageChange={(url) => setProductDraft((current) => ({ ...current, image_url: url }))} /></div></details>
-            {categoryById.get(productDraft.category_id)?.kind === "shop" && <details className="admin-details" open={selectedVariants.length > 0}><summary>Formats / variantes {selectedVariants.length ? `(${selectedVariants.length})` : ""}</summary><div className="editor-section"><div className="section-inline"><div><p className="muted">Créez autant de modèles que nécessaire : Boîte 30 g, Sachet 30 g, Boîte 100 g… Chaque modèle a son prix, son stock et son poids d’expédition. Les 3 photos sont communes au produit.</p><small className="muted">Un nouveau format est créé masqué : complétez-le puis cochez « Actif ».</small></div><button type="button" onClick={addVariant}>+ Ajouter un modèle</button></div>{!productDraft.id ? <p className="muted">Enregistrez d’abord le produit.</p> : selectedVariants.length ? <div className="variant-admin-list">{selectedVariants.map((variant) => <VariantEditor key={variant.id} variant={variant} onChange={(next) => setVariants((current) => current.map((v) => v.id === next.id ? next : v))} onSave={saveVariant} onDelete={deleteVariant} />)}</div> : <p className="muted">Aucun modèle. Le prix de base sera utilisé.</p>}</div></details>}
-            <details className="admin-details"><summary>Affichage avancé</summary><div className="editor-section"><div className="form-grid three"><label>Ordre<input type="number" value={productDraft.sort_order} onChange={(e) => setProductDraft({ ...productDraft, sort_order: Number(e.target.value) })} /></label><label>Slug<input value={productDraft.slug} onChange={(e) => setProductDraft({ ...productDraft, slug: e.target.value })} placeholder="automatique si vide" /></label></div></div></details>
-            <div className="drawer-save-bar"><span>{message || "Les changements rapides de la liste sont sauvegardés automatiquement."}</span>{draftCategory?.kind === "shop" && productDraft.id && reviewAdvanceProduct ? <div className="drawer-save-actions-v454"><button type="submit" className="button ghost" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button><button type="button" className="button primary" disabled={saving || draftContentIssues.length > 0} title={draftContentIssues.length > 0 ? "Corrigez les points à vérifier avant de passer automatiquement au suivant." : `Enregistrer puis ouvrir ${reviewAdvanceProduct.name_fr}`} onClick={() => void saveAndOpenNextReview()}>{saving ? "Enregistrement…" : "Enregistrer et suivant →"}</button></div> : draftCategory?.kind === "shop" && productDraft.id && isFinalReviewProduct ? <div className="drawer-save-actions-v454 drawer-save-actions-v455-finish"><button type="submit" className="button ghost" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button><button type="button" className="button primary" disabled={saving || draftContentIssues.length > 0} title={draftContentIssues.length > 0 ? "Corrigez les derniers points avant de terminer la révision." : "Enregistrer puis terminer la file de révision"} onClick={() => void saveAndFinishReview()}>{saving ? "Enregistrement…" : "Enregistrer et terminer ✓"}</button></div> : <button className="button primary" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer et continuer"}</button>}</div>
+              </div>
+              <div>
+                {publicProductHref && (
+                  <a
+                    className="button ghost small"
+                    href={publicProductHref}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Voir la fiche ↗
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="button ghost small"
+                  onClick={closeEditor}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+
+            <nav
+              className="product-editor-nav-v477"
+              aria-label="Sections de la fiche produit"
+            >
+              {PRODUCT_EDITOR_SECTIONS.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => scrollEditorSection(section.id)}
+                >
+                  {section.label}
+                </button>
+              ))}
+            </nav>
+
+            {message && (
+              <p
+                className={
+                  message.includes("✓")
+                    ? "save-message success"
+                    : "save-message"
+                }
+              >
+                {message}
+              </p>
+            )}
+
+            {!productDraft.id && draftPreset && (
+              <div className="smart-add-banner">
+                <div>
+                  <span className="smart-add-kicker">
+                    Préconfiguration automatique
+                  </span>
+                  <strong>{draftCategory?.name_fr}</strong>
+                  <p>{draftPreset.note}</p>
+                </div>
+                <div className="smart-add-chips">
+                  <span>{draftPreset.title}</span>
+                  <span>{draftPreset.fulfillment}</span>
+                  <span>
+                    {catalogZone === "menu"
+                      ? "Sans stock"
+                      : "Stock à renseigner"}
+                  </span>
+                  <span className="draft-chip">Brouillon masqué</span>
+                </div>
+              </div>
+            )}
+
+            <section
+              className="product-editor-section-v477"
+              id="product-editor-essential-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>01</span>
+                  <div>
+                    <h3>Essentiel</h3>
+                    <p>
+                      Identité, classement et visibilité — les champs utilisés
+                      le plus souvent.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-grid three">
+                <label>
+                  Nom FR
+                  <input
+                    value={productDraft.name_fr}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        name_fr: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                  <small
+                    className={`product-editor-field-hint-v477 ${
+                      productDraft.name_fr.trim().length > 65
+                        ? "warning"
+                        : "ready"
+                    }`}
+                  >
+                    {productDraft.name_fr.trim().length > 65
+                      ? `⚠ ${productDraft.name_fr.trim().length} caractères · title potentiellement long`
+                      : `✓ ${productDraft.name_fr.trim().length} caractère${productDraft.name_fr.trim().length > 1 ? "s" : ""}`}
+                  </small>
+                </label>
+
+                <label>
+                  Nom EN <small>(facultatif, FR utilisé si vide)</small>
+                  <input
+                    value={productDraft.name_en}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        name_en: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Type {draftPreset && <small>(pré-rempli)</small>}
+                  <select
+                    value={productDraft.type}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        type: e.target.value as ProductType,
+                      })
+                    }
+                  >
+                    <option value="drink">Boisson</option>
+                    <option value="dessert">Dessert</option>
+                    <option value="product">Matcha / produit</option>
+                    <option value="accessory">Accessoire</option>
+                    <option value="combo">Combo</option>
+                  </select>
+                </label>
+
+                <label>
+                  Catégorie
+                  <select
+                    value={productDraft.category_id}
+                    onChange={(e) => changeDraftCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">—</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.kind === "menu"
+                          ? "Carte · "
+                          : "Boutique · "}
+                        {category.name_fr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Badge
+                  <input
+                    value={productDraft.badge ?? ""}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        badge: e.target.value,
+                      })
+                    }
+                    placeholder="Signature, Nouveau…"
+                  />
+                </label>
+
+                {draftCategory?.kind === "menu" && (
+                  <label>
+                    Prix (€)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={productDraft.base_price}
+                      onChange={(e) =>
+                        setProductDraft({
+                          ...productDraft,
+                          base_price: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="quick-boolean-grid">
+                <label className="check-label">
+                  <input
+                    type="checkbox"
+                    checked={productDraft.active}
+                    disabled={!productDraft.active && draftCategory?.kind === "shop" && (draftContentIssues.length > 0 || draftSellabilityBlockers.length > 0)}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        active: e.target.checked,
+                      })
+                    }
+                  />{" "}
+                  Visible
+                  {!productDraft.active &&
+                    draftCategory?.kind === "shop" &&
+                    (draftContentIssues.length > 0 ||
+                      draftSellabilityBlockers.length > 0) && (
+                      <small className="publish-guard-inline-v456">
+                        {draftContentIssues.length > 0
+                          ? "Contenu à corriger avant publication"
+                          : "Configuration de vente à corriger avant publication"}
+                      </small>
+                    )}
+                </label>
+
+                <label className="check-label">
+                  <input
+                    type="checkbox"
+                    checked={productDraft.featured}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        featured: e.target.checked,
+                      })
+                    }
+                  />{" "}
+                  Mis en avant
+                </label>
+              </div>
+
+              {draftCategory?.kind === "menu" && (
+                <p className="menu-admin-note-v227">
+                  Article informatif uniquement : aucune option, aucun stock et
+                  aucune commande en ligne.
+                </p>
+              )}
+            </section>
+
+            <section
+              className="product-editor-section-v477"
+              id="product-editor-sale-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>02</span>
+                  <div>
+                    <h3>Vente</h3>
+                    <p>
+                      Prix, stock, expédition et formats sont regroupés ici.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {draftCategory?.kind === "shop" ? (
+                <>
+                  <div className="form-grid three product-editor-sale-grid-v477">
+                    <label>
+                      Prix de base (€)
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={productDraft.base_price}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            base_price: Number(e.target.value),
+                          })
+                        }
+                      />
+                      <small className="product-editor-field-hint-v477 ready">
+                        ✓ Utilisé si aucun format actif ne remplace ce prix
+                      </small>
+                    </label>
+
+                    {selectedVariants.length === 0 && (
+                      <label>
+                        Stock
+                        <input
+                          type="number"
+                          min="0"
+                          value={productDraft.stock}
+                          onChange={(e) =>
+                            setProductDraft({
+                              ...productDraft,
+                              stock: Number(e.target.value),
+                            })
+                          }
+                        />
+                        <small>Utilisé uniquement sans modèle.</small>
+                      </label>
+                    )}
+
+                    <label>
+                      Poids expédition (g)
+                      <input
+                        type="number"
+                        min="0"
+                        value={productDraft.shipping_weight_g ?? 0}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            shipping_weight_g: Number(e.target.value),
+                          })
+                        }
+                      />
+                      <small
+                        className={`product-editor-field-hint-v477 ${
+                          !productDraft.pickup_only &&
+                          Number(productDraft.shipping_weight_g || 0) <= 0
+                            ? "warning"
+                            : "ready"
+                        }`}
+                      >
+                        {!productDraft.pickup_only &&
+                        Number(productDraft.shipping_weight_g || 0) <= 0
+                          ? "⚠ Poids requis pour une expédition fiable"
+                          : "✓ Livraison / retrait cohérent"}
+                      </small>
+                    </label>
+                  </div>
+
+                  <div className="quick-boolean-grid product-editor-sale-switches-v477">
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={productDraft.pickup_only}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            pickup_only: e.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Retrait uniquement
+                    </label>
+                  </div>
+
+                  <div className="product-editor-variants-v477">
+                    <div className="section-inline">
+                      <div>
+                        <strong>
+                          Formats / variantes{" "}
+                          {selectedVariants.length
+                            ? `(${selectedVariants.length})`
+                            : ""}
+                        </strong>
+                        <p className="muted">
+                          Boîte 30 g, Sachet 30 g, Boîte 100 g… Chaque modèle
+                          conserve son prix, son stock et son poids.
+                        </p>
+                        <small className="muted">
+                          Un nouveau format est créé masqué : complétez-le puis
+                          cochez « Actif ».
+                        </small>
+                      </div>
+                      <button type="button" onClick={addVariant}>
+                        + Ajouter un modèle
+                      </button>
+                    </div>
+
+                    {!productDraft.id ? (
+                      <p className="muted">
+                        Enregistrez d’abord le produit.
+                      </p>
+                    ) : selectedVariants.length ? (
+                      <div className="variant-admin-list">
+                        {selectedVariants.map((variant) => (
+                          <VariantEditor
+                            key={variant.id}
+                            variant={variant}
+                            onChange={(next) =>
+                              setVariants((current) =>
+                                current.map((v) =>
+                                  v.id === next.id ? next : v,
+                                ),
+                              )
+                            }
+                            onSave={saveVariant}
+                            onDelete={deleteVariant}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="muted">
+                        Aucun modèle. Le prix et le stock de base seront
+                        utilisés.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="product-editor-empty-section-v477">
+                  <strong>Article de carte</strong>
+                  <span>
+                    Pas de stock ni d’expédition : le prix est modifiable dans
+                    Essentiel.
+                  </span>
+                </div>
+              )}
+            </section>
+
+            <section
+              className="product-editor-section-v477"
+              id="product-editor-content-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>03</span>
+                  <div>
+                    <h3>Contenu</h3>
+                    <p>
+                      Chaque signal apparaît près du champ à corriger, sans
+                      attendre le diagnostic final.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="description-help">
+                <div>
+                  <strong>Texte court = carte</strong>
+                  <span>
+                    {draftCategory?.kind === "menu"
+                      ? "Gardez 1–3 phrases : c’est tout ce que le visiteur voit sur la carte."
+                      : "Gardez 1–3 phrases. Le texte long apparaît dans la fiche Boutique."}
+                  </span>
+                </div>
+                <span
+                  className={
+                    productDraft.description_fr.length > 180
+                      ? "description-count warning"
+                      : "description-count"
+                  }
+                >
+                  {productDraft.description_fr.length}/180 conseillé
+                </span>
+              </div>
+
+              <div className="form-grid">
+                <label>
+                  Description courte FR
+                  <textarea
+                    rows={3}
+                    maxLength={260}
+                    value={productDraft.description_fr}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        description_fr: e.target.value,
+                      })
+                    }
+                    placeholder="Ex. Un matcha Uji doux, umami et équilibré, idéal en usucha ou latte."
+                  />
+                  {draftCategory?.kind === "shop"
+                    ? editorFieldHint(
+                        ["short_fr_missing", "short_fr_likely_en"],
+                        "Texte court FR cohérent",
+                      )
+                    : (
+                      <small>Utilisée sur la carte Menu.</small>
+                    )}
+                </label>
+
+                <label>
+                  Description courte EN <small>(facultatif)</small>
+                  <textarea
+                    rows={3}
+                    maxLength={260}
+                    value={productDraft.description_en}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        description_en: e.target.value,
+                      })
+                    }
+                    placeholder="Short description shown on product cards."
+                  />
+                  {draftCategory?.kind === "shop"
+                    ? editorFieldHint(
+                        ["short_en_likely_fr"],
+                        productDraft.description_en.trim()
+                          ? "Texte court EN cohérent"
+                          : "Fallback FR accepté",
+                      )
+                    : (
+                      <small>Si vide, le français est utilisé.</small>
+                    )}
+                </label>
+              </div>
+
+              {draftCategory?.kind === "shop" && (
+                <>
+                  <div className="form-grid long-description-grid">
+                    <label>
+                      Description complète FR
+                      <textarea
+                        rows={7}
+                        value={productDraft.long_description_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            long_description_fr: e.target.value,
+                          })
+                        }
+                        placeholder="Histoire du produit, profil aromatique, conseils, détails de préparation…"
+                      />
+                      {editorFieldHint(
+                        ["long_fr_missing", "long_fr_likely_en"],
+                        "Fiche complète FR cohérente",
+                      )}
+                    </label>
+
+                    <label>
+                      Description complète EN <small>(facultatif)</small>
+                      <textarea
+                        rows={7}
+                        value={productDraft.long_description_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            long_description_en: e.target.value,
+                          })
+                        }
+                        placeholder="Full product description."
+                      />
+                      {editorFieldHint(
+                        ["long_en_likely_fr"],
+                        productDraft.long_description_en?.trim()
+                          ? "Fiche complète EN cohérente"
+                          : "Fallback du texte court accepté",
+                      )}
+                    </label>
+                  </div>
+
+                  <div className="description-actions">
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      onClick={() =>
+                        setProductDraft((current) => ({
+                          ...current,
+                          long_description_fr:
+                            current.long_description_fr?.trim()
+                              ? current.long_description_fr
+                              : current.description_fr,
+                        }))
+                      }
+                    >
+                      Utiliser le texte court comme base FR
+                    </button>
+                    <button
+                      type="button"
+                      className="button ghost small"
+                      onClick={() =>
+                        setProductDraft((current) => ({
+                          ...current,
+                          long_description_en:
+                            current.long_description_en?.trim()
+                              ? current.long_description_en
+                              : current.description_en ||
+                                current.description_fr,
+                        }))
+                      }
+                    >
+                      Utiliser le texte court comme base EN
+                    </button>
+                  </div>
+
+                  <div className="form-grid three">
+                    <label>
+                      Origine
+                      <input
+                        value={productDraft.origin ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            origin: e.target.value,
+                          })
+                        }
+                      />
+                      {editorFieldHint(
+                        ["origin_missing"],
+                        productDraft.type === "product"
+                          ? "Origine renseignée"
+                          : "Origine optionnelle",
+                      )}
+                    </label>
+
+                    <label>
+                      Cultivar / base
+                      <input
+                        value={productDraft.cultivar ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            cultivar: e.target.value,
+                          })
+                        }
+                      />
+                      <small className="product-editor-field-hint-v477 ready">
+                        ✓ Optionnel
+                      </small>
+                    </label>
+
+                    <label>
+                      Idéal pour
+                      <input
+                        value={productDraft.ideal_for.join(", ")}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            ideal_for: e.target.value
+                              .split(",")
+                              .map((v) => v.trim()),
+                          })
+                        }
+                        placeholder="Usucha, latte…"
+                      />
+                      {editorFieldHint(
+                        ["ideal_for_missing", "ideal_for_cleanup"],
+                        productDraft.type === "product"
+                          ? "Usages renseignés"
+                          : "Usages optionnels",
+                      )}
+                    </label>
+                  </div>
+
+                  {draftContentIssues.some(
+                    (issue) => issue.code === "supplier_boilerplate",
+                  ) && (
+                    <div className="product-editor-field-global-v477 warning">
+                      ⚠ Texte fournisseur / livraison internationale détecté
+                      dans au moins une description.
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+
+            <section
+              className="product-editor-section-v477"
+              id="product-editor-photos-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>04</span>
+                  <div>
+                    <h3>Photos</h3>
+                    <p>
+                      Image principale et galerie restent gérées par le
+                      composant média existant.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <ProductGalleryAdmin
+                productId={productDraft.id}
+                productName={productDraft.name_fr || "Produit"}
+                catalogKind={categoryById.get(productDraft.category_id)?.kind ?? catalogZone}
+                fallbackImageUrl={productDraft.image_url}
+                onMainImageChange={(url) =>
+                  setProductDraft((current) => ({
+                    ...current,
+                    image_url: url,
+                  }))
+                }
+              />
+            </section>
+
+            <section
+              className="product-editor-section-v477 product-editor-quality-v477"
+              id="product-editor-quality-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>05</span>
+                  <div>
+                    <h3>SEO & qualité</h3>
+                    <p>
+                      Diagnostic après les champs : publication, vendabilité et
+                      qualité éditoriale utilisent les contrôles existants.
+                    </p>
+                  </div>
+                </div>
+                {publicProductHref && (
+                  <a
+                    className="button ghost small"
+                    href={publicProductHref}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Voir la fiche publique ↗
+                  </a>
+                )}
+              </div>
+
+              {draftCategory?.kind === "shop" &&
+                !productDraft.active &&
+                (draftContentIssues.length > 0 ||
+                  draftSellabilityBlockers.length > 0) && (
+                  <div
+                    className="publish-guard-banner-v456"
+                    role="status"
+                  >
+                    <strong>Publication verrouillée</strong>
+                    <span>
+                      {draftContentIssues.length > 0
+                        ? `Corrigez les ${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} de contenu signalé${draftContentIssues.length > 1 ? "s" : ""}.`
+                        : `Corrigez les ${draftSellabilityBlockers.length} point${draftSellabilityBlockers.length > 1 ? "s" : ""} de configuration de vente.`}
+                    </span>
+                  </div>
+                )}
+
+              {draftCategory?.kind === "shop" && draftSellability && (
+                <div
+                  className={`sellability-card-v457 ${
+                    draftSellabilityBlockers.length ? "blocked" : "ready"
+                  }`}
+                >
+                  <div className="sellability-head-v457">
+                    <div>
+                      <span>PRÊT À VENDRE</span>
+                      <strong>
+                        {draftSellabilityBlockers.length
+                          ? `${draftSellabilityBlockers.length} blocage${draftSellabilityBlockers.length > 1 ? "s" : ""}`
+                          : "Configuration vendable ✓"}
+                      </strong>
+                    </div>
+                    {draftSellabilityWarnings.length > 0 && (
+                      <em>
+                        {draftSellabilityWarnings.length} avertissement
+                        {draftSellabilityWarnings.length > 1 ? "s" : ""}
+                      </em>
+                    )}
+                  </div>
+                  <div className="sellability-checks-v457">
+                    {draftSellability.checks.map((check) => (
+                      <div
+                        className={`sellability-check-v457 ${check.status}`}
+                        key={check.id}
+                        title={check.detail}
+                      >
+                        <span>
+                          {check.status === "ready"
+                            ? "✓"
+                            : check.status === "warning"
+                              ? "!"
+                              : "×"}
+                        </span>
+                        <div>
+                          <strong>{check.label}</strong>
+                          <small>
+                            {check.status === "ready"
+                              ? "Prêt"
+                              : check.status === "warning"
+                                ? "À vérifier"
+                                : "Bloquant"}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {draftSellability.issues.length > 0 && (
+                    <ul className="sellability-issues-v457">
+                      {draftSellability.issues.map((issue) => (
+                        <li className={issue.level} key={issue.code}>
+                          {issue.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {draftCategory?.kind === "shop" && draftCompletion && (
+                <div className="content-completion-card-v453">
+                  <div className="content-completion-head-v453">
+                    <div>
+                      <span>FICHE PRODUIT</span>
+                      <strong>
+                        {draftCompletion.completedCount}/
+                        {draftCompletion.totalCount} points prêts
+                      </strong>
+                    </div>
+                    <b>{draftCompletion.percent}%</b>
+                  </div>
+                  <div className="content-completion-steps-v453">
+                    {draftCompletion.steps.map((step) => (
+                      <div
+                        className={`content-completion-step-v453 ${step.status}`}
+                        key={step.id}
+                        title={step.detail}
+                      >
+                        <span>
+                          {step.status === "ready"
+                            ? "✓"
+                            : step.status === "fallback"
+                              ? "↳"
+                              : "!"}
+                        </span>
+                        <div>
+                          <strong>{step.label}</strong>
+                          <small>
+                            {step.status === "ready"
+                              ? "Prêt"
+                              : step.status === "fallback"
+                                ? "Fallback accepté"
+                                : "À vérifier"}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {draftCategory?.kind === "shop" && (
+                <div
+                  className={`content-quality-panel-v451 ${
+                    draftContentIssues.length ? "needs-review" : "ready"
+                  }`}
+                >
+                  <div>
+                    <span className="content-quality-kicker-v451">
+                      QUALITÉ DU CONTENU
+                    </span>
+                    <strong>
+                      {draftContentIssues.length
+                        ? `${draftContentIssues.length} point${draftContentIssues.length > 1 ? "s" : ""} à vérifier`
+                        : "Contenu prêt ✓"}
+                    </strong>
+                    <p>
+                      {draftContentIssues.length
+                        ? "Les champs concernés sont signalés plus haut ; ce résumé confirme ce qui reste à traiter."
+                        : "Descriptions et informations essentielles sont cohérentes."}
+                    </p>
+                    {draftContentIssues.length > 0 && (
+                      <div className="content-quality-actions-v452">
+                        {draftSafeFixCount > 0 && (
+                          <button
+                            type="button"
+                            className="button ghost small"
+                            onClick={applySafeEditorialFixes}
+                          >
+                            Appliquer {draftSafeFixCount} correction
+                            {draftSafeFixCount > 1 ? "s" : ""} sûre
+                            {draftSafeFixCount > 1 ? "s" : ""}
+                          </button>
+                        )}
+                        {draftHasShortEnLanguageWarning && (
+                          <button
+                            type="button"
+                            className="button ghost small"
+                            onClick={useFrenchFallbackForShortEnglish}
+                          >
+                            Utiliser le fallback FR pour EN
+                          </button>
+                        )}
+                        <small>
+                          Le brouillon est seulement prérempli : vérifiez les
+                          champs puis cliquez sur Enregistrer.
+                        </small>
+                      </div>
+                    )}
+                  </div>
+                  {draftContentIssues.length > 0 && (
+                    <ul>
+                      {draftContentIssues.map((issue) => (
+                        <li key={issue.code} className={issue.level}>
+                          {issue.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {draftCategory?.kind === "shop" &&
+                productDraft.id &&
+                shopContentReviewCount > 0 && (
+                  <div className="content-review-nav-v453">
+                    <div>
+                      <span>FILE DE RÉVISION</span>
+                      <strong>
+                        {isFinalReviewProduct
+                          ? "Dernier produit à revoir"
+                          : currentReviewIndex >= 0
+                            ? `Produit ${currentReviewIndex + 1} sur ${shopContentReviewCount}`
+                            : `${shopContentReviewCount} produit${shopContentReviewCount > 1 ? "s" : ""} restant${shopContentReviewCount > 1 ? "s" : ""}`}
+                      </strong>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        className="button ghost small"
+                        disabled={!previousReviewProduct}
+                        onClick={() =>
+                          previousReviewProduct &&
+                          chooseProduct(previousReviewProduct)
+                        }
+                      >
+                        ← Précédent
+                      </button>
+                      <button
+                        type="button"
+                        className="button ghost small"
+                        disabled={
+                          !nextReviewProduct ||
+                          nextReviewProduct.id === productDraft.id
+                        }
+                        onClick={() =>
+                          nextReviewProduct &&
+                          chooseProduct(nextReviewProduct)
+                        }
+                      >
+                        Suivant à revoir →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              {draftCategory?.kind === "shop" && (
+                <p className="product-editor-seo-note-v477">
+                  L’audit SEO global reste disponible dans Pilotage → SEO. Cette
+                  fiche utilise ici les mêmes données produit sans dupliquer le
+                  dashboard V475.
+                </p>
+              )}
+            </section>
+
+            <section
+              className="product-editor-section-v477"
+              id="product-editor-advanced-v477"
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>06</span>
+                  <div>
+                    <h3>Avancé</h3>
+                    <p>
+                      Paramètres rarement modifiés et action destructive.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-grid three">
+                <label>
+                  Ordre
+                  <input
+                    type="number"
+                    value={productDraft.sort_order}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        sort_order: Number(e.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Slug
+                  <input
+                    value={productDraft.slug}
+                    onChange={(e) =>
+                      setProductDraft({
+                        ...productDraft,
+                        slug: e.target.value,
+                      })
+                    }
+                    placeholder="automatique si vide"
+                  />
+                  <small>
+                    URL publique :{" "}
+                    {productDraft.slug.trim()
+                      ? `/boutique/${productDraft.slug.trim()}`
+                      : "générée à l’enregistrement"}
+                  </small>
+                </label>
+              </div>
+
+              {productDraft.id && (
+                <div className="product-editor-danger-v477">
+                  <div>
+                    <strong>Supprimer définitivement</strong>
+                    <span>
+                      À utiliser uniquement si ce produit doit réellement
+                      disparaître du catalogue.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="button danger small"
+                    onClick={() => deleteProduct(productDraft.id)}
+                  >
+                    Supprimer le produit
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <div className="drawer-save-bar product-editor-savebar-v477">
+              <div className="product-editor-save-status-v477">
+                <button
+                  type="button"
+                  className="button ghost"
+                  onClick={closeEditor}
+                >
+                  ← Fermer
+                </button>
+                <span
+                  className={
+                    draftDirty
+                      ? "product-editor-dirty-v477"
+                      : "product-editor-clean-v477"
+                  }
+                >
+                  {draftDirty
+                    ? "● Modifications non enregistrées"
+                    : productDraft.id
+                      ? "✓ À jour"
+                      : "Nouveau brouillon"}
+                </span>
+                {message && <small>{message}</small>}
+              </div>
+
+              {draftCategory?.kind === "shop" &&
+              productDraft.id &&
+              reviewAdvanceProduct ? (
+                <div className="drawer-save-actions-v454">
+                  <button type="submit" className="button ghost" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={saving || draftContentIssues.length > 0}
+                    title={
+                      draftContentIssues.length > 0
+                        ? "Corrigez les points à vérifier avant de passer automatiquement au suivant."
+                        : `Enregistrer puis ouvrir ${reviewAdvanceProduct.name_fr}`
+                    }
+                    onClick={() => void saveAndOpenNextReview()}
+                  >
+                    {saving
+                      ? "Enregistrement…"
+                      : "Enregistrer et suivant →"}
+                  </button>
+                </div>
+              ) : draftCategory?.kind === "shop" &&
+                productDraft.id &&
+                isFinalReviewProduct ? (
+                <div className="drawer-save-actions-v454 drawer-save-actions-v455-finish">
+                  <button type="submit" className="button ghost" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={saving || draftContentIssues.length > 0}
+                    title={
+                      draftContentIssues.length > 0
+                        ? "Corrigez les derniers points avant de terminer la révision."
+                        : "Enregistrer puis terminer la file de révision"
+                    }
+                    onClick={() => void saveAndFinishReview()}
+                  >
+                    {saving
+                      ? "Enregistrement…"
+                      : "Enregistrer et terminer ✓"}
+                  </button>
+                </div>
+              ) : (
+                <button className="button primary" disabled={saving}>
+                  {saving
+                    ? "Enregistrement…"
+                    : "Enregistrer et continuer"}
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>}
+
     </div>
   );
 }
