@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 import { MATCHA_GUIDE_SUMMARIES } from "@/lib/matcha-guide-index";
 import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
+import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 export function MatchaGuidesIndexContent() {
   const { language } = useLanguage();
@@ -11,11 +12,20 @@ export function MatchaGuidesIndexContent() {
   return (
     <div className="matcha-guides-page-v469">
       <div className="matcha-guides-shell-v469">
-        <nav className="matcha-guide-breadcrumb-v469" aria-label={language === "fr" ? "Fil d’Ariane" : "Breadcrumb"}>
-          <Link href="/">{language === "fr" ? "Accueil" : "Home"}</Link>
-          <span aria-hidden="true">/</span>
-          <span>{language === "fr" ? "Guides du matcha" : "Matcha guides"}</span>
-        </nav>
+        <SeoBreadcrumbs
+          className="matcha-guide-breadcrumb-v469"
+          ariaLabel={language === "fr" ? "Fil d’Ariane" : "Breadcrumb"}
+          items={[
+            {
+              href: "/",
+              label: language === "fr" ? "Accueil" : "Home",
+            },
+            {
+              label:
+                language === "fr" ? "Guides du matcha" : "Matcha guides",
+            },
+          ]}
+        />
 
         <header className="matcha-guides-hero-v469">
           <p className="eyebrow">{language === "fr" ? "APPRENDRE LE MATCHA" : "LEARN MATCHA"}</p>
@@ -61,6 +71,9 @@ export function MatchaGuidesIndexContent() {
             </p>
           </div>
           <div className="matcha-guide-intent-links-v470">
+            <Link href="/matcha-nice">
+              {language === "fr" ? "Matcha à Nice" : "Matcha in Nice"}
+            </Link>
             {MATCHA_INTENT_SUMMARIES.map((intent) => (
               <Link key={intent.href} href={intent.href}>
                 {language === "fr" ? intent.labelFr : intent.labelEn}

@@ -10,15 +10,12 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { trackConversion } from "@/lib/conversion-analytics";
 import { ProductGuideLinks } from "@/components/ProductGuideLinks";
+import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 export function ProductPageContent({
   product,
-  categoryNameFr,
-  categoryNameEn,
 }: {
   product: Product;
-  categoryNameFr: string;
-  categoryNameEn: string;
 }) {
   const { language } = useLanguage();
   const [imageIndex, setImageIndex] = useState(0);
@@ -47,9 +44,6 @@ export function ProductPageContent({
     sanitizeStorefrontProductText(
       language === "fr" ? product.long_description_fr : product.long_description_en,
     ) || description;
-  const categoryName =
-    (language === "fr" ? categoryNameFr : categoryNameEn) || categoryNameFr;
-
   const imageRows = [...(product.images ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
@@ -68,20 +62,23 @@ export function ProductPageContent({
       data-product-page-v459
     >
       <div className="product-page-shell-v431 product-page-shell-v432">
-        <nav
+        <SeoBreadcrumbs
           className="product-page-breadcrumb-v431"
-          aria-label={language === "fr" ? "Fil d’Ariane" : "Breadcrumb"}
-        >
-          <Link href="/">{language === "fr" ? "Accueil" : "Home"}</Link>
-          <span aria-hidden="true">/</span>
-          <Link href="/#boutique">Boutique</Link>
-          {categoryName && (
-            <>
-              <span aria-hidden="true">/</span>
-              <span>{categoryName}</span>
-            </>
-          )}
-        </nav>
+          ariaLabel={language === "fr" ? "Fil d’Ariane" : "Breadcrumb"}
+          items={[
+            {
+              href: "/",
+              label: language === "fr" ? "Accueil" : "Home",
+            },
+            {
+              href: "/#boutique",
+              label: "Boutique",
+            },
+            {
+              label: name,
+            },
+          ]}
+        />
 
         <header className="product-page-story-v431 product-page-header-v432">
           <p className="eyebrow">

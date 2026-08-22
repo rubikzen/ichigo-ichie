@@ -7,6 +7,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import type { MatchaIntentPage } from "@/lib/matcha-intent-pages";
 import type { MatchaIntentSummary } from "@/lib/matcha-intent-index";
 import type { Product } from "@/lib/types";
+import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 export function MatchaIntentLandingContent({
   page,
@@ -23,16 +24,18 @@ export function MatchaIntentLandingContent({
   return (
     <main className="matcha-intent-page-v470">
       <div className="matcha-intent-shell-v470">
-        <nav
+        <SeoBreadcrumbs
           className="matcha-intent-breadcrumb-v470"
-          aria-label={fr ? "Fil d’Ariane" : "Breadcrumb"}
-        >
-          <Link href="/">{fr ? "Accueil" : "Home"}</Link>
-          <span aria-hidden="true">/</span>
-          <Link href="/guides">{fr ? "Guides du matcha" : "Matcha guides"}</Link>
-          <span aria-hidden="true">/</span>
-          <span>{fr ? page.labelFr : page.labelEn}</span>
-        </nav>
+          ariaLabel={fr ? "Fil d’Ariane" : "Breadcrumb"}
+          items={[
+            { href: "/", label: fr ? "Accueil" : "Home" },
+            {
+              href: "/guides",
+              label: fr ? "Guides du matcha" : "Matcha guides",
+            },
+            { label: fr ? page.labelFr : page.labelEn },
+          ]}
+        />
 
         <header className="matcha-intent-hero-v470">
           <p className="eyebrow">{fr ? page.eyebrowFr : page.eyebrowEn}</p>
@@ -159,6 +162,9 @@ export function MatchaIntentLandingContent({
           <div className="matcha-intent-related-links-v470">
             <Link href={page.guideHref}>
               {fr ? "Lire le guide associé →" : "Read the related guide →"}
+            </Link>
+            <Link href="/matcha-nice">
+              {fr ? "Matcha à Nice →" : "Matcha in Nice →"}
             </Link>
             {relatedPages.map((related) => (
               <Link key={related.href} href={related.href}>

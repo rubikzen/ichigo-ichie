@@ -10,6 +10,7 @@ import {
   type MatchaNiceStoreInfo,
 } from "@/lib/matcha-nice-content";
 import type { Product } from "@/lib/types";
+import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 function money(value: number, language: "fr" | "en") {
   return new Intl.NumberFormat(language === "fr" ? "fr-FR" : "en-GB", {
@@ -34,14 +35,14 @@ export function MatchaNiceLocalContent({
   return (
     <main className="matcha-nice-page-v471">
       <div className="matcha-nice-shell-v471">
-        <nav
+        <SeoBreadcrumbs
           className="matcha-nice-breadcrumb-v471"
-          aria-label={fr ? "Fil d’Ariane" : "Breadcrumb"}
-        >
-          <Link href="/">{fr ? "Accueil" : "Home"}</Link>
-          <span aria-hidden="true">/</span>
-          <span>{fr ? "Matcha à Nice" : "Matcha in Nice"}</span>
-        </nav>
+          ariaLabel={fr ? "Fil d’Ariane" : "Breadcrumb"}
+          items={[
+            { href: "/", label: fr ? "Accueil" : "Home" },
+            { label: fr ? "Matcha à Nice" : "Matcha in Nice" },
+          ]}
+        />
 
         <header className="matcha-nice-hero-v471">
           <div>

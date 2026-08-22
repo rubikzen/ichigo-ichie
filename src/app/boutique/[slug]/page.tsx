@@ -188,11 +188,7 @@ export default async function ProductPage({ params }: ProductPageParams) {
         data-product-schema-v431
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
-      <ProductPageContent
-        product={product}
-        categoryNameFr={category?.name_fr || ""}
-        categoryNameEn={category?.name_en || category?.name_fr || ""}
-      />
+      <ProductPageContent product={product} />
     </>
   );
 }

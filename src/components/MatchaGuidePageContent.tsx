@@ -5,6 +5,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { SafeImage } from "@/components/SafeImage";
 import type { Product } from "@/lib/types";
 import type { MatchaGuide } from "@/lib/matcha-guides";
+import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 export function MatchaGuidePageContent({
   guide,
@@ -19,13 +20,18 @@ export function MatchaGuidePageContent({
   return (
     <article className="matcha-guide-page-v469">
       <div className="matcha-guide-shell-v469">
-        <nav className="matcha-guide-breadcrumb-v469" aria-label={fr ? "Fil d’Ariane" : "Breadcrumb"}>
-          <Link href="/">{fr ? "Accueil" : "Home"}</Link>
-          <span aria-hidden="true">/</span>
-          <Link href="/guides">{fr ? "Guides du matcha" : "Matcha guides"}</Link>
-          <span aria-hidden="true">/</span>
-          <span>{fr ? guide.titleFr : guide.titleEn}</span>
-        </nav>
+        <SeoBreadcrumbs
+          className="matcha-guide-breadcrumb-v469"
+          ariaLabel={fr ? "Fil d’Ariane" : "Breadcrumb"}
+          items={[
+            { href: "/", label: fr ? "Accueil" : "Home" },
+            {
+              href: "/guides",
+              label: fr ? "Guides du matcha" : "Matcha guides",
+            },
+            { label: fr ? guide.titleFr : guide.titleEn },
+          ]}
+        />
 
         <header className="matcha-guide-article-hero-v469">
           <p className="eyebrow">{fr ? guide.eyebrowFr : guide.eyebrowEn}</p>
@@ -140,6 +146,7 @@ export function MatchaGuidePageContent({
           </div>
           <div>
             <Link href="/guides">{fr ? "Tous les guides" : "All guides"}</Link>
+            <Link href="/matcha-nice">{fr ? "Matcha à Nice" : "Matcha in Nice"}</Link>
             <Link href="/#boutique">{fr ? "Choisir un matcha" : "Choose matcha"}</Link>
           </div>
         </section>
