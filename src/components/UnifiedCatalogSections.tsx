@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "./ProductCard";
+import { RitualBundleBuilder } from "./RitualBundleBuilder";
 import { MenuInfoCard } from "./MenuInfoCard";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
@@ -125,6 +126,10 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
         </div>
         <a className="onepage-backtop" href="#top" aria-label={language === "fr" ? "Retour en haut" : "Back to top"}>↑</a>
       </div>
+
+      {kind === "shop" && (
+        <RitualBundleBuilder products={products} />
+      )}
 
       <div className="onepage-catalog-toolbar onepage-catalog-toolbar-v221 onepage-catalog-toolbar-v225">
         <div className="category-tabs onepage-category-tabs onepage-category-tabs-v225">

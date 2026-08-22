@@ -250,8 +250,18 @@ export async function POST(request: Request) {
         if (hasMenuItem) throw new OrderValidationError("La carte boissons & desserts est uniquement informative. Commandez seulement les produits de la Boutique.");
       }
     }
+    const bundleDiscountAmount = Number(
+      cart.bundleDiscount || 0,
+    );
     let promo = null;
     const requestedPromoCode = optionalText(body.promoCode, 40);
+
+    if (bundleDiscountAmount > 0 && requestedPromoCode) {
+      throw new OrderValidationError(
+        "L’avantage rituel ne peut pas être cumulé avec un code promo.",
+      );
+    }
+
     if (requestedPromoCode) {
       try {
         promo = await resolvePromoCode(supabase, requestedPromoCode, cart.subtotal);
@@ -264,8 +274,14 @@ export async function POST(request: Request) {
         throw promoError;
       }
     }
-    const discountAmount = Number(promo?.discountAmount || 0);
-    const discountedSubtotal = Math.max(0, Math.round((cart.subtotal - discountAmount) * 100) / 100);
+    const discountAmount =
+      bundleDiscountAmount > 0
+        ? bundleDiscountAmount
+        : Number(promo?.discountAmount || 0);
+    const discountedSubtotal = Math.max(
+      0,
+      Math.round((cart.subtotal - discountAmount) * 100) / 100,
+    );
 
     const sourceChannel: "shop" = "shop";
     let shippingFee = 0;

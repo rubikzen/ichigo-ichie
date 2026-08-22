@@ -6,6 +6,7 @@ import type { Category, Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { ProductCard } from "./ProductCard";
+import { RitualBundleBuilder } from "./RitualBundleBuilder";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
 
 type CatalogKind = "menu" | "shop";
@@ -34,6 +35,7 @@ export function CatalogGrid({ categories, products, kind }: { categories: Catego
       <h1>{val("title")}</h1>
       <p>{val("intro")}</p>
     </div>
+    {kind === "shop" && <RitualBundleBuilder products={products} />}
     <div className="catalog-toolbar catalog-toolbar-v218">
       <div className="category-tabs">
         <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>{val("all")}</button>

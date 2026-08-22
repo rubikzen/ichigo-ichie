@@ -93,5 +93,7 @@ export type CartItem = {
   unitPrice: number;
   quantity: number;
   pickupOnly: boolean;
+  bundleId?: string | null;
+  bundleGroupId?: string | null;
   choices: CartChoice[];
 };

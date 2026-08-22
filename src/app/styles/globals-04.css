@@ -7858,3 +7858,170 @@
   .conversion-kpis-v464,
   .conversion-funnel-v464 { grid-template-columns: 1fr; }
 }
+
+
+/* V465 — ritual bundle */
+.ritual-bundle-v465 {
+  margin: 26px 0 30px;
+  padding: 24px;
+  border: 1px solid rgba(63, 86, 63, 0.16);
+  border-radius: 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 247, 238, 0.96),
+    rgba(255, 255, 255, 0.96)
+  );
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.4fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.ritual-bundle-copy-v465 h3 {
+  margin: 4px 0 10px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+
+.ritual-bundle-copy-v465 > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.ritual-bundle-builder-v465 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ritual-bundle-choice-v465 {
+  border: 1px solid rgba(63, 86, 63, 0.14);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  display: grid;
+  gap: 10px;
+}
+
+.ritual-bundle-choice-v465 label {
+  display: grid;
+  gap: 6px;
+}
+
+.ritual-bundle-choice-v465 label > span,
+.ritual-bundle-total-v465 small {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ritual-bundle-choice-v465 select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(63, 86, 63, 0.18);
+  border-radius: 12px;
+  padding: 0 36px 0 11px;
+  background: #fff;
+}
+
+.ritual-bundle-choice-v465 > strong {
+  font-size: 1.05rem;
+}
+
+.ritual-bundle-plus-v465 {
+  align-self: center;
+  font-size: 1.45rem;
+  color: var(--muted);
+}
+
+.ritual-bundle-total-v465 {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(63, 86, 63, 0.13);
+  padding-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.ritual-bundle-total-v465 > div {
+  display: grid;
+  gap: 2px;
+}
+
+.ritual-bundle-total-v465 > div strong {
+  font-size: 1.25rem;
+}
+
+.ritual-bundle-total-v465 > span {
+  justify-self: end;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(57, 91, 58, 0.1);
+  color: #315334;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ritual-bundle-cta-v465 {
+  grid-column: 1 / -1;
+  min-height: 48px;
+}
+
+.cart-bundle-chip-v465 {
+  display: inline-flex;
+  margin-top: 6px;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(57, 91, 58, 0.1);
+  color: #315334;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cart-bundle-saving-v465 strong,
+.ritual-summary-line-v465 > strong {
+  color: #315334;
+}
+
+@media (max-width: 820px) {
+  .ritual-bundle-v465 {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ritual-bundle-v465 {
+    margin: 18px 0 24px;
+    padding: 16px;
+  }
+
+  .ritual-bundle-builder-v465 {
+    grid-template-columns: 1fr;
+  }
+
+  .ritual-bundle-plus-v465 {
+    justify-self: center;
+    line-height: 1;
+  }
+
+  .ritual-bundle-total-v465 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ritual-bundle-total-v465 > span {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .ritual-bundle-choice-v465 select,
+  .ritual-bundle-cta-v465 {
+    min-height: 48px;
+  }
+}

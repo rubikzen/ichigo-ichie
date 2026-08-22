@@ -10,6 +10,7 @@ import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { trackConversion } from "@/lib/conversion-analytics";
+import { cartBundleDiscount } from "@/lib/bundle";
 
 type OrderResult = {
   orderNumber: string;
@@ -90,7 +91,12 @@ function cartPayload(items: CartItem[]) {
     productId: item.productId,
     variantId: item.variantId,
     quantity: item.quantity,
-    choices: item.choices.map((choice) => ({ groupId: choice.groupId, valueId: choice.valueId })),
+    bundleId: item.bundleId ?? null,
+    bundleGroupId: item.bundleGroupId ?? null,
+    choices: item.choices.map((choice) => ({
+      groupId: choice.groupId,
+      valueId: choice.valueId,
+    })),
   }));
 }
 
@@ -329,8 +335,16 @@ export default function CheckoutPage() {
   const selectedShipping = quote?.methods.find((method) => method.id === shippingMethodId) ?? null;
   const manualAddressReady = addressEntryMode === "manual" && address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2;
   const shippingFee = orderType === "shipping" ? Number(selectedShipping?.fee ?? 0) : 0;
-  const discountAmount = Number(appliedPromo?.discountAmount || 0);
-  const discountedSubtotal = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
+  const bundleDiscountAmount = cartBundleDiscount(items);
+  const promoDiscountAmount = Number(appliedPromo?.discountAmount || 0);
+  const discountAmount =
+    bundleDiscountAmount > 0
+      ? bundleDiscountAmount
+      : promoDiscountAmount;
+  const discountedSubtotal = Math.max(
+    0,
+    Math.round((subtotal - discountAmount) * 100) / 100,
+  );
   const checkoutTotal = Math.round((discountedSubtotal + shippingFee) * 100) / 100;
   const freeShippingGap = orderType === "shipping" && selectedShipping?.freeThreshold && !selectedShipping.free
     ? Math.max(0, Math.round((selectedShipping.freeThreshold - subtotal) * 100) / 100)
@@ -339,7 +353,9 @@ export default function CheckoutPage() {
     ? Math.min(100, Math.max(0, (subtotal / selectedShipping.freeThreshold) * 100))
     : 0;
   const paymentMethod = "online" as const;
-  const promoFieldVisible = settings.promo_field_visible !== "false";
+  const promoFieldVisible =
+    settings.promo_field_visible !== "false" &&
+    bundleDiscountAmount <= 0;
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
   const underMinimumOnlinePayment = checkoutTotal > 0 && checkoutTotal < MIN_ONLINE_PAYMENT_EUR;
   const submitDisabled = loading || underMinimumOnlinePayment || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
@@ -367,9 +383,18 @@ export default function CheckoutPage() {
       setPromoError("");
     });
     return () => { cancelled = true; };
-  }, [subtotal]);
+  }, [subtotal, bundleDiscountAmount]);
 
   async function applyPromo() {
+    if (bundleDiscountAmount > 0) {
+      setPromoError(
+        language === "fr"
+          ? "L’avantage rituel ne peut pas être cumulé avec un code promo."
+          : "The ritual saving cannot be combined with a promo code.",
+      );
+      return;
+    }
+
     const code = promoCode.trim();
     if (!code) { setPromoError(language === "fr" ? "Saisissez un code promo." : "Enter a promo code."); return; }
     setPromoLoading(true);
@@ -741,7 +766,24 @@ export default function CheckoutPage() {
         </div>
         <div className="checkout-summary-totals">
           <div className="checkout-line"><span>{language === "fr" ? "Sous-total produits" : "Items subtotal"}</span><strong>{money.format(subtotal)}</strong></div>
-          {appliedPromo && <div className="checkout-line promo-summary-line-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong><small>{appliedPromo.code}</small></span><strong>− {money.format(discountAmount)}</strong></div>}
+          {bundleDiscountAmount > 0 && (
+            <div className="checkout-line promo-summary-line-v234 ritual-summary-line-v465">
+              <span>
+                <strong>
+                  {language === "fr"
+                    ? "Avantage rituel"
+                    : "Ritual saving"}
+                </strong>
+                <small>
+                  {language === "fr"
+                    ? "Matcha + accessoire · −5 %"
+                    : "Matcha + accessory · −5%"}
+                </small>
+              </span>
+              <strong>− {money.format(bundleDiscountAmount)}</strong>
+            </div>
+          )}
+          {appliedPromo && bundleDiscountAmount <= 0 && <div className="checkout-line promo-summary-line-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong><small>{appliedPromo.code}</small></span><strong>− {money.format(discountAmount)}</strong></div>}
           {orderType === "shipping" && <div className="checkout-line shipping-total-line"><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong>{selectedShipping && <small>{language === "fr" ? selectedShipping.nameFr : selectedShipping.nameEn}</small>}</span><strong>{quoteLoading ? "…" : selectedShipping?.free ? (language === "fr" ? "Offerte" : "Free") : money.format(shippingFee)}</strong></div>}
           <div className="checkout-total"><span>Total</span><strong>{money.format(checkoutTotal)}</strong></div>
         </div>

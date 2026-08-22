@@ -1,10 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { composeProductVariantName } from "@/lib/product-label";
+import { RITUAL_BUNDLE_ID, RITUAL_BUNDLE_RATE } from "@/lib/bundle";
 
 export type PayloadItem = {
   productId: string;
   variantId?: string | null;
   quantity: number;
+  bundleId?: string | null;
+  bundleGroupId?: string | null;
   choices?: Array<{ groupId: string; valueId: string }>;
 };
 
@@ -12,6 +15,75 @@ type GroupRule = { id: string; required: boolean; min_select: number; max_select
 
 export class OrderValidationError extends Error {
   status = 400;
+}
+
+type BundleNormalizedItem = {
+  product_type: string;
+  quantity: number;
+  line_total: number;
+  bundle_id: string | null;
+  bundle_group_id: string | null;
+};
+
+function resolveRitualBundleDiscount(
+  items: BundleNormalizedItem[],
+) {
+  const groups = new Map<string, BundleNormalizedItem[]>();
+
+  for (const item of items) {
+    const hasBundleMetadata = Boolean(
+      item.bundle_id || item.bundle_group_id,
+    );
+    if (!hasBundleMetadata) continue;
+
+    if (
+      item.bundle_id !== RITUAL_BUNDLE_ID ||
+      !item.bundle_group_id ||
+      !/^[0-9a-z-]{8,80}$/i.test(item.bundle_group_id)
+    ) {
+      throw new OrderValidationError("Coffret rituel invalide.");
+    }
+
+    groups.set(item.bundle_group_id, [
+      ...(groups.get(item.bundle_group_id) ?? []),
+      item,
+    ]);
+  }
+
+  let discount = 0;
+
+  for (const rows of groups.values()) {
+    if (rows.length !== 2) {
+      throw new OrderValidationError(
+        "Un coffret rituel doit contenir exactement deux articles.",
+      );
+    }
+
+    if (rows[0].quantity !== rows[1].quantity) {
+      throw new OrderValidationError(
+        "Les quantités du coffret rituel doivent rester liées.",
+      );
+    }
+
+    const roles = new Set(
+      rows.map((row) => row.product_type),
+    );
+    if (
+      !roles.has("product") ||
+      !roles.has("accessory") ||
+      roles.size !== 2
+    ) {
+      throw new OrderValidationError(
+        "Le coffret rituel doit associer un matcha et un accessoire.",
+      );
+    }
+
+    discount +=
+      rows.reduce((sum, row) => sum + row.line_total, 0) *
+      RITUAL_BUNDLE_RATE;
+  }
+
+  return Math.round(discount * 100) / 100;
 }
 
 export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]) {
@@ -22,7 +94,7 @@ export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]
   const choiceIds = [...new Set(items.flatMap((item) => item.choices?.map((choice) => choice.valueId) ?? []))];
 
   const [productResult, variantResult, choiceResult, joinResult] = await Promise.all([
-    supabase.from("products").select("id,name_fr,base_price,stock,pickup_only,active,shipping_weight_g").in("id", productIds),
+    supabase.from("products").select("id,name_fr,type,base_price,stock,pickup_only,active,shipping_weight_g").in("id", productIds),
     supabase.from("product_variants").select("id,product_id,name,packaging,weight,price,stock,active,shipping_weight_g").in("product_id", productIds),
     choiceIds.length
       ? supabase.from("option_values").select("id,option_group_id,label_fr,price_delta,active").in("id", choiceIds)
@@ -97,6 +169,11 @@ export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]
     return {
       product_id: item.productId,
       variant_id: chosenVariant?.id ?? null,
+      product_type: String(product.type || ""),
+      bundle_id: item.bundleId ? String(item.bundleId) : null,
+      bundle_group_id: item.bundleGroupId
+        ? String(item.bundleGroupId)
+        : null,
       name: itemName,
       quantity,
       unit_price: Math.round(unitPrice * 100) / 100,
@@ -108,9 +185,17 @@ export async function resolveCart(supabase: SupabaseClient, items: PayloadItem[]
   });
 
   const subtotal = Math.round(normalized.reduce((sum, item) => sum + item.line_total, 0) * 100) / 100;
+  const bundleDiscount = resolveRitualBundleDiscount(normalized);
   const itemWeightG = normalized.reduce((sum, item) => sum + item.shipping_weight_g * item.quantity, 0);
   const containsPickupOnly = normalized.some((item) => item.pickup_only);
   const missingShippingWeight = normalized.some((item) => !item.pickup_only && item.shipping_weight_g <= 0);
 
-  return { normalized, subtotal, itemWeightG, containsPickupOnly, missingShippingWeight };
+  return {
+    normalized,
+    subtotal,
+    bundleDiscount,
+    itemWeightG,
+    containsPickupOnly,
+    missingShippingWeight,
+  };
 }

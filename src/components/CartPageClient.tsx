@@ -9,6 +9,7 @@ import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, normalizeLegacyProductLabel, packagingLabel, variantLabel } from "@/lib/product-label";
+import { RITUAL_BUNDLE_ID, cartBundleDiscount } from "@/lib/bundle";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
   language === "fr" ? "fr-FR" : "en-GB",
@@ -63,15 +64,37 @@ export function CartPageClient({ products }: { products: Product[] }) {
   const editingProduct = editingItem ? productMap.get(editingItem.productId) : undefined;
   const hasPickupOnly = items.some((item) => item.pickupOnly);
   const hasShippingItems = items.some((item) => !item.pickupOnly);
+  const ritualDiscount = useMemo(
+    () => cartBundleDiscount(items),
+    [items],
+  );
+  const ritualSubtotal = Math.max(
+    0,
+    Math.round((subtotal - ritualDiscount) * 100) / 100,
+  );
 
   const updateQuantity = (item: CartItem, next: number) => {
     if (next <= 0) {
       removeItem(item.key);
       return;
     }
-    const stock = getItemStock(item, productMap.get(item.productId));
-    const usedElsewhere = quantityUsedByOtherLines(items, item);
-    if (stock !== null && usedElsewhere + next > stock) return;
+
+    const linked = item.bundleGroupId
+      ? items.filter(
+          (candidate) =>
+            candidate.bundleGroupId === item.bundleGroupId,
+        )
+      : [item];
+
+    for (const candidate of linked) {
+      const stock = getItemStock(
+        candidate,
+        productMap.get(candidate.productId),
+      );
+      const usedElsewhere = quantityUsedByOtherLines(items, candidate);
+      if (stock !== null && usedElsewhere + next > stock) return;
+    }
+
     setQuantity(item.key, next);
   };
 
@@ -140,6 +163,14 @@ export function CartPageClient({ products }: { products: Product[] }) {
                         ? (language === "fr" ? "Retrait boutique" : "Boutique pickup")
                         : (language === "fr" ? "Livraison possible" : "Shipping available")}
                     </span>
+                    {item.bundleId === RITUAL_BUNDLE_ID &&
+                      item.bundleGroupId && (
+                        <span className="cart-bundle-chip-v465">
+                          {language === "fr"
+                            ? "Rituel −5 %"
+                            : "Ritual −5%"}
+                        </span>
+                      )}
                   </div>
                   <strong>{money(item.unitPrice * item.quantity, language)}</strong>
                 </div>
@@ -167,7 +198,19 @@ export function CartPageClient({ products }: { products: Product[] }) {
                   </small>}
                   <div className="cart-line-actions-v216">
                     {canEdit && <button type="button" onClick={() => setEditingKey(item.key)}>{language === "fr" ? "Modifier" : "Edit"}</button>}
-                    <button type="button" className="danger" onClick={() => removeItem(item.key)}>{language === "fr" ? "Supprimer" : "Remove"}</button>
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => removeItem(item.key)}
+                    >
+                      {item.bundleGroupId
+                        ? language === "fr"
+                          ? "Supprimer le rituel"
+                          : "Remove ritual"
+                        : language === "fr"
+                          ? "Supprimer"
+                          : "Remove"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -184,6 +227,12 @@ export function CartPageClient({ products }: { products: Product[] }) {
         <p className="eyebrow">{language === "fr" ? "RÉCAPITULATIF" : "SUMMARY"}</p>
         <h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>
         <div className="cart-summary-line-v216"><span>{language === "fr" ? "Articles" : "Items"}</span><strong>{count}</strong></div>
+        {ritualDiscount > 0 && (
+          <div className="cart-summary-line-v216 cart-bundle-saving-v465">
+            <span>{language === "fr" ? "Avantage rituel" : "Ritual saving"}</span>
+            <strong>− {money(ritualDiscount, language)}</strong>
+          </div>
+        )}
 <div className="cart-summary-line-v216 cart-shipping-preview-v254">
   <span>{language === "fr" ? "Livraison" : "Shipping"}</span>
   <strong>
@@ -212,7 +261,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
             : language === "fr"
               ? "Passer à la commande"
               : "Proceed to checkout"}</span>
-          <strong>{money(subtotal, language)}</strong>
+          <strong>{money(ritualSubtotal, language)}</strong>
         </Link>
         <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>
         <div className="cart-trust-v460" aria-label={language === "fr" ? "Informations de confiance" : "Trust information"}>
@@ -228,7 +277,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
       >
         <div className="mobile-cart-total-v419" aria-live="polite">
           <small>{language === "fr" ? "Sous-total" : "Subtotal"}</small>
-          <strong>{money(subtotal, language)}</strong>
+          <strong>{money(ritualSubtotal, language)}</strong>
         </div>
         <Link
           className={`button primary mobile-cart-checkout-v419 ${hasStockConflict ? "is-disabled" : ""}`}
@@ -305,7 +354,16 @@ function CartItemEditor({ item, product, allItems, language, onClose, onSave }: 
     }));
   });
 
-  const nextKey = [product.id, variant?.id ?? "base", ...choices.map((choice) => `${choice.groupId}:${choice.valueId}`).sort()].join("|");
+  const nextBaseKey = [
+    product.id,
+    variant?.id ?? "base",
+    ...choices
+      .map((choice) => `${choice.groupId}:${choice.valueId}`)
+      .sort(),
+  ].join("|");
+  const nextKey = item.bundleGroupId
+    ? `${nextBaseKey}|bundle:${item.bundleGroupId}`
+    : nextBaseKey;
   const nextUnitPrice = Number(variant?.price ?? product.base_price) + choices.reduce((sum, choice) => sum + choice.priceDelta, 0);
   const maxStock = (product.type === "product" || product.type === "accessory") ? Number(variant?.stock ?? product.stock) : null;
   const existingTarget = allItems.find(

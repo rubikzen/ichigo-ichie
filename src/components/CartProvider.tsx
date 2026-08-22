@@ -69,10 +69,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...current, { ...item, quantity: item.quantity ?? 1 }];
     }),
-    setQuantity: (key, quantity) => setItems((current) => quantity <= 0
-      ? current.filter((item) => item.key !== key)
-      : current.map((item) => item.key === key ? { ...item, quantity } : item)),
-    removeItem: (key) => setItems((current) => current.filter((item) => item.key !== key)),
+    setQuantity: (key, quantity) => setItems((current) => {
+      const target = current.find((item) => item.key === key);
+      if (!target?.bundleGroupId) {
+        return quantity <= 0
+          ? current.filter((item) => item.key !== key)
+          : current.map((item) =>
+              item.key === key ? { ...item, quantity } : item,
+            );
+      }
+      if (quantity <= 0) {
+        return current.filter(
+          (item) => item.bundleGroupId !== target.bundleGroupId,
+        );
+      }
+      return current.map((item) =>
+        item.bundleGroupId === target.bundleGroupId
+          ? { ...item, quantity }
+          : item,
+      );
+    }),
+    removeItem: (key) => setItems((current) => {
+      const target = current.find((item) => item.key === key);
+      if (!target?.bundleGroupId) {
+        return current.filter((item) => item.key !== key);
+      }
+      return current.filter(
+        (item) => item.bundleGroupId !== target.bundleGroupId,
+      );
+    }),
     replaceItem: (oldKey, nextItem) => setItems((current) => {
       if (oldKey === nextItem.key) {
         return current.map((item) => item.key === oldKey ? nextItem : item);
