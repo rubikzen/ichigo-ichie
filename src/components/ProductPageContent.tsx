@@ -56,10 +56,11 @@ export function ProductPageContent({
 
   return (
     <main
-      className="product-page-v431 product-page-v432 product-page-v459"
+      className="product-page-v431 product-page-v432 product-page-v459 product-page-v480"
       data-product-page-v431
       data-product-page-v432
       data-product-page-v459
+      data-product-page-v480
     >
       <div className="product-page-shell-v431 product-page-shell-v432">
         <SeoBreadcrumbs
@@ -80,7 +81,7 @@ export function ProductPageContent({
           ]}
         />
 
-        <header className="product-page-story-v431 product-page-header-v432">
+        <header className="product-page-story-v431 product-page-header-v432 product-page-header-v480">
           <p className="eyebrow">
             {product.badge ||
               (language === "fr"
@@ -112,7 +113,7 @@ export function ProductPageContent({
 
         <section className="product-page-hero-v431 product-page-grid-v432">
           <div
-            className="product-page-gallery-v432"
+            className="product-page-gallery-v432 product-page-gallery-v480"
             aria-label={language === "fr" ? "Photos du produit" : "Product photos"}
           >
             <div className="product-page-gallery-stage-v432">
@@ -188,13 +189,13 @@ export function ProductPageContent({
             )}
           </div>
 
-          <aside className="product-page-side-v432">
+          <aside className="product-page-side-v432 product-page-side-v480">
             <section
               id="product-purchase-v459"
-              className="product-page-buy-box-v432 product-page-buy-box-v459"
+              className="product-page-buy-box-v432 product-page-buy-box-v459 product-page-buy-box-v480"
               aria-label={language === "fr" ? "Acheter ce produit" : "Buy this product"}
             >
-              <div className="product-page-buy-intro-v432">
+              <div className="product-page-buy-intro-v432 product-page-buy-intro-v480">
                 <span>
                   {language === "fr" ? "Commander en ligne" : "Order online"}
                 </span>
@@ -210,13 +211,13 @@ export function ProductPageContent({
               </div>
 
               <div
-                className="product-page-purchase-v431 product-page-purchase-v432"
+                className="product-page-purchase-v431 product-page-purchase-v432 product-page-purchase-v480"
                 data-product-purchase-v432
               >
                 <ProductCard product={product} />
               </div>
 
-              <div className="product-page-service-v432">
+              <div className="product-page-service-v432 product-page-service-v480">
                 <span>
                   <b aria-hidden="true">✓</b>
                   {language === "fr"
@@ -236,39 +237,56 @@ export function ProductPageContent({
               </div>
             </section>
 
-            {(product.origin ||
-              product.cultivar ||
-              product.ideal_for.length > 0) && (
-              <dl className="product-page-facts-v431 product-page-facts-v432">
-                {product.origin && (
-                  <div>
-                    <dt>{language === "fr" ? "Origine" : "Origin"}</dt>
-                    <dd>{product.origin}</dd>
-                  </div>
-                )}
-                {product.cultivar && (
-                  <div>
-                    <dt>Cultivar</dt>
-                    <dd>{product.cultivar}</dd>
-                  </div>
-                )}
-                {product.ideal_for.length > 0 && (
-                  <div className="product-page-ideal-v431 product-page-ideal-v432">
-                    <dt>{language === "fr" ? "Idéal pour" : "Ideal for"}</dt>
-                    <dd>
-                      {product.ideal_for.map((item) => (
-                        <span key={item}>{item}</span>
-                      ))}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
           </aside>
         </section>
 
+        {(product.origin ||
+          product.cultivar ||
+          product.ideal_for.length > 0) && (
+          <section
+            className="product-page-facts-section-v480"
+            aria-labelledby="product-page-facts-title-v480"
+          >
+            <div className="product-page-section-heading-v480">
+              <p className="eyebrow">
+                {language === "fr" ? "DÉTAILS" : "DETAILS"}
+              </p>
+              <h2 id="product-page-facts-title-v480">
+                {language === "fr"
+                  ? "Le produit en un coup d’œil"
+                  : "The product at a glance"}
+              </h2>
+            </div>
+
+            <dl className="product-page-facts-v431 product-page-facts-v432 product-page-facts-v480">
+              {product.origin && (
+                <div>
+                  <dt>{language === "fr" ? "Origine" : "Origin"}</dt>
+                  <dd>{product.origin}</dd>
+                </div>
+              )}
+              {product.cultivar && (
+                <div>
+                  <dt>Cultivar</dt>
+                  <dd>{product.cultivar}</dd>
+                </div>
+              )}
+              {product.ideal_for.length > 0 && (
+                <div className="product-page-ideal-v431 product-page-ideal-v432">
+                  <dt>{language === "fr" ? "Idéal pour" : "Ideal for"}</dt>
+                  <dd>
+                    {product.ideal_for.map((item) => (
+                      <span key={item}>{item}</span>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        )}
+
         {longDescription && longDescription !== description && (
-          <section className="product-page-description-v431 product-page-description-v432">
+          <section className="product-page-description-v431 product-page-description-v432 product-page-description-v480">
             <p className="eyebrow">
               {language === "fr" ? "LE PRODUIT" : "THE PRODUCT"}
             </p>
@@ -281,15 +299,20 @@ export function ProductPageContent({
           </section>
         )}
 
-        <ProductGuideLinks product={product} />
+        <div className="product-page-guides-v480">
+          <ProductGuideLinks product={product} />
+        </div>
 
-        <div className="product-page-back-v431 product-page-back-v432">
+        <div className="product-page-reviews-shell-v480">
+          <ProductReviews productId={product.id} />
+        </div>
+
+        <div className="product-page-back-v431 product-page-back-v432 product-page-back-v480">
           <Link href="/#boutique">
             ← {language === "fr" ? "Retour à la boutique" : "Back to shop"}
           </Link>
         </div>
       </div>
-          <ProductReviews productId={product.id} />
-</main>
+    </main>
   );
 }
