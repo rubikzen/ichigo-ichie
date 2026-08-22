@@ -4,7 +4,9 @@ test("Boutique product permalink opens a canonical SEO product page", async ({ p
   await page.goto("/#boutique");
 
   const productLink = page
-    .locator("#boutique a.product-permalink-v431:visible")
+    .locator(
+      "#boutique a.product-title-link-v4792:visible, #boutique a.product-permalink-v431:visible",
+    )
     .first();
   await expect(productLink).toBeVisible();
 

@@ -437,6 +437,13 @@ const requiresChoice = selectableVariants.length > 1;
             >
               {name}
             </button>
+            <Link
+              className="product-title-link-v4792"
+              href={`/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}`}
+              aria-label={language === "fr" ? `Voir ${name}` : `View ${name}`}
+            >
+              {name}
+            </Link>
           </h3>
           {!isSoldOut && <strong className="product-card-price">{selectableVariants.length > 1 && (language === "fr" ? "Dès " : "From ")}{money(minimumPrice, language)}</strong>}
         </div>

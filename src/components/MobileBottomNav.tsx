@@ -85,6 +85,7 @@ export function MobileBottomNav() {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
   const [active, setActive] = useState<SectionId>("");
+  const [dockHiddenByScroll, setDockHiddenByScroll] = useState(false);
   const hashSection = useSyncExternalStore<SectionId>(subscribeHashSection, readHashSection, readServerHashSection);
   const t = (fr: string, en: string, fallback: string) => settings[language === "fr" ? fr : en] || settings[fr] || fallback;
   const hidden = HIDDEN_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -95,6 +96,50 @@ export function MobileBottomNav() {
     document.body.classList.toggle("mobile-dock-hidden-v236", hidden);
     return () => document.body.classList.remove("mobile-dock-hidden-v236");
   }, [hidden]);
+
+
+  useEffect(() => {
+    if (hidden) return;
+
+    let lastY = Math.max(0, window.scrollY);
+    let frame = 0;
+
+    const updateDockVisibility = () => {
+      const nextY = Math.max(0, window.scrollY);
+      const delta = nextY - lastY;
+      const nearTop = nextY < 180;
+      const nearBottom =
+        window.innerHeight + nextY >=
+        document.documentElement.scrollHeight - 180;
+
+      if (nearTop || nearBottom) {
+        setDockHiddenByScroll(false);
+      } else if (delta > 12) {
+        setDockHiddenByScroll(true);
+      } else if (delta < -10) {
+        setDockHiddenByScroll(false);
+      }
+
+      if (Math.abs(delta) > 6) lastY = nextY;
+      frame = 0;
+    };
+
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateDockVisibility);
+    };
+
+    const revealDock = () => setDockHiddenByScroll(false);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("focus", revealDock);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("focus", revealDock);
+    };
+  }, [hidden, pathname]);
 
   useEffect(() => {
     if (!onHome) return;
@@ -140,7 +185,11 @@ export function MobileBottomNav() {
   if (hidden) return null;
 
   return (
-    <nav className="mobile-bottom-nav-v225 mobile-bottom-nav-v236" aria-label={language === "fr" ? "Navigation mobile" : "Mobile navigation"}>
+    <nav
+      className={`mobile-bottom-nav-v225 mobile-bottom-nav-v236 mobile-bottom-nav-v4792${dockHiddenByScroll ? " is-scroll-hidden-v4792" : ""}`}
+      aria-label={language === "fr" ? "Navigation mobile" : "Mobile navigation"}
+      data-scroll-hidden-v4792={dockHiddenByScroll ? "true" : "false"}
+    >
       <Link href="/#boutique" className={visibleActive === "boutique" ? "active" : ""} aria-current={visibleActive === "boutique" ? "location" : undefined}>
         <IconShop />
         <span>{t("nav_shop_fr", "nav_shop_en", language === "fr" ? "Boutique" : "Shop")}</span>

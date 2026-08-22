@@ -70,9 +70,9 @@ test("desktop navigation places Boutique before La carte", () => {
 });
 
 test("mobile navigation also places Boutique before Carte", () => {
-  const navStart = mobileNav.indexOf(
-    '<nav className="mobile-bottom-nav-v225'
-  );
+  const navStart = mobileNav.indexOf("mobile-bottom-nav-v225");
+  assert.ok(navStart >= 0);
+
   const mobileBlock = mobileNav.slice(navStart);
   const shop = mobileBlock.indexOf('href="/#boutique"');
   const menu = mobileBlock.indexOf('href="/#menu"');
