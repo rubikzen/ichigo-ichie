@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
+import { persistConversionEvent, type PersistedConversionEvent } from "@/lib/conversion-analytics-server";
 
 const EVENT_NAMES = new Set([
   "product_view",
@@ -70,15 +71,13 @@ export async function POST(request: Request) {
       ? input.order_type
       : undefined;
 
-  const record = {
+  const record: PersistedConversionEvent = {
     event,
     session_id: sessionId,
-    occurred_at:
-      typeof input.occurred_at === "string"
-        ? input.occurred_at.slice(0, 40)
-        : new Date().toISOString(),
+    // Server time is authoritative for persisted analytics.
+    occurred_at: new Date().toISOString(),
     path: cleanPath(input.path),
-    currency: input.currency === "EUR" ? "EUR" : undefined,
+    currency: input.currency === "EUR" ? ("EUR" as const) : undefined,
     product_id: cleanId(input.product_id),
     variant_id: cleanId(input.variant_id),
     source,
@@ -91,6 +90,9 @@ export async function POST(request: Request) {
   };
 
   console.info("[conversion:v463]", JSON.stringify(record));
+
+  // Best-effort only: analytics persistence must never affect storefront commerce.
+  await persistConversionEvent(request, record);
 
   return NextResponse.json(
     { ok: true },
