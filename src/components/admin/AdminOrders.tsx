@@ -6,6 +6,7 @@ import { OrderStatistics } from "../OrderStatistics";
 import { ConversionAnalyticsAdmin } from "./ConversionAnalyticsAdmin";
 import { ProductReviewsAdmin } from "./ProductReviewsAdmin";
 import { InventoryForecastAdmin } from "./InventoryForecastAdmin";
+import { SeoHealthAdmin } from "./SeoHealthAdmin";
 
 type OrderRow = { id: string; order_number: string; environment?: "test" | "live" | "legacy"; archived_at?: string | null; created_at: string; status: string; payment_status: string; payment_method?: "online" | "pickup"; source_channel?: "menu" | "shop" | "mixed"; order_type: "pickup" | "shipping"; customer_first_name: string; customer_last_name: string; customer_phone: string; customer_email: string; pickup_time: string | null; notes: string | null; subtotal: number; shipping_fee: number; total: number; shipping_method_name?: string | null; shipping_address1?: string | null; shipping_address2?: string | null; shipping_postal_code?: string | null; shipping_city?: string | null; shipping_country?: string | null; package_weight_g?: number | null; public_token?: string | null; tracking_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; shipped_at?: string | null; confirmation_email_sent_at?: string | null; shipping_email_sent_at?: string | null; refund_email_sent_at?: string | null; pickup_ready_email_sent_at?: string | null; pickup_completed_email_sent_at?: string | null; stripe_refund_id?: string | null; promo_code?: string | null; discount_amount?: number | null; invoices?: Array<{ id: string; document_type: "invoice" | "credit_note"; document_number: string; email_sent_at?: string | null }>; order_items?: Array<{ id: string; product_name: string; quantity: number; line_total?: number; choices: Array<{ label?: string }> }> };
 type ContactMessageRow = { id: string; created_at: string; updated_at?: string | null; status: "new" | "read" | "archived"; first_name: string; last_name: string; email: string; phone: string; message: string; locale?: "fr" | "en" };
@@ -780,6 +781,7 @@ const orderMatchesZone = (order: OrderRow) => order.source_channel === "shop" ||
         .join("|")}
     />
       <InventoryForecastAdmin supabase={supabase} />
+      <SeoHealthAdmin supabase={supabase} />
       <ConversionAnalyticsAdmin supabase={supabase} />
           <ProductReviewsAdmin supabase={supabase} />
     </>

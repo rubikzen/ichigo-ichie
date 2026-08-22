@@ -10296,3 +10296,67 @@
     display: grid;
   }
 }
+
+
+/* V475 — admin SEO health audit */
+.seo-health-admin-v475{display:grid;gap:16px;margin-top:18px;padding-top:20px;border-top:1px solid rgba(40,65,52,.12)}
+.seo-health-head-v475{display:flex;align-items:start;justify-content:space-between;gap:18px}
+.seo-health-head-v475 h3{margin:4px 0 5px}
+.seo-health-head-v475 p.muted{max-width:780px;margin:0;line-height:1.55}
+.seo-health-kpis-v475{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.seo-health-kpis-v475 article{display:grid;gap:2px;min-width:0;padding:13px;border:1px solid rgba(40,65,52,.1);border-radius:14px;background:rgba(255,255,255,.7)}
+.seo-health-kpis-v475 article.alert{border-color:rgba(154,58,43,.24);background:rgba(154,58,43,.055)}
+.seo-health-kpis-v475 span,.seo-health-kpis-v475 small{color:var(--muted);font-size:.68rem}
+.seo-health-kpis-v475 strong{font-size:1.35rem}
+.seo-health-global-v475{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.seo-health-global-v475 article{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;padding:11px;border:1px solid rgba(40,65,52,.09);border-radius:12px}
+.seo-health-global-v475 article>span{display:grid;width:22px;height:22px;place-items:center;border-radius:999px;background:rgba(72,106,75,.08);font-size:.72rem;font-weight:800}
+.seo-health-global-v475 article>div{display:grid;gap:2px}
+.seo-health-global-v475 small{color:var(--muted);font-size:.67rem;line-height:1.35}
+.seo-health-global-error-v475{border-color:rgba(154,58,43,.2)!important}
+.seo-health-global-warning-v475{border-color:rgba(148,112,36,.2)!important}
+.seo-health-toolbar-v475{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seo-health-views-v475{display:flex;flex-wrap:wrap;gap:5px}
+.seo-health-views-v475 button{min-height:34px;padding:6px 10px;border:1px solid rgba(40,65,52,.12);border-radius:999px;background:#fff;font-size:.72rem;font-weight:700}
+.seo-health-views-v475 button.active{border-color:rgba(72,106,75,.3);background:rgba(72,106,75,.08);color:var(--moss-dark)}
+.seo-health-toolbar-v475 input[type="search"]{width:min(330px,100%);min-height:38px;padding:7px 10px;border:1px solid rgba(40,65,52,.12);border-radius:11px}
+.seo-health-table-v475{overflow:hidden;border:1px solid rgba(40,65,52,.1);border-radius:14px}
+.seo-health-row-v475{display:grid;grid-template-columns:minmax(180px,1.25fr) 88px minmax(150px,.9fr) minmax(220px,1.4fr) 100px;gap:12px;align-items:start;padding:12px;border-top:1px solid rgba(40,65,52,.07);background:rgba(255,255,255,.62);font-size:.75rem}
+.seo-health-row-v475.header{border-top:0;background:rgba(72,106,75,.055);color:var(--muted);font-size:.66rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.seo-health-product-v475,.seo-health-signals-v475,.seo-health-issues-v475,.seo-health-links-v475{display:grid;gap:4px;min-width:0}
+.seo-health-product-v475 small{color:var(--muted)}
+.seo-health-product-v475 code{overflow:hidden;color:var(--muted);font-size:.64rem;text-overflow:ellipsis;white-space:nowrap}
+.seo-health-status-v475{display:inline-flex;width:fit-content;margin-top:4px;padding:3px 7px;border-radius:999px;font-size:.62rem;font-weight:800}
+.seo-health-status-v475.error{background:rgba(154,58,43,.09);color:#8b3427}
+.seo-health-status-v475.warning{background:rgba(148,112,36,.1);color:#71551b}
+.seo-health-status-v475.ready{background:rgba(72,106,75,.09);color:var(--moss-dark)}
+.seo-health-signals-v475 span{width:fit-content;padding:2px 6px;border-radius:999px;background:rgba(72,106,75,.055);color:#4e5a52;font-size:.65rem}
+.seo-health-issues-v475 span{line-height:1.35}
+.seo-health-issues-v475 span.error{color:#8b3427;font-weight:700}
+.seo-health-issues-v475 span.warning{color:#71551b}
+.seo-health-issues-v475 span.ready{color:var(--moss-dark)}
+.seo-health-issues-v475 small{color:var(--muted)}
+.seo-health-links-v475 a{font-weight:750}
+.seo-health-empty-v475{display:grid;gap:3px;padding:16px;border:1px dashed rgba(40,65,52,.14);border-radius:13px}
+.seo-health-empty-v475 span,.seo-health-foot-v475{color:var(--muted);font-size:.7rem}
+.seo-health-foot-v475{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px}
+@media (max-width:1080px){
+  .seo-health-kpis-v475,.seo-health-global-v475{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .seo-health-row-v475{grid-template-columns:minmax(180px,1.2fr) 80px minmax(150px,1fr)}
+  .seo-health-row-v475.header span:nth-child(4),.seo-health-row-v475.header span:nth-child(5){display:none}
+  .seo-health-issues-v475,.seo-health-links-v475{grid-column:1/-1}
+}
+@media (max-width:700px){
+  .seo-health-head-v475,.seo-health-toolbar-v475{align-items:stretch;flex-direction:column}
+  .seo-health-head-v475 .button,.seo-health-toolbar-v475 input[type="search"]{width:100%}
+  .seo-health-kpis-v475,.seo-health-global-v475{grid-template-columns:1fr 1fr}
+  .seo-health-views-v475{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .seo-health-views-v475::-webkit-scrollbar{display:none}
+  .seo-health-views-v475 button{flex:0 0 auto;min-height:40px}
+  .seo-health-table-v475{overflow:visible;border:0}
+  .seo-health-row-v475.header{display:none}
+  .seo-health-row-v475{grid-template-columns:1fr 74px;margin-bottom:8px;border:1px solid rgba(40,65,52,.1);border-radius:13px}
+  .seo-health-row-v475>div[data-label]::before{content:attr(data-label);display:block;margin-bottom:4px;color:var(--muted);font-size:.6rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .seo-health-signals-v475,.seo-health-issues-v475,.seo-health-links-v475{grid-column:1/-1}
+}
+@media (max-width:430px){.seo-health-kpis-v475,.seo-health-global-v475{grid-template-columns:1fr}}
