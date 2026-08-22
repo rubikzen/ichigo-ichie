@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import type { CartItem, Product, Variant } from "@/lib/types";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { trackConversion } from "@/lib/conversion-analytics";
+import { settingEnabled } from "@/lib/settings";
 import { composeProductVariantName, variantLabel } from "@/lib/product-label";
 import {
   RITUAL_BUNDLE_ID,
@@ -53,6 +55,7 @@ function selectVariant(product: Product, variantId: string) {
 
 export function RitualBundleBuilder({ products }: { products: Product[] }) {
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
   const { items, addItem } = useCart();
 
   const candidates = useMemo(
@@ -80,7 +83,13 @@ export function RitualBundleBuilder({ products }: { products: Product[] }) {
   );
   const [added, setAdded] = useState(false);
 
-  if (!matchas.length || !accessories.length) return null;
+  if (
+    !settingEnabled(settings.shop_ritual_bundle_visible) ||
+    !matchas.length ||
+    !accessories.length
+  ) {
+    return null;
+  }
 
   const matcha =
     matchas.find((product) => product.id === matchaId) ?? matchas[0];
@@ -189,13 +198,13 @@ export function RitualBundleBuilder({ products }: { products: Product[] }) {
         </p>
         <h3 id="ritual-bundle-title-v465">
           {language === "fr"
-            ? "Un matcha + un accessoire, −5 %"
-            : "One matcha + one accessory, 5% off"}
+            ? "Matcha + accessoire · −5 %"
+            : "Matcha + accessory · 5% off"}
         </h3>
         <p>
           {language === "fr"
-            ? "Choisissez votre matcha et votre accessoire. Stock, format et disponibilité sont revérifiés au paiement."
-            : "Choose your matcha and accessory. Stock, format and availability are rechecked at checkout."}
+            ? "Choisissez les deux éléments de votre rituel. Stock et disponibilité restent vérifiés au paiement."
+            : "Choose both parts of your ritual. Stock and availability are still verified at checkout."}
         </p>
       </div>
 

@@ -91,6 +91,7 @@ export const siteSettingDefaults: SiteSettings = {
   shop_title_en: "Shop",
   shop_intro_fr: "Matcha japonais et accessoires sélectionnés pour votre rituel quotidien.",
   shop_intro_en: "Japanese matcha and accessories selected for your daily ritual.",
+  shop_ritual_bundle_visible: "true",
   shop_all_fr: "Tout",
   shop_all_en: "All",
   shop_empty_fr: "Aucun produit dans cette catégorie.",
