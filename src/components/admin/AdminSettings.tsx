@@ -180,6 +180,43 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
           Afficher Composez votre rituel
         </label>
       </div>
+      <div className="cms-subsection">
+        <h3>Offre Composez votre rituel</h3>
+        <div className="form-grid">
+          <label>
+            Composition
+            <select
+              value={settings.shop_ritual_bundle_mode || "matcha_accessory"}
+              onChange={(event) =>
+                set("shop_ritual_bundle_mode", event.target.value)
+              }
+            >
+              <option value="matcha_accessory">Matcha + accessoire</option>
+              <option value="two_matcha">2 matchas</option>
+            </select>
+          </label>
+          <label>
+            Réduction (%)
+            <input
+              type="number"
+              min="0"
+              max="50"
+              step="0.5"
+              value={settings.shop_ritual_bundle_discount_percent ?? "5"}
+              onChange={(event) =>
+                set(
+                  "shop_ritual_bundle_discount_percent",
+                  event.target.value,
+                )
+              }
+            />
+          </label>
+        </div>
+        <small>
+          Le prix et la composition sont revérifiés côté serveur au moment
+          de la commande. Maximum autorisé : 50 %.
+        </small>
+      </div>
       {bilingual("shop_eyebrow", "Petit titre")}{bilingual("shop_title", "Titre")}{bilingual("shop_intro", "Introduction", true)}{bilingual("shop_all", "Bouton Toutes catégories")}{bilingual("shop_empty", "Message quand aucun résultat", true)}<div className="cms-subsection"><h3>Tri catalogue</h3>{bilingual("catalog_sort_label", "Libellé")}{bilingual("catalog_sort_recommended", "Ordre recommandé")}{bilingual("catalog_sort_price_asc", "Prix croissant")}{bilingual("catalog_sort_price_desc", "Prix décroissant")}{bilingual("catalog_sort_name_asc", "Nom A → Z")}{bilingual("catalog_sort_name_desc", "Nom Z → A")}</div><div className="cms-subsection"><h3>Navigation mobile</h3>{bilingual("mobile_menu_label", "Carte")}{bilingual("mobile_house_label", "Maison")}</div></>)}
 
 

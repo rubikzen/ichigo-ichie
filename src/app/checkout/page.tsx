@@ -10,7 +10,13 @@ import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { trackConversion } from "@/lib/conversion-analytics";
-import { cartBundleDiscount } from "@/lib/bundle";
+import {
+  cartBundleDiscount,
+  ritualBundleModeFromSetting,
+  ritualBundlePercentFromSetting,
+  ritualBundlePercentLabel,
+  ritualBundleRateFromSetting,
+} from "@/lib/bundle";
 
 type OrderResult = {
   orderNumber: string;
@@ -104,6 +110,31 @@ export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
+  const ritualBundleMode = ritualBundleModeFromSetting(
+    settings.shop_ritual_bundle_mode,
+  );
+  const ritualBundlePercent = ritualBundlePercentFromSetting(
+    settings.shop_ritual_bundle_discount_percent,
+  );
+  const ritualBundleRate = ritualBundleRateFromSetting(
+    settings.shop_ritual_bundle_discount_percent,
+  );
+  const ritualBundlePercentText = ritualBundlePercentLabel(
+    ritualBundlePercent,
+    language,
+  );
+  const ritualBundleSummaryLabel =
+    ritualBundleMode === "two_matcha"
+      ? language === "fr"
+        ? `2 matchas · −${ritualBundlePercentText} %`
+        : `2 matchas · −${ritualBundlePercentText}%`
+      : ritualBundlePercent === 5
+        ? language === "fr"
+          ? "Matcha + accessoire · −5 %"
+          : "Matcha + accessory · −5%"
+        : language === "fr"
+          ? `Matcha + accessoire · −${ritualBundlePercentText} %`
+          : `Matcha + accessory · −${ritualBundlePercentText}%`;
   const cms = (fr: string, en: string, fallbackFr: string, fallbackEn: string) => settings[language === "fr" ? fr : en] || (language === "fr" ? fallbackFr : fallbackEn);
   const mustPickup = items.some((item) => item.pickupOnly);
   const [loading, setLoading] = useState(false);
@@ -336,10 +367,14 @@ export default function CheckoutPage() {
   const manualAddressReady = addressEntryMode === "manual" && address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2;
   const shippingFee = orderType === "shipping" ? Number(selectedShipping?.fee ?? 0) : 0;
   const bundleDiscountAmount = cartBundleDiscount(items);
+  const configuredBundleDiscountAmount =
+    ritualBundlePercent === 5
+      ? bundleDiscountAmount
+      : cartBundleDiscount(items, ritualBundleRate);
   const promoDiscountAmount = Number(appliedPromo?.discountAmount || 0);
   const discountAmount =
-    bundleDiscountAmount > 0
-      ? bundleDiscountAmount
+    configuredBundleDiscountAmount > 0
+      ? configuredBundleDiscountAmount
       : promoDiscountAmount;
   const discountedSubtotal = Math.max(
     0,
@@ -355,7 +390,7 @@ export default function CheckoutPage() {
   const paymentMethod = "online" as const;
   const promoFieldVisible =
     settings.promo_field_visible !== "false" &&
-    bundleDiscountAmount <= 0;
+    configuredBundleDiscountAmount <= 0;
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
   const underMinimumOnlinePayment = checkoutTotal > 0 && checkoutTotal < MIN_ONLINE_PAYMENT_EUR;
   const submitDisabled = loading || underMinimumOnlinePayment || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
@@ -383,10 +418,10 @@ export default function CheckoutPage() {
       setPromoError("");
     });
     return () => { cancelled = true; };
-  }, [subtotal, bundleDiscountAmount]);
+  }, [subtotal, configuredBundleDiscountAmount]);
 
   async function applyPromo() {
-    if (bundleDiscountAmount > 0) {
+    if (configuredBundleDiscountAmount > 0) {
       setPromoError(
         language === "fr"
           ? "L’avantage rituel ne peut pas être cumulé avec un code promo."
@@ -766,7 +801,7 @@ export default function CheckoutPage() {
         </div>
         <div className="checkout-summary-totals">
           <div className="checkout-line"><span>{language === "fr" ? "Sous-total produits" : "Items subtotal"}</span><strong>{money.format(subtotal)}</strong></div>
-          {bundleDiscountAmount > 0 && (
+          {configuredBundleDiscountAmount > 0 && (
             <div className="checkout-line promo-summary-line-v234 ritual-summary-line-v465">
               <span>
                 <strong>
@@ -775,15 +810,13 @@ export default function CheckoutPage() {
                     : "Ritual saving"}
                 </strong>
                 <small>
-                  {language === "fr"
-                    ? "Matcha + accessoire · −5 %"
-                    : "Matcha + accessory · −5%"}
+                  {ritualBundleSummaryLabel}
                 </small>
               </span>
-              <strong>− {money.format(bundleDiscountAmount)}</strong>
+              <strong>− {money.format(configuredBundleDiscountAmount)}</strong>
             </div>
           )}
-          {appliedPromo && bundleDiscountAmount <= 0 && <div className="checkout-line promo-summary-line-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong><small>{appliedPromo.code}</small></span><strong>− {money.format(discountAmount)}</strong></div>}
+          {appliedPromo && configuredBundleDiscountAmount <= 0 && <div className="checkout-line promo-summary-line-v234"><span><strong>{language === "fr" ? "Réduction" : "Discount"}</strong><small>{appliedPromo.code}</small></span><strong>− {money.format(discountAmount)}</strong></div>}
           {orderType === "shipping" && <div className="checkout-line shipping-total-line"><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong>{selectedShipping && <small>{language === "fr" ? selectedShipping.nameFr : selectedShipping.nameEn}</small>}</span><strong>{quoteLoading ? "…" : selectedShipping?.free ? (language === "fr" ? "Offerte" : "Free") : money.format(shippingFee)}</strong></div>}
           <div className="checkout-total"><span>Total</span><strong>{money.format(checkoutTotal)}</strong></div>
         </div>

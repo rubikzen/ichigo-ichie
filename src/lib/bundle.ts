@@ -2,6 +2,41 @@ import type { CartItem, Product, Variant } from "@/lib/types";
 
 export const RITUAL_BUNDLE_ID = "rituel-matcha-accessoire-v465";
 export const RITUAL_BUNDLE_RATE = 0.05;
+export const MAX_RITUAL_BUNDLE_PERCENT = 50;
+
+export type RitualBundleMode = "matcha_accessory" | "two_matcha";
+
+export function ritualBundleModeFromSetting(
+  value: string | undefined | null,
+): RitualBundleMode {
+  return value === "two_matcha" ? "two_matcha" : "matcha_accessory";
+}
+
+export function ritualBundlePercentFromSetting(
+  value: string | number | undefined | null,
+) {
+  const parsed = Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(parsed)) return RITUAL_BUNDLE_RATE * 100;
+  return Math.min(
+    MAX_RITUAL_BUNDLE_PERCENT,
+    Math.max(0, Math.round(parsed * 100) / 100),
+  );
+}
+
+export function ritualBundleRateFromSetting(
+  value: string | number | undefined | null,
+) {
+  return ritualBundlePercentFromSetting(value) / 100;
+}
+
+export function ritualBundlePercentLabel(
+  percent: number,
+  language: "fr" | "en",
+) {
+  const rounded = Math.round(percent * 100) / 100;
+  const text = String(rounded);
+  return language === "fr" ? text.replace(".", ",") : text;
+}
 
 export function availableBundleVariants(product: Product) {
   return product.variants.filter(
@@ -50,8 +85,11 @@ export function bundleCartKey(
   productId: string,
   variantId: string | null | undefined,
   groupId: string,
+  slot?: "a" | "b",
 ) {
-  return `${productId}|${variantId ?? "base"}|bundle:${groupId}`;
+  return `${productId}|${variantId ?? "base"}|bundle:${groupId}${
+    slot ? `:slot:${slot}` : ""
+  }`;
 }
 
 export function cartBundleDiscount(
@@ -61,7 +99,12 @@ export function cartBundleDiscount(
       "bundleId" | "bundleGroupId" | "quantity" | "unitPrice"
     >
   >,
+  rate = RITUAL_BUNDLE_RATE,
 ) {
+  const safeRate = Math.min(
+    MAX_RITUAL_BUNDLE_PERCENT / 100,
+    Math.max(0, Number(rate) || 0),
+  );
   const groups = new Map<string, typeof items>();
 
   for (const item of items) {
@@ -81,7 +124,7 @@ export function cartBundleDiscount(
       (sum, row) => sum + row.unitPrice * row.quantity,
       0,
     );
-    discount += groupSubtotal * RITUAL_BUNDLE_RATE;
+    discount += groupSubtotal * safeRate;
   }
 
   return Math.round(discount * 100) / 100;

@@ -9,7 +9,13 @@ import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, normalizeLegacyProductLabel, packagingLabel, variantLabel } from "@/lib/product-label";
-import { RITUAL_BUNDLE_ID, cartBundleDiscount } from "@/lib/bundle";
+import {
+  RITUAL_BUNDLE_ID,
+  cartBundleDiscount,
+  ritualBundlePercentFromSetting,
+  ritualBundlePercentLabel,
+  ritualBundleRateFromSetting,
+} from "@/lib/bundle";
 
 const money = (value: number, language: "fr" | "en") => new Intl.NumberFormat(
   language === "fr" ? "fr-FR" : "en-GB",
@@ -64,9 +70,22 @@ export function CartPageClient({ products }: { products: Product[] }) {
   const editingProduct = editingItem ? productMap.get(editingItem.productId) : undefined;
   const hasPickupOnly = items.some((item) => item.pickupOnly);
   const hasShippingItems = items.some((item) => !item.pickupOnly);
+  const ritualBundlePercent = ritualBundlePercentFromSetting(
+    settings.shop_ritual_bundle_discount_percent,
+  );
+  const ritualBundleRate = ritualBundleRateFromSetting(
+    settings.shop_ritual_bundle_discount_percent,
+  );
+  const ritualBundlePercentText = ritualBundlePercentLabel(
+    ritualBundlePercent,
+    language,
+  );
   const ritualDiscount = useMemo(
-    () => cartBundleDiscount(items),
-    [items],
+    () =>
+      ritualBundlePercent === 5
+        ? cartBundleDiscount(items)
+        : cartBundleDiscount(items, ritualBundleRate),
+    [items, ritualBundlePercent, ritualBundleRate],
   );
   const ritualSubtotal = Math.max(
     0,
@@ -79,20 +98,49 @@ export function CartPageClient({ products }: { products: Product[] }) {
       return;
     }
 
-    const linked = item.bundleGroupId
-      ? items.filter(
-          (candidate) =>
-            candidate.bundleGroupId === item.bundleGroupId,
-        )
-      : [item];
-
-    for (const candidate of linked) {
+    if (!item.bundleGroupId) {
       const stock = getItemStock(
-        candidate,
-        productMap.get(candidate.productId),
+        item,
+        productMap.get(item.productId),
       );
-      const usedElsewhere = quantityUsedByOtherLines(items, candidate);
+      const usedElsewhere = quantityUsedByOtherLines(items, item);
       if (stock !== null && usedElsewhere + next > stock) return;
+      setQuantity(item.key, next);
+      return;
+    }
+
+    const linked = items.filter(
+      (candidate) =>
+        candidate.bundleGroupId === item.bundleGroupId,
+    );
+
+    const linkedKeys = new Set(linked.map(stockUnitKey));
+
+    for (const key of linkedKeys) {
+      const sample = linked.find(
+        (candidate) => stockUnitKey(candidate) === key,
+      );
+      if (!sample) continue;
+
+      const stock = getItemStock(
+        sample,
+        productMap.get(sample.productId),
+      );
+      if (stock === null) continue;
+
+      const linkedLineCount = linked.filter(
+        (candidate) => stockUnitKey(candidate) === key,
+      ).length;
+      const outsideQuantity = items.reduce(
+        (sum, candidate) =>
+          !linked.some((row) => row.key === candidate.key) &&
+          stockUnitKey(candidate) === key
+            ? sum + candidate.quantity
+            : sum,
+        0,
+      );
+
+      if (outsideQuantity + linkedLineCount * next > stock) return;
     }
 
     setQuantity(item.key, next);
@@ -142,9 +190,38 @@ export function CartPageClient({ products }: { products: Product[] }) {
               ? composeProductVariantName(language === "fr" ? product.name_fr : product.name_en, itemVariant, language)
               : normalizeLegacyProductLabel(item.name, language);
             const usedElsewhere = quantityUsedByOtherLines(items, item);
-            const maxForThisLine = stock === null ? null : Math.max(0, stock - usedElsewhere);
+            const linkedSameUnitCount = item.bundleGroupId
+              ? items.filter(
+                  (candidate) =>
+                    candidate.bundleGroupId === item.bundleGroupId &&
+                    stockUnitKey(candidate) === stockUnitKey(item),
+                ).length
+              : 1;
+            const outsideForUnit = item.bundleGroupId
+              ? items.reduce(
+                  (sum, candidate) =>
+                    candidate.bundleGroupId !== item.bundleGroupId &&
+                    stockUnitKey(candidate) === stockUnitKey(item)
+                      ? sum + candidate.quantity
+                      : sum,
+                  0,
+                )
+              : usedElsewhere;
+            const maxForThisLine = stock === null
+              ? null
+              : Math.max(
+                  0,
+                  Math.floor(
+                    (stock - outsideForUnit) /
+                      Math.max(1, linkedSameUnitCount),
+                  ),
+                );
             const lineStockConflict = maxForThisLine !== null && item.quantity > maxForThisLine;
-            const canEdit = Boolean(product && (product.variants.length > 0 || product.option_groups.length > 0));
+            const canEdit = Boolean(
+              product &&
+              !item.bundleGroupId &&
+              (product.variants.length > 0 || product.option_groups.length > 0),
+            );
             return <article className={`cart-item cart-item-v216 ${savedKey === item.key ? "is-updated" : ""}`} key={item.key}>
               <SafeImage
                 className="cart-item-image-v216"
@@ -167,8 +244,8 @@ export function CartPageClient({ products }: { products: Product[] }) {
                       item.bundleGroupId && (
                         <span className="cart-bundle-chip-v465">
                           {language === "fr"
-                            ? "Rituel −5 %"
-                            : "Ritual −5%"}
+                            ? `Rituel −${ritualBundlePercentText} %`
+                            : `Ritual −${ritualBundlePercentText}%`}
                         </span>
                       )}
                   </div>
