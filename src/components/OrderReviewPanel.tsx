@@ -2,6 +2,8 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import { settingEnabled } from "@/lib/settings";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type ReviewItem = {
@@ -22,6 +24,9 @@ export function OrderReviewPanel({
   status: string;
 }) {
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
+  const reviewsEnabled = settingEnabled(settings.shop_reviews_enabled);
+  const showVerifiedBadge = settingEnabled(settings.shop_reviews_verified_badge_visible);
   const products = useMemo(() => {
     const seen = new Set<string>();
     return items.filter((item) => {
@@ -42,6 +47,7 @@ export function OrderReviewPanel({
   const [submitted, setSubmitted] = useState<Set<string>>(() => new Set());
 
   if (
+    !reviewsEnabled ||
     paymentStatus !== "paid" ||
     status !== "completed" ||
     !products.length
@@ -76,6 +82,7 @@ export function OrderReviewPanel({
       const data = (await response.json()) as {
         error?: string;
         code?: string;
+        status?: "pending" | "approved";
       };
 
       if (!response.ok) {
@@ -110,10 +117,15 @@ export function OrderReviewPanel({
       setRating(5);
       setTitle("");
       setBody("");
+      const published = data.status === "approved";
       setMessage(
         language === "fr"
-          ? "Merci ! Votre avis sera publié après validation."
-          : "Thank you! Your review will be published after moderation.",
+          ? published
+            ? "Merci ! Votre avis est maintenant publié."
+            : "Merci ! Votre avis sera publié après validation."
+          : published
+            ? "Thank you! Your review is now published."
+            : "Thank you! Your review will be published after moderation.",
       );
     } catch (error) {
       setMessage(
@@ -142,10 +154,10 @@ export function OrderReviewPanel({
             {language === "fr" ? "Donnez votre avis" : "Review your purchase"}
           </h2>
         </div>
-        <span className="verified-purchase-v466">
+        {showVerifiedBadge && <span className="verified-purchase-v466">
           ✓{" "}
           {language === "fr" ? "Achat vérifié" : "Verified purchase"}
-        </span>
+        </span>}
       </div>
 
       <p className="muted">

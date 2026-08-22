@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
+import { settingEnabled, siteSettingDefaults } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,35 @@ export async function GET(
     return NextResponse.json(
       { error: "Service indisponible." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const { data: enabledRow, error: enabledError } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "shop_reviews_enabled")
+    .maybeSingle();
+
+  if (enabledError) {
+    console.warn("Review visibility lookup failed; using default", enabledError.message);
+  }
+
+  const reviewsEnabled = settingEnabled(
+    enabledRow?.value == null
+      ? siteSettingDefaults.shop_reviews_enabled
+      : String(enabledRow.value),
+  );
+
+  if (!reviewsEnabled) {
+    return NextResponse.json(
+      {
+        disabled: true,
+        count: 0,
+        average: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        reviews: [],
+      },
+      { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } },
     );
   }
 

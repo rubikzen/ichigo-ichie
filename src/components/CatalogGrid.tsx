@@ -8,6 +8,7 @@ import { useSiteSettings } from "./SiteSettingsProvider";
 import { ProductCard } from "./ProductCard";
 import { RitualBundleBuilder } from "./RitualBundleBuilder";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
+import { ReviewSummaryProvider } from "./ReviewSummaryProvider";
 
 type CatalogKind = "menu" | "shop";
 
@@ -29,7 +30,7 @@ export function CatalogGrid({ categories, products, kind }: { categories: Catego
   const prefix = kind === "menu" ? "menu" : "shop";
   const val = (suffix: string) => settings[`${prefix}_${suffix}_${language}`] || settings[`${prefix}_${suffix}_fr`] || "";
 
-  return <section className={`catalog-page catalog-page-v218 catalog-${kind}-v218`}>
+  const content = <section className={`catalog-page catalog-page-v218 catalog-${kind}-v218`}>
     <div className="page-heading page-heading-v218">
       <p className="eyebrow">{val("eyebrow")}</p>
       <h1>{val("title")}</h1>
@@ -45,4 +46,10 @@ export function CatalogGrid({ categories, products, kind }: { categories: Catego
     </div>
     {filtered.length ? <div className="product-grid">{filtered.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="empty-state">{val("empty")}</div>}
   </section>;
+
+  return kind === "shop" ? (
+    <ReviewSummaryProvider productIds={products.map((product) => product.id)}>
+      {content}
+    </ReviewSummaryProvider>
+  ) : content;
 }

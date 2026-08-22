@@ -217,6 +217,30 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
           de la commande. Maximum autorisé : 50 %.
         </small>
       </div>
+      <div className="cms-subsection">
+        <h3>Avis clients</h3>
+        <div className="cms-toggle-grid">
+          <label><input type="checkbox" checked={settings.shop_reviews_enabled !== "false"} onChange={() => toggle("shop_reviews_enabled")} /> Activer les avis clients</label>
+          <label><input type="checkbox" checked={settings.shop_reviews_show_rating !== "false"} onChange={() => toggle("shop_reviews_show_rating")} /> Afficher les notes et étoiles</label>
+          <label><input type="checkbox" checked={settings.shop_reviews_verified_badge_visible !== "false"} onChange={() => toggle("shop_reviews_verified_badge_visible")} /> Afficher le badge Achat vérifié</label>
+          <label><input type="checkbox" checked={settings.shop_reviews_admin_reply_visible !== "false"} onChange={() => toggle("shop_reviews_admin_reply_visible")} /> Afficher les réponses Ichigo Ichie</label>
+          <label><input type="checkbox" checked={settings.shop_reviews_card_rating_visible !== "false"} onChange={() => toggle("shop_reviews_card_rating_visible")} /> Afficher ★ note · avis sur les fiches catalogue</label>
+        </div>
+        <div className="form-grid">
+          <label>
+            Publication des nouveaux avis
+            <select value={settings.shop_reviews_moderation_mode || "manual"} onChange={(event) => set("shop_reviews_moderation_mode", event.target.value)}>
+              <option value="manual">Validation manuelle</option>
+              <option value="auto">Publication automatique</option>
+            </select>
+          </label>
+          <label>
+            Nombre d’avis affichés au départ
+            <input type="number" min="1" max="20" step="1" value={settings.shop_reviews_initial_limit ?? "6"} onChange={(event) => set("shop_reviews_initial_limit", event.target.value)} />
+          </label>
+        </div>
+        <small>Même en publication automatique, un avis reste réservé à un produit réellement acheté dans une commande payée et terminée.</small>
+      </div>
       {bilingual("shop_eyebrow", "Petit titre")}{bilingual("shop_title", "Titre")}{bilingual("shop_intro", "Introduction", true)}{bilingual("shop_all", "Bouton Toutes catégories")}{bilingual("shop_empty", "Message quand aucun résultat", true)}<div className="cms-subsection"><h3>Tri catalogue</h3>{bilingual("catalog_sort_label", "Libellé")}{bilingual("catalog_sort_recommended", "Ordre recommandé")}{bilingual("catalog_sort_price_asc", "Prix croissant")}{bilingual("catalog_sort_price_desc", "Prix décroissant")}{bilingual("catalog_sort_name_asc", "Nom A → Z")}{bilingual("catalog_sort_name_desc", "Nom Z → A")}</div><div className="cms-subsection"><h3>Navigation mobile</h3>{bilingual("mobile_menu_label", "Carte")}{bilingual("mobile_house_label", "Maison")}</div></>)}
 
 

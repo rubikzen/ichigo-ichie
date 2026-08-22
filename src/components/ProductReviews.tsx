@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import { settingEnabled } from "@/lib/settings";
 
 type Review = {
   id: string;
@@ -39,12 +41,24 @@ function Stars({ value, label }: { value: number; label: string }) {
 
 export function ProductReviews({ productId }: { productId: string }) {
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
+  const reviewsEnabled = settingEnabled(settings.shop_reviews_enabled);
+  const showRating = settingEnabled(settings.shop_reviews_show_rating);
+  const showVerifiedBadge = settingEnabled(settings.shop_reviews_verified_badge_visible);
+  const showAdminReply = settingEnabled(settings.shop_reviews_admin_reply_visible);
+  const initialLimit = Math.min(
+    20,
+    Math.max(1, Number.parseInt(settings.shop_reviews_initial_limit || "6", 10) || 6),
+  );
+  const [visibleCount, setVisibleCount] = useState(initialLimit);
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<"recent" | "rating">("recent");
 
   useEffect(() => {
     let active = true;
+
+    if (!reviewsEnabled) return;
 
     async function load() {
       try {
@@ -64,11 +78,11 @@ export function ProductReviews({ productId }: { productId: string }) {
     return () => {
       active = false;
     };
-  }, [productId]);
+  }, [productId, reviewsEnabled]);
 
   const reviews = useMemo(() => {
     const rows = [...(data?.reviews ?? [])];
-    if (sort === "rating") {
+    if (showRating && sort === "rating") {
       rows.sort(
         (a, b) =>
           b.rating - a.rating ||
@@ -77,7 +91,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       );
     }
     return rows;
-  }, [data, sort]);
+  }, [data, sort, showRating]);
 
   const dateFormat = useMemo(
     () =>
@@ -88,8 +102,13 @@ export function ProductReviews({ productId }: { productId: string }) {
     [language],
   );
 
+  if (!reviewsEnabled) return null;
+
+  const visibleReviews = reviews.slice(0, visibleCount);
+
   return (
     <section
+      id="avis"
       className="product-reviews-v466"
       aria-labelledby="product-reviews-title-v466"
     >
@@ -105,7 +124,7 @@ export function ProductReviews({ productId }: { productId: string }) {
           </h2>
         </div>
 
-        {data && data.count > 0 && (
+        {showRating && data && data.count > 0 && (
           <div className="product-review-score-v466">
             <strong>{data.average.toFixed(1).replace(".", ",")}</strong>
             <div>
@@ -140,8 +159,8 @@ export function ProductReviews({ productId }: { productId: string }) {
         </div>
       ) : (
         <>
-          <div className="product-review-overview-v466">
-            <div className="product-review-bars-v466">
+          <div className={`product-review-overview-v466 ${showRating ? "" : "rating-hidden-v4661"}`}>
+            {showRating && <div className="product-review-bars-v466">
               {[5, 4, 3, 2, 1].map((rating) => {
                 const count =
                   data.distribution[
@@ -161,7 +180,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                   </div>
                 );
               })}
-            </div>
+            </div>}
 
             <label className="product-review-sort-v466">
               <span>{language === "fr" ? "Trier" : "Sort"}</span>
@@ -174,28 +193,28 @@ export function ProductReviews({ productId }: { productId: string }) {
                 <option value="recent">
                   {language === "fr" ? "Plus récents" : "Most recent"}
                 </option>
-                <option value="rating">
+                {showRating && <option value="rating">
                   {language === "fr" ? "Meilleure note" : "Highest rating"}
-                </option>
+                </option>}
               </select>
             </label>
           </div>
 
           <div className="product-review-list-v466">
-            {reviews.map((review) => (
+            {visibleReviews.map((review) => (
               <article key={review.id}>
                 <div className="product-review-meta-v466">
                   <div>
-                    <Stars
+                    {showRating && <Stars
                       value={review.rating}
                       label={`${review.rating} / 5`}
-                    />
-                    <span className="verified-purchase-v466">
+                    />}
+                    {showVerifiedBadge && <span className="verified-purchase-v466">
                       ✓{" "}
                       {language === "fr"
                         ? "Achat vérifié"
                         : "Verified purchase"}
-                    </span>
+                    </span>}
                   </div>
                   <time dateTime={review.createdAt}>
                     {dateFormat.format(new Date(review.createdAt))}
@@ -211,7 +230,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                   {review.authorName}
                 </strong>
 
-                {review.adminReply && (
+                {showAdminReply && review.adminReply && (
                   <div className="product-review-reply-v466">
                     <small>ICHIGO ICHIE</small>
                     <strong>
@@ -225,6 +244,18 @@ export function ProductReviews({ productId }: { productId: string }) {
               </article>
             ))}
           </div>
+
+          {visibleCount < reviews.length && (
+            <button
+              type="button"
+              className="button ghost product-reviews-more-v4661"
+              onClick={() => setVisibleCount((current) => current + initialLimit)}
+            >
+              {language === "fr"
+                ? `Voir plus d’avis (${reviews.length - visibleCount})`
+                : `Show more reviews (${reviews.length - visibleCount})`}
+            </button>
+          )}
         </>
       )}
     </section>

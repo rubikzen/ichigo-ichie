@@ -7,6 +7,7 @@ import {
   readJsonBody,
   tooManyRequests,
 } from "@/lib/public-api";
+import { settingEnabled, siteSettingDefaults } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -74,6 +75,35 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: settingRows, error: settingError } = await supabase
+      .from("site_settings")
+      .select("key,value")
+      .in("key", ["shop_reviews_enabled", "shop_reviews_moderation_mode"]);
+
+    if (settingError) {
+      console.warn("Review settings lookup failed; using defaults", settingError.message);
+    }
+
+    const reviewSettings = {
+      ...siteSettingDefaults,
+      ...Object.fromEntries(
+        (settingRows ?? []).map((row) => [String(row.key), String(row.value ?? "")]),
+      ),
+    };
+
+    if (!settingEnabled(reviewSettings.shop_reviews_enabled)) {
+      throw new PublicApiError(
+        "Les avis clients sont actuellement désactivés.",
+        403,
+        "REVIEWS_DISABLED",
+      );
+    }
+
+    const reviewStatus =
+      reviewSettings.shop_reviews_moderation_mode === "auto"
+        ? "approved"
+        : "pending";
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(
@@ -128,7 +158,7 @@ export async function POST(request: Request) {
         rating,
         title: title || null,
         body: reviewBody,
-        status: "pending",
+        status: reviewStatus,
       });
 
     if (insertError?.code === "23505") {
@@ -142,7 +172,7 @@ export async function POST(request: Request) {
     if (insertError) throw insertError;
 
     return NextResponse.json(
-      { ok: true, status: "pending" },
+      { ok: true, status: reviewStatus },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

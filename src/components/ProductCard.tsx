@@ -12,6 +12,7 @@ import { useCart } from "./CartProvider";
 import { RestockNotify } from "./RestockNotify";
 import { trackConversion } from "@/lib/conversion-analytics";
 import { matchaFinderLabel, productMatchaFinderTags } from "@/lib/product-merchandising";
+import { useProductReviewSummary } from "./ReviewSummaryProvider";
 
 const moneyFormatters = {
   fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
@@ -44,6 +45,7 @@ export function ProductCard({ product }: { product: Product }) {
 function ProductCardStateful({ product }: { product: Product }) {
   const { language } = useLanguage();
   const { items, count, addItem, setQuantity, removeItem } = useCart();
+  const reviewSummary = useProductReviewSummary(product.id);
   const selectableVariants = useMemo(() => product.variants.filter((item) => item.active), [product.variants]);
   const firstAvailable = selectableVariants.find((item) => item.stock > 0) ?? selectableVariants[0] ?? null;
   const gallery = useMemo(() => {
@@ -438,6 +440,17 @@ const requiresChoice = selectableVariants.length > 1;
           </h3>
           {!isSoldOut && <strong className="product-card-price">{selectableVariants.length > 1 && (language === "fr" ? "Dès " : "From ")}{money(minimumPrice, language)}</strong>}
         </div>
+
+        {reviewSummary && reviewSummary.count > 0 && (
+          <Link
+            className="product-card-rating-v4661"
+            href={`/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}#avis`}
+          >
+            <span aria-hidden="true">★</span>
+            <strong>{reviewSummary.average.toFixed(1).replace(".", language === "fr" ? "," : ".")}</strong>
+            <small>· {reviewSummary.count} {language === "fr" ? "avis" : reviewSummary.count === 1 ? "review" : "reviews"}</small>
+          </Link>
+        )}
 
         {shortDescription && <p className="product-card-description" title={shortDescription}>{shortDescription}</p>}
 

@@ -8560,3 +8560,27 @@
     min-height: 44px;
   }
 }
+
+
+/* V466.1 — review settings and catalogue ratings */
+.product-card-rating-v4661 {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 4px;
+  margin: 3px 0 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+.product-card-rating-v4661 > span { color: #9a7a25; font-size: 0.94rem; }
+.product-card-rating-v4661 > small { color: var(--muted); font-size: 0.76rem; }
+.product-card-rating-v4661:hover small { color: var(--moss-dark); text-decoration: underline; }
+.product-review-overview-v466.rating-hidden-v4661 { grid-template-columns: 1fr; }
+.product-review-overview-v466.rating-hidden-v4661 .product-review-sort-v466 { justify-self: end; }
+.product-reviews-more-v4661 { display: flex; width: fit-content; min-height: 42px; margin: 18px auto 0; }
+@media (max-width: 700px) {
+  .product-card-rating-v4661 { margin-bottom: 7px; }
+  .product-review-overview-v466.rating-hidden-v4661 .product-review-sort-v466 { justify-self: stretch; }
+  .product-reviews-more-v4661 { width: 100%; justify-content: center; }
+}

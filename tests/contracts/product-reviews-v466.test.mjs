@@ -50,7 +50,10 @@ test("V466 submission verifies a real paid completed order and purchased product
     submitRoute,
     /String\(item\.product_id \|\| ""\) === productId/,
   );
-  assert.match(submitRoute, /status: "pending"/);
+  // V466.1 preserves verified-purchase guards while making publication
+  // configurable: manual => pending, automatic => approved.
+  assert.match(submitRoute, /const reviewStatus/);
+  assert.match(submitRoute, /status: reviewStatus/);
   assert.doesNotMatch(
     submitRoute,
     /body\.verified|verified:\s*body|customer_email/,

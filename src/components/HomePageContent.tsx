@@ -7,6 +7,7 @@ import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { HomeFeatured } from "./HomeFeatured";
 import { UnifiedCatalogSections } from "./UnifiedCatalogSections";
+import { ReviewSummaryProvider } from "./ReviewSummaryProvider";
 import { settingEnabled } from "@/lib/settings";
 import { ContactSection } from "./ContactSection";
 import { SafeImage } from "./SafeImage";
@@ -74,7 +75,8 @@ export function HomePageContent({
       };
 
   return (
-    <main id="top" className="onepage-main premium-home-v224 premium-home-mobile-v260">
+    <ReviewSummaryProvider productIds={shopProducts.map((product) => product.id)}>
+      <main id="top" className="onepage-main premium-home-v224 premium-home-mobile-v260">
       {settingEnabled(settings.home_hero_visible) && (
         <section className="hero hero-v218 hero-v224 hero-mobile-v260">
           <div className="hero-copy hero-copy-v224">
@@ -610,6 +612,7 @@ export function HomePageContent({
           }
         }
       `}</style>
-    </main>
+      </main>
+    </ReviewSummaryProvider>
   );
 }
