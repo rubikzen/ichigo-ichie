@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
 import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
@@ -20,6 +21,33 @@ export function MatchaExploreNav() {
   const pathname = usePathname();
   const { language } = useLanguage();
   const fr = language === "fr";
+  const activeLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const active = activeLinkRef.current;
+    const scroller = active?.parentElement;
+
+    if (
+      !active ||
+      !scroller ||
+      !window.matchMedia("(max-width: 820px)").matches
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const targetLeft =
+        active.offsetLeft -
+        Math.max(0, (scroller.clientWidth - active.clientWidth) / 2);
+
+      scroller.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: "auto",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [language, pathname]);
 
   if (!shouldShow(pathname)) return null;
 
@@ -61,6 +89,7 @@ export function MatchaExploreNav() {
             <Link
               key={item.href}
               href={item.href}
+              ref={item.active ? activeLinkRef : undefined}
               className={item.active ? "active" : ""}
               aria-current={item.active ? "page" : undefined}
             >

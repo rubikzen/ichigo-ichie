@@ -108,7 +108,7 @@ export function ShopCollectionContent({
         />
 
         <header className="shop-collection-hero-v473">
-          <div>
+          <div className="shop-collection-hero-copy-v478">
             <p className="eyebrow">
               {fr ? "ICHIGO ICHIE · SÉLECTION JAPONAISE" : "ICHIGO ICHIE · JAPANESE SELECTION"}
             </p>
@@ -137,38 +137,47 @@ export function ShopCollectionContent({
           className="shop-collection-taxonomy-v473"
           aria-label={fr ? "Collections Boutique" : "Shop collections"}
         >
-          <div className="shop-collection-category-links-v473">
-            <Link
-              href="/boutique"
-              className={!currentCategory ? "active" : ""}
-              aria-current={!currentCategory ? "page" : undefined}
-            >
-              {fr ? "Tout" : "All"}
-            </Link>
-            {categories.map((category) => {
-              const active = currentCategory?.id === category.id;
-              return (
-                <Link
-                  key={category.id}
-                  href={categoryCollectionPath(category)}
-                  className={active ? "active" : ""}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {fr
-                    ? category.name_fr
-                    : category.name_en || category.name_fr}
-                </Link>
-              );
-            })}
+          <div className="shop-collection-taxonomy-row-v478">
+            <span className="shop-collection-taxonomy-label-v478">
+              {fr ? "Catégorie" : "Category"}
+            </span>
+            <div className="shop-collection-category-links-v473">
+              <Link
+                href="/boutique"
+                className={!currentCategory ? "active" : ""}
+                aria-current={!currentCategory ? "page" : undefined}
+              >
+                {fr ? "Tout" : "All"}
+              </Link>
+              {categories.map((category) => {
+                const active = currentCategory?.id === category.id;
+                return (
+                  <Link
+                    key={category.id}
+                    href={categoryCollectionPath(category)}
+                    className={active ? "active" : ""}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {fr
+                      ? category.name_fr
+                      : category.name_en || category.name_fr}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="shop-collection-intent-links-v473">
-            <span>{fr ? "Choisir par usage" : "Choose by use"}</span>
-            {MATCHA_INTENT_SUMMARIES.map((intent) => (
-              <Link key={intent.href} href={intent.href}>
-                {fr ? intent.labelFr : intent.labelEn}
-              </Link>
-            ))}
+          <div className="shop-collection-taxonomy-row-v478">
+            <span className="shop-collection-taxonomy-label-v478">
+              {fr ? "Usage" : "Use"}
+            </span>
+            <div className="shop-collection-intent-links-v473">
+              {MATCHA_INTENT_SUMMARIES.map((intent) => (
+                <Link key={intent.href} href={intent.href}>
+                  {fr ? intent.labelFr : intent.labelEn}
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -177,7 +186,7 @@ export function ShopCollectionContent({
           aria-labelledby="shop-collection-products-title-v473"
         >
           <div className="shop-collection-toolbar-v473">
-            <div>
+            <div className="shop-collection-count-v478">
               <p className="eyebrow">
                 {fr ? "CATALOGUE ACTUEL" : "CURRENT CATALOGUE"}
               </p>
@@ -187,7 +196,7 @@ export function ShopCollectionContent({
                   : `${products.length} ${products.length === 1 ? "product" : "products"}`}
               </h2>
             </div>
-            <label>
+            <label className="shop-collection-sort-v478">
               <span>{fr ? "Trier par" : "Sort by"}</span>
               <select
                 value={sortMode}
