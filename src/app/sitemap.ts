@@ -19,6 +19,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const collectionPages: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/boutique`,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    ...shop.categories.map((category) => ({
+      url: `${base}/boutique/categorie/${encodeURIComponent(
+        category.slug.trim().toLowerCase(),
+      )}`,
+      changeFrequency: "daily" as const,
+      priority: 0.78,
+    })),
+  ];
+
   const guidePages: MetadataRoute.Sitemap = [
     {
       url: `${base}/guides`,
@@ -51,6 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
+    ...collectionPages,
     ...productPages,
     ...guidePages,
     ...intentPages,

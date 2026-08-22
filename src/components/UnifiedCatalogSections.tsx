@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "./ProductCard";
@@ -10,6 +11,7 @@ import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
 import { MATCHA_FINDER_TAGS, matchaFinderLabel, productMatchesFinderTag, productMatchaFinderTags, type MatchaFinderTag } from "@/lib/product-merchandising";
+import { categoryCollectionPath } from "@/lib/shop-collection-seo";
 
 type CatalogBlockProps = {
   id: "menu" | "boutique";
@@ -177,7 +179,17 @@ function CatalogBlock({ id, kind, categories, products }: CatalogBlockProps) {
           {groups.map(({ category, products: categoryProducts }) => (
             <section className="onepage-category-group" key={category.id}>
               <div className="onepage-category-heading">
-                <h3>{language === "fr" ? category.name_fr : category.name_en || category.name_fr}</h3>
+                <div className="onepage-category-title-v473">
+                  <h3>{language === "fr" ? category.name_fr : category.name_en || category.name_fr}</h3>
+                  {kind === "shop" && (
+                    <Link
+                      className="onepage-category-collection-link-v473"
+                      href={categoryCollectionPath(category)}
+                    >
+                      {language === "fr" ? "Voir la collection →" : "View collection →"}
+                    </Link>
+                  )}
+                </div>
                 <span>{categoryProducts.length}</span>
               </div>
               <div className={`product-grid onepage-product-grid ${kind === "menu" ? "menu-info-grid menu-compact-grid-v449" : ""} ${kind === "shop" && categoryProducts.length < 4 ? "product-grid-sparse-v412" : ""}`}>

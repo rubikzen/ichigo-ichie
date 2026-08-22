@@ -25,6 +25,11 @@ export function MatchaExploreNav() {
 
   const links = [
     {
+      href: "/boutique",
+      label: fr ? "Boutique" : "Shop",
+      active: pathname === "/boutique" || pathname.startsWith("/boutique/"),
+    },
+    {
       href: "/matcha-nice",
       label: fr ? "Nice" : "Nice",
       active: pathname === "/matcha-nice",
