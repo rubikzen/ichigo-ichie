@@ -1,4 +1,5 @@
 "use client";
+import { ProductReviews } from "@/components/ProductReviews";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -288,6 +289,7 @@ export function ProductPageContent({
           </Link>
         </div>
       </div>
-    </main>
+          <ProductReviews productId={product.id} />
+</main>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { OrderReviewPanel } from "@/components/OrderReviewPanel";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -42,6 +43,7 @@ type PublicOrder = {
 }>;
   order_items?: Array<{
     id: string;
+    product_id?: string | null;
     product_name: string;
     quantity: number;
     line_total: number;
@@ -548,7 +550,13 @@ const canDownloadInvoice =
     <div className="tracking-total"><span>Total</span><strong>{money.format(Number(order.total))}</strong></div>
     <p className="tracking-refresh">{language === "fr" ? "Cette page se met à jour automatiquement." : "This page refreshes automatically."}</p>
     <div className="tracking-actions"><Link className="button primary" href="/compte">{language === "fr" ? "Mon espace client" : "My account"}</Link><Link className="button ghost" href="/#boutique">{language === "fr" ? "Retour à la boutique" : "Back to shop"}</Link></div>
-  </div></section>;
+  <OrderReviewPanel
+      token={token}
+      items={order.order_items ?? []}
+      paymentStatus={order.payment_status}
+      status={order.status}
+    />
+    </div></section>;
 }
 
 function paymentTitle(order: PublicOrder, language: "fr" | "en", paymentReturn: "success" | "cancelled" | "" = "") {

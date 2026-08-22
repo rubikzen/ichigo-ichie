@@ -55,7 +55,7 @@ export async function GET(
       tracking_number,
       tracking_url,
       shipped_at,
-      order_items(
+      order_items(product_id,
         id,
         product_name,
         quantity,
