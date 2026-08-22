@@ -9,6 +9,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 const model = src("src/lib/inventory-forecast.ts");
 const route = src("src/app/api/admin/inventory-forecast/route.ts");
 const admin = src("src/components/admin/InventoryForecastAdmin.tsx");
+const stockHub = src("src/components/admin/AdminStockHub.tsx");
 const orders = src("src/components/admin/AdminOrders.tsx");
 const css = src("src/app/styles/globals-04.css");
 
@@ -84,16 +85,16 @@ test("V467 admin dashboard exposes period controls stock velocity coverage and s
   assert.match(admin, /Tous les stocks/);
 });
 
-test("V467 is mounted in existing Pilotage Boutique rather than creating another admin navigation", () => {
+test("V467 forecast is consolidated in the V476 Stock and restock workspace", () => {
   assert.match(
-    orders,
+    stockHub,
     /import \{ InventoryForecastAdmin \} from "\.\/InventoryForecastAdmin"/,
   );
   assert.match(
-    orders,
+    stockHub,
     /<InventoryForecastAdmin supabase=\{supabase\} \/>/,
   );
-  assert.match(orders, /Pilotage Boutique/);
+  assert.doesNotMatch(orders, /InventoryForecastAdmin|Pilotage Boutique/);
 });
 
 test("V467 remains responsive and explicitly surfaces weak forecasting data", () => {

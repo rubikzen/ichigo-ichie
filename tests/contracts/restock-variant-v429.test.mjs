@@ -7,6 +7,7 @@ const root = process.cwd();
 const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
 const notify = readFileSync(resolve(root, "src/components/RestockNotify.tsx"), "utf8");
 const subscribe = readFileSync(resolve(root, "src/app/api/restock/subscribe/route.ts"), "utf8");
+const stockHub = readFileSync(resolve(root, "src/components/admin/AdminStockHub.tsx"), "utf8");
 const admin = readFileSync(resolve(root, "src/components/admin/AdminCatalog.tsx"), "utf8");
 const waitlist = readFileSync(resolve(root, "src/components/admin/RestockWaitlistAdmin.tsx"), "utf8");
 const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8");
@@ -44,7 +45,9 @@ test("server validates and labels the exact variant before confirmation email de
 });
 
 test("admin waitlist identifies the precise format customers are waiting for", () => {
-  assert.match(admin, /variants=\{variants\}/);
+  assert.match(stockHub, /variants=\{variants\}/);
+  assert.match(stockHub, /<RestockWaitlistAdmin/);
+  assert.doesNotMatch(admin, /RestockWaitlistAdmin/);
   assert.match(waitlist, /productVariantLabel\(variant, "fr"\)/);
   assert.match(waitlist, /variantNames\.get\(row\.variant_id\)/);
   assert.match(waitlist, /Tous les formats/);

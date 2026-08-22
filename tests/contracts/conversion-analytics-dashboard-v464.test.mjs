@@ -10,6 +10,7 @@ const publicRoute = src("src/app/api/analytics/conversion/route.ts");
 const persistence = src("src/lib/conversion-analytics-server.ts");
 const adminRoute = src("src/app/api/admin/analytics/conversion/route.ts");
 const component = src("src/components/admin/ConversionAnalyticsAdmin.tsx");
+const pilotage = src("src/components/admin/AdminPilotage.tsx");
 const adminOrders = src("src/components/admin/AdminOrders.tsx");
 const css = src("src/app/styles/globals-04.css");
 
@@ -63,12 +64,11 @@ test("V464 dashboard exposes funnel, revenue and 7 30 90 day controls", () => {
   assert.match(component, /authorization: `Bearer \$\{token\}`/);
 });
 
-test("V464 reuses existing Boutique pilotage instead of adding admin navigation", () => {
-  assert.match(adminOrders, /import \{ ConversionAnalyticsAdmin \}/);
-  const stats = adminOrders.indexOf("<OrderStatistics");
-  const analytics = adminOrders.indexOf("<ConversionAnalyticsAdmin", stats);
-  assert.ok(stats >= 0 && analytics > stats);
-  assert.doesNotMatch(adminOrders, /type Tab[^;]*analytics/);
+test("V464 analytics remains in the dedicated V476 Pilotage workspace", () => {
+  assert.match(pilotage, /import \{ ConversionAnalyticsAdmin \}/);
+  assert.match(pilotage, /section === "conversion"/);
+  assert.match(pilotage, /<ConversionAnalyticsAdmin supabase=\{supabase\} \/>/);
+  assert.doesNotMatch(adminOrders, /ConversionAnalyticsAdmin|Pilotage Boutique/);
 });
 
 test("V464 product ranking does not invent purchase attribution and stays responsive", () => {

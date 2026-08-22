@@ -9,6 +9,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 const helper = src("src/lib/seo-health.ts");
 const route = src("src/app/api/admin/seo-health/route.ts");
 const ui = src("src/components/admin/SeoHealthAdmin.tsx");
+const pilotage = src("src/components/admin/AdminPilotage.tsx");
 const orders = src("src/components/admin/AdminOrders.tsx");
 const productContent = src("src/lib/product-content.ts");
 const merchandising = src("src/lib/product-merchandising.ts");
@@ -77,13 +78,11 @@ test("V475 dashboard exposes score priorities filters search refresh and public-
   assert.match(ui, /Collection ↗/);
 });
 
-test("V475 mounts inside the existing Pilotage Boutique alongside current operational dashboards", () => {
-  assert.match(orders, /import \{ SeoHealthAdmin \}/);
-  assert.match(
-    orders,
-    /<InventoryForecastAdmin supabase=\{supabase\} \/>[\s\S]*?<SeoHealthAdmin supabase=\{supabase\} \/>[\s\S]*?<ConversionAnalyticsAdmin supabase=\{supabase\} \/>/,
-  );
-  assert.match(orders, /Pilotage Boutique/);
+test("V475 remains available in the dedicated V476 Pilotage workspace", () => {
+  assert.match(pilotage, /import \{ SeoHealthAdmin \}/);
+  assert.match(pilotage, /section === "seo"/);
+  assert.match(pilotage, /<SeoHealthAdmin supabase=\{supabase\} \/>/);
+  assert.doesNotMatch(orders, /SeoHealthAdmin|Pilotage Boutique/);
 });
 
 test("V475 admin audit is responsive and keeps mobile controls touch-scrollable", () => {
@@ -111,5 +110,5 @@ test("V475 remains diagnostic only with no schema migration commerce order or st
   assert.doesNotMatch(auditFiles, /stock\s*[-+]=|clear\(\)/);
   assert.doesNotMatch(auditFiles, /supabase\/migrations/);
 
-  assert.match(orders, /<SeoHealthAdmin supabase=\{supabase\} \/>/);
+  assert.match(pilotage, /<SeoHealthAdmin supabase=\{supabase\} \/>/);
 });

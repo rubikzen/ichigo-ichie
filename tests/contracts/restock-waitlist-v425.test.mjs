@@ -8,6 +8,7 @@ const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "u
 const notify = readFileSync(resolve(root, "src/components/RestockNotify.tsx"), "utf8");
 const api = readFileSync(resolve(root, "src/app/api/restock/subscribe/route.ts"), "utf8");
 const migration = readFileSync(resolve(root, "supabase/migrations/20260815184000_restock_waitlist.sql"), "utf8");
+const stockHub = readFileSync(resolve(root, "src/components/admin/AdminStockHub.tsx"), "utf8");
 const admin = readFileSync(resolve(root, "src/components/admin/AdminCatalog.tsx"), "utf8");
 const waitlist = readFileSync(resolve(root, "src/components/admin/RestockWaitlistAdmin.tsx"), "utf8");
 const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8");
@@ -55,8 +56,10 @@ test("restock form is bilingual, purpose-limited and includes bot protection", (
   assert.match(notify, /fetch\("\/api\/restock\/subscribe"/);
 });
 
-test("Boutique admin exposes the private restock dashboard without touching Menu", () => {
-  assert.match(admin, /catalogZone === "shop"[\s\S]*?<RestockWaitlistAdmin/);
+test("Boutique admin exposes the private restock dashboard in the dedicated V476 stock workspace", () => {
+  assert.match(stockHub, /<RestockWaitlistAdmin/);
+  assert.match(stockHub, /\.eq\("kind", "shop"\)/);
+  assert.doesNotMatch(admin, /RestockWaitlistAdmin/);
   assert.match(waitlist, /\.from\("restock_subscriptions"\)/);
   assert.match(waitlist, /useState<WaitlistStatus>\("active"\)/);
   assert.match(waitlist, /\.eq\("status", activeTab\)/);

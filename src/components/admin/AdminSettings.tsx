@@ -95,19 +95,19 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
     </div>
   </article>;
   const settingsPanels = [
-    { id: "media", group: "Contenu", label: "Médias & images", hint: "Images générales" },
     { id: "identity", group: "Contenu", label: "Identité & navigation", hint: "Logo, marque, menus" },
     { id: "home", group: "Contenu", label: "Page d’accueil", hint: "Hero & présentation" },
-    { id: "menu", group: "Contenu", label: "La carte", hint: "Textes du menu" },
     { id: "shop", group: "Contenu", label: "Boutique", hint: "Catalogue & tri" },
+    { id: "menu", group: "Contenu", label: "La carte", hint: "Textes du menu" },
     { id: "contact", group: "Contenu", label: "Contact", hint: "Formulaire public" },
+    { id: "media", group: "Contenu", label: "Médias & images", hint: "Bibliothèque d’images" },
     { id: "cart", group: "Vente", label: "Panier & checkout", hint: "Commande & paiement" },
     { id: "shipping", group: "Vente", label: "Livraison & tarifs", hint: "Modes & poids" },
-    { id: "footer", group: "Site", label: "Boutique & footer", hint: "Coordonnées & liens" },
-    { id: "legal", group: "Site", label: "Informations légales", hint: "CGV & confidentialité" },
-    { id: "theme", group: "Site", label: "Couleurs & style", hint: "Identité visuelle" },
-    { id: "seo", group: "Site", label: "SEO", hint: "Moteurs de recherche" },
-    { id: "logistics", group: "Site", label: "Technique", hint: "Paramètres boutique" },
+    { id: "footer", group: "Entreprise", label: "Boutique physique & footer", hint: "Coordonnées, horaires & liens" },
+    { id: "legal", group: "Entreprise", label: "Informations légales", hint: "CGV & confidentialité" },
+    { id: "seo", group: "Visibilité", label: "SEO", hint: "Moteurs de recherche" },
+    { id: "theme", group: "Visibilité", label: "Couleurs & style", hint: "Identité visuelle" },
+    { id: "logistics", group: "Avancé", label: "Technique", hint: "Paramètres avancés" },
   ] as const;
 
   const filteredSettingsPanels = settingsPanels.filter((item) => {
@@ -137,7 +137,7 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
         <aside className="settings-sidebar-v238" aria-label="Rubriques des réglages">
           <div className="settings-sidebar-search-v238"><label htmlFor="settings-search-v238">Rechercher</label><input id="settings-search-v238" value={settingsMenuSearch} placeholder="Ex. livraison, logo, SEO…" onChange={(event) => setSettingsMenuSearch(event.target.value)} /></div>
           <div className="settings-sidebar-list-v238">
-            {["Contenu", "Vente", "Site"].map((group) => {
+            {["Contenu", "Vente", "Entreprise", "Visibilité", "Avancé"].map((group) => {
               const items = filteredSettingsPanels.filter((item) => item.group === group);
               if (!items.length) return null;
               return <div className="settings-sidebar-group-v238" key={group}><span className="settings-sidebar-group-label-v238">{group}</span><div>{items.map((item) => <button type="button" key={item.id} className={settingsPanel === item.id ? "is-active" : ""} onClick={() => selectSettingsPanel(item.id)}><strong>{item.label}</strong><small>{item.hint}</small>{settingsPanel === item.id && <b aria-hidden="true">→</b>}</button>)}</div></div>;

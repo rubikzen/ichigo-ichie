@@ -22,6 +22,7 @@ const orderRoute = src("src/app/api/orders/[token]/route.ts");
 const adminReviews = src(
   "src/components/admin/ProductReviewsAdmin.tsx",
 );
+const pilotage = src("src/components/admin/AdminPilotage.tsx");
 const adminOrders = src("src/components/admin/AdminOrders.tsx");
 const css = src("src/app/styles/globals-04.css");
 
@@ -110,11 +111,13 @@ test("V466 moderation is admin-only with pending approved hidden states and repl
   assert.match(adminReviews, /Enregistrer la réponse/);
 });
 
-test("V466 reuses Boutique pilotage and remains responsive without catalogue N plus one review requests", () => {
+test("V466 moderation remains in V476 Pilotage and stays responsive without catalogue N plus one review requests", () => {
   assert.match(
-    adminOrders,
+    pilotage,
     /<ProductReviewsAdmin supabase=\{supabase\} \/>/,
   );
+  assert.match(pilotage, /section === "reviews"/);
+  assert.doesNotMatch(adminOrders, /ProductReviewsAdmin|Pilotage Boutique/);
   assert.match(css, /V466 — verified product reviews/);
   assert.match(css, /@media \(max-width: 700px\)/);
   assert.doesNotMatch(
