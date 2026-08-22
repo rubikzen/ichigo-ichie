@@ -9,7 +9,7 @@ export type PersistedConversionEvent = {
   currency?: "EUR";
   product_id?: string;
   variant_id?: string;
-  source?: "product_page" | "product_modal";
+  source?: "product_page" | "product_modal" | "reorder";
   order_type?: "pickup" | "shipping";
   value?: number;
   quantity?: number;

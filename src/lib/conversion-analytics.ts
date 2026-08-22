@@ -13,7 +13,7 @@ export type ConversionEventPayload = {
   quantity?: number;
   item_count?: number;
   currency?: "EUR";
-  source?: "product_page" | "product_modal";
+  source?: "product_page" | "product_modal" | "reorder";
   order_type?: "pickup" | "shipping";
   transaction_id?: string;
 };

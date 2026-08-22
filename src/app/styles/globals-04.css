@@ -8836,3 +8836,102 @@
     min-height: 40px;
   }
 }
+
+
+/* V468 — secure order-again flow */
+.reorder-order-v468 {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(40, 65, 52, 0.12);
+  border-radius: 14px;
+  background: rgba(40, 65, 52, 0.035);
+}
+.reorder-order-v468.compact-v468 {
+  margin-top: 10px;
+  padding: 11px 12px;
+}
+.reorder-order-action-v468 {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+}
+.reorder-order-action-v468 > small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.reorder-order-error-v468 {
+  margin: 0;
+  color: #8b3d31;
+  font-size: 0.78rem;
+}
+.reorder-order-result-v468 {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(40, 65, 52, 0.1);
+}
+.reorder-order-result-v468 > strong {
+  font-size: 0.88rem;
+}
+.reorder-order-result-v468 > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.reorder-order-result-actions-v468 {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.reorder-order-result-v468 details {
+  border-top: 1px dashed rgba(40, 65, 52, 0.12);
+  padding-top: 7px;
+}
+.reorder-order-result-v468 summary {
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.reorder-order-result-v468 ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.reorder-order-result-v468 li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 0.73rem;
+}
+.reorder-order-result-v468 li a {
+  flex: 0 0 auto;
+  font-weight: 750;
+}
+@media (max-width: 640px) {
+  .reorder-order-v468 {
+    padding: 12px;
+  }
+  .reorder-order-action-v468,
+  .reorder-order-result-actions-v468 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .reorder-order-action-v468 .button,
+  .reorder-order-result-actions-v468 .button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .reorder-order-result-v468 li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

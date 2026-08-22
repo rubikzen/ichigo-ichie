@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { useLanguage } from "@/components/LanguageProvider";
+import { ReorderOrderButton } from "@/components/ReorderOrderButton";
 import { composeProductVariantName, normalizeLegacyProductLabel } from "@/lib/product-label";
 
 type Profile = {
@@ -748,6 +749,9 @@ export function CustomerAccount() {
           const previewItems = (order.order_items ?? []).slice(0, expanded ? undefined : 2);
           const paymentHint = customerPaymentRecoveryHint(order, language);
           const paymentNeedsAttention = canRecoverPaymentStatus(order.payment_status);
+          const reorderAvailable =
+            ["completed", "cancelled", "refunded"].includes(order.status) ||
+            order.payment_status === "refunded";
           return <article
             key={order.id}
             className={`customer-order-card-v243 customer-order-card-v244 state-${visual} ${paymentNeedsAttention ? "needs-payment-v410" : ""}`}
@@ -789,6 +793,13 @@ export function CustomerAccount() {
               {order.public_token && order.invoices?.some((doc) => doc.document_type === "credit_note") && <a className="button ghost invoice-download-v245" href={`/api/invoices/${order.id}?token=${encodeURIComponent(order.public_token)}&type=credit_note`}>{language === "fr" ? "Avoir PDF ↓" : "Credit note PDF ↓"}</a>}
               {order.tracking_url && order.tracking_number && <a className="button ghost" href={order.tracking_url} target="_blank" rel="noreferrer">{language === "fr" ? "Suivre le colis ↗" : "Track parcel ↗"}</a>}
             </div>
+            {reorderAvailable && order.public_token && (
+              <ReorderOrderButton
+                token={order.public_token}
+                orderNumber={order.order_number}
+                compact
+              />
+            )}
           </article>;
         })}
       </div>}

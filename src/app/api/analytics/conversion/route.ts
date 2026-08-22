@@ -63,7 +63,9 @@ export async function POST(request: Request) {
   }
 
   const source =
-    input.source === "product_page" || input.source === "product_modal"
+    input.source === "product_page" ||
+    input.source === "product_modal" ||
+    input.source === "reorder"
       ? input.source
       : undefined;
   const orderType =
