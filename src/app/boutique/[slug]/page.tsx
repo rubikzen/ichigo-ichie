@@ -4,6 +4,7 @@ import { getCachedCatalog } from "@/lib/catalog-server";
 import { ProductPageContent } from "@/components/ProductPageContent";
 import type { Product, Variant } from "@/lib/types";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
+import { getProductReviewSeoSnapshot } from "@/lib/product-review-seo";
 
 export const revalidate = 30;
 
@@ -148,6 +149,7 @@ export default async function ProductPage({ params }: ProductPageParams) {
 
   const path = productPath(product);
   const description = productDescription(product);
+  const reviewSeo = await getProductReviewSeoSnapshot(product.id);
   const images = [
     ...(product.images ?? []).map((image) => absoluteUrl(image.url)),
     absoluteUrl(product.image_url),
@@ -168,6 +170,38 @@ export default async function ProductPage({ params }: ProductPageParams) {
         url: `${siteUrl()}${path}`,
         category: category?.name_fr || "Boutique",
         offers: productOffers(product),
+        ...(reviewSeo
+          ? {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: reviewSeo.average,
+                ratingCount: reviewSeo.count,
+                reviewCount: reviewSeo.count,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              ...(reviewSeo.reviews.length
+                ? {
+                    review: reviewSeo.reviews.map((review) => ({
+                      "@type": "Review",
+                      ...(review.title ? { name: review.title } : {}),
+                      reviewBody: review.body,
+                      datePublished: review.createdAt.slice(0, 10),
+                      author: {
+                        "@type": "Person",
+                        name: review.authorName,
+                      },
+                      reviewRating: {
+                        "@type": "Rating",
+                        ratingValue: review.rating,
+                        bestRating: 5,
+                        worstRating: 1,
+                      },
+                    })),
+                  }
+                : {}),
+            }
+          : {}),
       },
       {
         "@type": "BreadcrumbList",
@@ -186,6 +220,7 @@ export default async function ProductPage({ params }: ProductPageParams) {
       <script
         type="application/ld+json"
         data-product-schema-v431
+        data-product-review-schema-v474={reviewSeo ? "enabled" : "omitted"}
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
       <ProductPageContent product={product} />
