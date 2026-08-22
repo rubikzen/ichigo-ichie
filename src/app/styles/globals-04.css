@@ -9623,3 +9623,316 @@
     display: grid;
   }
 }
+
+
+/* V471 — local Matcha Nice landing */
+.matcha-nice-page-v471 {
+  background: var(--paper);
+}
+.matcha-nice-shell-v471 {
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 34px 0 72px;
+}
+.matcha-nice-breadcrumb-v471 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.matcha-nice-breadcrumb-v471 a {
+  color: inherit;
+}
+.matcha-nice-hero-v471 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.7fr);
+  gap: 36px;
+  align-items: center;
+  padding: 28px 0 42px;
+}
+.matcha-nice-hero-v471 h1 {
+  max-width: 780px;
+  margin: 6px 0 14px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(2.4rem, 6.5vw, 4.9rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+.matcha-nice-lead-v471 {
+  max-width: 780px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.8vw, 1.16rem);
+  line-height: 1.72;
+}
+.matcha-nice-hero-actions-v471 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.matcha-nice-visit-card-v471 {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(40, 65, 52, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.76);
+}
+.matcha-nice-visit-card-v471 > div:not(.matcha-nice-visit-links-v471) {
+  display: grid;
+  gap: 3px;
+}
+.matcha-nice-visit-card-v471 small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.matcha-nice-visit-card-v471 strong,
+.matcha-nice-visit-card-v471 a {
+  font-size: 0.88rem;
+}
+.matcha-nice-visit-links-v471 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(40, 65, 52, 0.09);
+}
+.matcha-nice-visit-links-v471 a {
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+.matcha-nice-local-points-v471 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 22px 0 42px;
+}
+.matcha-nice-local-points-v471 article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(72, 106, 75, 0.055);
+}
+.matcha-nice-local-points-v471 article > span {
+  grid-row: 1 / span 2;
+  color: rgba(40, 65, 52, 0.34);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.matcha-nice-local-points-v471 strong {
+  align-self: end;
+}
+.matcha-nice-local-points-v471 p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.matcha-nice-menu-v471,
+.matcha-nice-shop-v471,
+.matcha-nice-faq-v471 {
+  padding: 40px 0;
+  border-top: 1px solid rgba(40, 65, 52, 0.12);
+}
+.matcha-nice-section-head-v471 {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.matcha-nice-section-head-v471 h2,
+.matcha-nice-faq-v471 h2 {
+  margin: 5px 0 6px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(1.75rem, 3.4vw, 2.45rem);
+}
+.matcha-nice-section-head-v471 p {
+  max-width: 780px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.matcha-nice-section-head-v471 > a {
+  flex: 0 0 auto;
+  font-weight: 750;
+}
+.matcha-nice-menu-grid-v471 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.matcha-nice-menu-grid-v471 article {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(40, 65, 52, 0.1);
+  border-radius: 15px;
+  background: #fff;
+}
+.matcha-nice-menu-grid-v471 article > div {
+  min-width: 0;
+}
+.matcha-nice-menu-grid-v471 strong {
+  display: block;
+}
+.matcha-nice-menu-grid-v471 p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+.matcha-nice-menu-grid-v471 article > span {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.matcha-nice-product-grid-v471 {
+  margin-top: 0;
+}
+.matcha-nice-empty-v471 {
+  padding: 20px;
+  border: 1px dashed rgba(40, 65, 52, 0.16);
+  border-radius: 16px;
+  color: var(--muted);
+}
+.matcha-nice-editorial-v471 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 40px 0;
+  border-top: 1px solid rgba(40, 65, 52, 0.12);
+}
+.matcha-nice-editorial-v471 section {
+  padding: 22px;
+  border: 1px solid rgba(40, 65, 52, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.matcha-nice-editorial-v471 h2 {
+  margin: 0 0 12px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.45rem;
+  line-height: 1.12;
+}
+.matcha-nice-editorial-v471 p {
+  color: #3f4c44;
+  font-size: 0.9rem;
+  line-height: 1.72;
+}
+.matcha-nice-editorial-v471 p:last-child {
+  margin-bottom: 0;
+}
+.matcha-nice-guide-links-v471 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px;
+  border-radius: 22px;
+  background: var(--moss-dark);
+  color: #fff;
+}
+.matcha-nice-guide-links-v471 h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-serif, Georgia, serif);
+}
+.matcha-nice-guide-links-v471 > div:last-child {
+  display: flex;
+  max-width: 660px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 16px;
+}
+.matcha-nice-guide-links-v471 a {
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+.matcha-nice-faq-v471 {
+  margin-top: 38px;
+}
+.matcha-nice-faq-v471 > div {
+  display: grid;
+  gap: 8px;
+  max-width: 920px;
+  margin-top: 16px;
+}
+.matcha-nice-faq-v471 details {
+  border: 1px solid rgba(40, 65, 52, 0.11);
+  border-radius: 14px;
+  background: #fff;
+}
+.matcha-nice-faq-v471 summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-weight: 750;
+}
+.matcha-nice-faq-v471 details p {
+  margin: 0;
+  padding: 0 16px 16px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+@media (max-width: 900px) {
+  .matcha-nice-hero-v471,
+  .matcha-nice-editorial-v471 {
+    grid-template-columns: 1fr;
+  }
+  .matcha-nice-local-points-v471,
+  .matcha-nice-menu-grid-v471 {
+    grid-template-columns: 1fr;
+  }
+  .matcha-nice-guide-links-v471,
+  .matcha-nice-section-head-v471 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .matcha-nice-guide-links-v471 > div:last-child {
+    max-width: none;
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 640px) {
+  .matcha-nice-shell-v471 {
+    width: calc(100% - 28px);
+    padding-top: 20px;
+  }
+  .matcha-nice-breadcrumb-v471 {
+    overflow-x: auto;
+    margin-bottom: 10px;
+    white-space: nowrap;
+  }
+  .matcha-nice-hero-v471 {
+    gap: 20px;
+    padding-top: 20px;
+  }
+  .matcha-nice-hero-v471 h1 {
+    font-size: clamp(2.1rem, 11vw, 3.3rem);
+  }
+  .matcha-nice-hero-actions-v471 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .matcha-nice-hero-actions-v471 .button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .matcha-nice-guide-links-v471 {
+    padding: 20px;
+  }
+  .matcha-nice-guide-links-v471 > div:last-child {
+    display: grid;
+  }
+}

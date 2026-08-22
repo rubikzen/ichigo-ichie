@@ -54,6 +54,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...productPages,
     ...guidePages,
     ...intentPages,
+    {
+      url: `${base}/matcha-nice`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     { url: `${base}/cgv`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/mentions-legales`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/confidentialite`, changeFrequency: "monthly", priority: 0.3 },

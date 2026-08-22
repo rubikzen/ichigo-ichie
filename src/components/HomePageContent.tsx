@@ -300,6 +300,11 @@ export function HomePageContent({
                   {t("story_instagram_cta_fr", "story_instagram_cta_en")}
                 </a>
               )}
+              <Link className="house-text-link-v226" href="/matcha-nice">
+                {language === "fr"
+                  ? "Matcha à Nice →"
+                  : "Matcha in Nice →"}
+              </Link>
               {t("story_link_fr", "story_link_en") && (
                 <Link className="house-text-link-v226" href="/#menu">
                   {t("story_link_fr", "story_link_en")}

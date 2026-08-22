@@ -38,6 +38,9 @@ export function SiteFooter() {
 
       <div className="footer-column-v226">
         <strong>{t("footer_visit_title_fr", "footer_visit_title_en")}</strong>
+        <Link href="/matcha-nice">
+          {language === "fr" ? "Matcha à Nice" : "Matcha in Nice"}
+        </Link>
         {settings.store_address && (mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer">{settings.store_address}</a> : <span>{settings.store_address}</span>)}
         {settings.opening_hours && <span>{t("footer_open_prefix_fr", "footer_open_prefix_en")} · {settings.opening_hours}</span>}
         {settings.phone && <a href={phoneHref}>{settings.phone}</a>}
