@@ -9,7 +9,12 @@ const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8")
 const marker = "/* Ichigo Ichie V4.62.1 — Storefront paint stability */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V462.1 CSS marker must exist");
-const block = css.slice(start);
+const end = css.indexOf(
+  "/* Ichigo Ichie V4.62.2 — Mobile product media centering */",
+  start + marker.length,
+);
+assert.ok(end > start, "V462.1 CSS block end marker must exist");
+const block = css.slice(start, end);
 
 test("V462.1 keeps mobile Shop filters in normal document flow below the site header", () => {
   assert.match(block, /\.onepage-catalog-shop \.onepage-catalog-toolbar-v225/);

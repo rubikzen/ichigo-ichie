@@ -8584,3 +8584,255 @@
   .product-review-overview-v466.rating-hidden-v4661 .product-review-sort-v466 { justify-self: stretch; }
   .product-reviews-more-v4661 { width: 100%; justify-content: center; }
 }
+
+
+/* V467 — deterministic stock forecasting */
+.inventory-forecast-v467 {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(40, 65, 52, 0.13);
+}
+.inventory-forecast-head-v467 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.inventory-forecast-head-v467 h3 {
+  margin: 4px 0 5px;
+}
+.inventory-forecast-head-v467 .muted {
+  max-width: 760px;
+}
+.inventory-forecast-actions-v467 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.inventory-forecast-periods-v467,
+.inventory-forecast-view-v467 {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(40, 65, 52, 0.07);
+}
+.inventory-forecast-periods-v467 button,
+.inventory-forecast-view-v467 button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+.inventory-forecast-periods-v467 button.active,
+.inventory-forecast-view-v467 button.active {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(25, 42, 31, 0.12);
+  font-weight: 750;
+}
+.inventory-forecast-kpis-v467 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.inventory-forecast-kpis-v467 article {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(40, 65, 52, 0.11);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+}
+.inventory-forecast-kpis-v467 article.alert {
+  border-color: rgba(151, 67, 50, 0.28);
+  background: rgba(151, 67, 50, 0.05);
+}
+.inventory-forecast-kpis-v467 span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.inventory-forecast-kpis-v467 strong {
+  font-size: 1.25rem;
+}
+.inventory-forecast-toolbar-v467 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.inventory-forecast-toolbar-v467 input {
+  width: min(320px, 100%);
+  min-height: 39px;
+  border: 1px solid rgba(40, 65, 52, 0.15);
+  border-radius: 11px;
+  background: #fff;
+  padding: 8px 11px;
+}
+.inventory-forecast-table-v467 {
+  overflow: hidden;
+  border: 1px solid rgba(40, 65, 52, 0.12);
+  border-radius: 14px;
+  background: #fff;
+}
+.inventory-forecast-row-v467 {
+  display: grid;
+  grid-template-columns:
+    minmax(210px, 2.2fr)
+    minmax(60px, 0.55fr)
+    minmax(66px, 0.6fr)
+    minmax(72px, 0.65fr)
+    minmax(82px, 0.8fr)
+    minmax(92px, 0.85fr)
+    minmax(125px, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(40, 65, 52, 0.08);
+  font-size: 0.8rem;
+}
+.inventory-forecast-row-v467:first-child {
+  border-top: 0;
+}
+.inventory-forecast-row-v467.header {
+  background: rgba(40, 65, 52, 0.05);
+  color: var(--muted);
+  font-size: 0.69rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.inventory-forecast-product-v467 {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.inventory-forecast-product-v467 strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inventory-forecast-product-v467 small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.inventory-signal-v467 {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.69rem !important;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.inventory-signal-v467.out,
+.inventory-signal-v467.urgent {
+  background: rgba(151, 67, 50, 0.11);
+  color: #813c2e;
+}
+.inventory-signal-v467.order {
+  background: rgba(173, 116, 30, 0.11);
+  color: #815b1d;
+}
+.inventory-signal-v467.watch {
+  background: rgba(174, 142, 40, 0.11);
+  color: #74601e;
+}
+.inventory-signal-v467.healthy {
+  background: rgba(49, 83, 52, 0.09);
+  color: #315334;
+}
+.inventory-signal-v467.no_sales {
+  background: rgba(70, 70, 66, 0.08);
+  color: #65655f;
+}
+.inventory-forecast-foot-v467 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.inventory-forecast-empty-v467 {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px dashed rgba(40, 65, 52, 0.16);
+  border-radius: 14px;
+  color: var(--muted);
+}
+.inventory-forecast-empty-v467 strong {
+  color: var(--ink);
+}
+@media (max-width: 900px) {
+  .inventory-forecast-head-v467,
+  .inventory-forecast-actions-v467 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .inventory-forecast-kpis-v467 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inventory-forecast-kpis-v467 article:last-child {
+    grid-column: 1 / -1;
+  }
+  .inventory-forecast-toolbar-v467 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .inventory-forecast-toolbar-v467 input {
+    width: 100%;
+  }
+  .inventory-forecast-table-v467 {
+    border: 0;
+    background: transparent;
+    display: grid;
+    gap: 8px;
+  }
+  .inventory-forecast-row-v467.header {
+    display: none;
+  }
+  .inventory-forecast-row-v467 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+    border: 1px solid rgba(40, 65, 52, 0.12);
+    border-radius: 13px;
+    background: #fff;
+    padding: 12px;
+  }
+  .inventory-forecast-product-v467 {
+    grid-column: 1 / -1;
+  }
+  .inventory-forecast-row-v467 > span:not(.inventory-signal-v467) {
+    display: grid;
+    gap: 2px;
+  }
+  .inventory-forecast-row-v467 > span:not(.inventory-signal-v467)::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.66rem;
+  }
+  .inventory-signal-v467 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 520px) {
+  .inventory-forecast-kpis-v467 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .inventory-forecast-periods-v467,
+  .inventory-forecast-view-v467 {
+    width: 100%;
+  }
+  .inventory-forecast-periods-v467 button,
+  .inventory-forecast-view-v467 button {
+    flex: 1;
+    min-height: 40px;
+  }
+}

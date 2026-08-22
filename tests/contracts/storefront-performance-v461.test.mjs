@@ -13,7 +13,12 @@ const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8")
 const marker = "/* Ichigo Ichie V4.61 — Storefront performance pass */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V461 CSS marker must exist");
-const v461 = css.slice(start);
+const end = css.indexOf(
+  "/* Ichigo Ichie V4.62 — Matcha finder merchandising */",
+  start + marker.length,
+);
+assert.ok(end > start, "V461 CSS block end marker must exist");
+const v461 = css.slice(start, end);
 
 test("V461 reuses currency formatters across ProductCard renders", () => {
   assert.match(product, /const moneyFormatters =/);
