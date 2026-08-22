@@ -18,9 +18,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const guidePages: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/guides`,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/guides/comment-choisir-son-matcha`,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+    {
+      url: `${base}/guides/usucha-vs-koicha`,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+    {
+      url: `${base}/guides/matcha-ceremonie-vs-latte`,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+  ];
+
   return [
     { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
     ...productPages,
+    ...guidePages,
     { url: `${base}/cgv`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/mentions-legales`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/confidentialite`, changeFrequency: "monthly", priority: 0.3 },

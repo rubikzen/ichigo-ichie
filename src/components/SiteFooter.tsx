@@ -31,6 +31,7 @@ export function SiteFooter() {
         <strong>{t("footer_nav_title_fr", "footer_nav_title_en")}</strong>
         <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
         <Link href="/#boutique">{t("nav_shop_fr", "nav_shop_en")}</Link>
+        <Link href="/guides">{language === "fr" ? "Guides du matcha" : "Matcha guides"}</Link>
         <Link href="/#maison">{t("nav_house_fr", "nav_house_en")}</Link>
         <Link href="/#contact">{t("nav_contact_fr", "nav_contact_en")}</Link>
       </div>

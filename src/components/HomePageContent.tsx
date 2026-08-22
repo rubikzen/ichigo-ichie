@@ -11,6 +11,7 @@ import { ReviewSummaryProvider } from "./ReviewSummaryProvider";
 import { settingEnabled } from "@/lib/settings";
 import { ContactSection } from "./ContactSection";
 import { SafeImage } from "./SafeImage";
+import { MatchaGuidesTeaser } from "./MatchaGuidesTeaser";
 
 export function HomePageContent({
   shopFeatured,
@@ -131,6 +132,8 @@ export function HomePageContent({
         shopCategories={shopCategories}
         shopProducts={shopProducts}
       />
+
+      <MatchaGuidesTeaser />
 
       <section
         className="mobile-home-flow-v260 mobile-home-after-catalog-v4491"

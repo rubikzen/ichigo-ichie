@@ -9,6 +9,7 @@ import { SafeImage } from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { trackConversion } from "@/lib/conversion-analytics";
+import { ProductGuideLinks } from "@/components/ProductGuideLinks";
 
 export function ProductPageContent({
   product,
@@ -282,6 +283,8 @@ export function ProductPageContent({
             <p>{longDescription}</p>
           </section>
         )}
+
+        <ProductGuideLinks product={product} />
 
         <div className="product-page-back-v431 product-page-back-v432">
           <Link href="/#boutique">
