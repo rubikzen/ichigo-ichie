@@ -94,6 +94,7 @@ export function OrderTracker({ token }: { token: string }) {
   const [retryPaymentSession, setRetryPaymentSession] = useState<{ clientSecret: string; orderNumber: string; total: number; trackingUrl?: string | null } | null>(null);
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancelled" | "">("");
   const [paymentReturnSessionId, setPaymentReturnSessionId] = useState("");
+  const [paymentReturnParamsReady, setPaymentReturnParamsReady] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [autoRetryRequested, setAutoRetryRequested] = useState(false);
   const [paymentSubmissionGuard, setPaymentSubmissionGuard] = useState(false);
@@ -114,15 +115,19 @@ export function OrderTracker({ token }: { token: string }) {
       if (state === "retry") {
         setAutoRetryRequested(true);
         window.history.replaceState(window.history.state, "", window.location.pathname);
+        setPaymentReturnParamsReady(true);
         return;
       }
 
-      if (state !== "success" && state !== "cancelled") return;
-      if (state === "success" && sessionId) {
-        setPaymentReturnSessionId(sessionId);
+      if (state === "success" || state === "cancelled") {
+        if (state === "success" && sessionId) {
+          setPaymentReturnSessionId(sessionId);
+        }
+        setPaymentReturn(state);
+        window.history.replaceState(window.history.state, "", window.location.pathname);
       }
-      setPaymentReturn(state);
-      window.history.replaceState(window.history.state, "", window.location.pathname);
+
+      setPaymentReturnParamsReady(true);
     });
     return () => { cancelled = true; };
   }, []);
@@ -165,6 +170,8 @@ export function OrderTracker({ token }: { token: string }) {
   }, [paymentReturn, paymentConfirmed, order]);
 
   useEffect(() => {
+    if (!paymentReturnParamsReady) return;
+
     let active = true;
 
     async function loadPublicOrder() {
@@ -250,6 +257,7 @@ export function OrderTracker({ token }: { token: string }) {
     };
   }, [
     token,
+    paymentReturnParamsReady,
     orderRefreshIntervalMs,
     paymentSyncRequested,
     paymentReturnSessionId,

@@ -12694,3 +12694,126 @@
     transition: none !important;
   }
 }
+
+
+/* V480.1 — CI return-sync race and mobile card density hotfix */
+
+/*
+  V479.2 aligned card bottoms by stretching the whole ProductCard. On real
+  two-column mobile rows that can create large empty vertical bands between
+  title, merchandising, stock and CTA. Let each card size to its own content;
+  grid rows may still follow the tallest sibling, but whitespace stays outside
+  the card instead of weakening the product hierarchy inside it.
+*/
+@media (min-width: 360px) and (max-width: 820px) {
+  .onepage-catalog-shop .onepage-product-grid {
+    align-items: start !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact {
+    height: auto !important;
+    align-self: start !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-copy {
+    flex: 0 0 auto !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-title-row {
+    min-height: 36px !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-merchandising-v462 {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-meta {
+    min-height: 0 !important;
+    justify-content: flex-start !important;
+    margin-top: 5px !important;
+    margin-bottom: 7px !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-stock-card {
+    min-height: 0 !important;
+    margin-top: 4px !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-cta {
+    margin-top: 8px !important;
+  }
+}
+
+@media (min-width: 360px) and (max-width: 640px) {
+  .shop-collection-grid-v473 {
+    align-items: start !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact {
+    height: auto !important;
+    align-self: start !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-copy {
+    flex: 0 0 auto !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-title-row {
+    min-height: 36px !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-merchandising-v462 {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-meta {
+    min-height: 0 !important;
+    justify-content: flex-start !important;
+    margin-top: 5px !important;
+    margin-bottom: 7px !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-stock-card {
+    min-height: 0 !important;
+    margin-top: 4px !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-cta {
+    margin-top: 8px !important;
+  }
+}
