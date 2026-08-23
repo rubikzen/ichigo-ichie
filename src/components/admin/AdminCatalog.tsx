@@ -39,6 +39,25 @@ const PRODUCT_EDITOR_SECTIONS: Array<{
   { id: "advanced", label: "Avancé" },
 ];
 
+function foodInfoFingerprint(product: AdminProduct) {
+  const food = product.food_info ?? {};
+  return {
+    legal_name_fr: food.legal_name_fr ?? "",
+    legal_name_en: food.legal_name_en ?? "",
+    ingredients_fr: food.ingredients_fr ?? "",
+    ingredients_en: food.ingredients_en ?? "",
+    allergens_fr: food.allergens_fr ?? "",
+    allergens_en: food.allergens_en ?? "",
+    net_quantity: food.net_quantity ?? "",
+    storage_fr: food.storage_fr ?? "",
+    storage_en: food.storage_en ?? "",
+    operator_fr: food.operator_fr ?? "",
+    operator_en: food.operator_en ?? "",
+    preparation_fr: food.preparation_fr ?? "",
+    preparation_en: food.preparation_en ?? "",
+  };
+}
+
 function productDraftFingerprint(product: AdminProduct) {
   return JSON.stringify({
     slug: product.slug.trim(),
@@ -63,7 +82,7 @@ function productDraftFingerprint(product: AdminProduct) {
     ideal_for: (product.ideal_for ?? []).map((value) =>
       String(value).trim(),
     ),
-    food_info: product.food_info ?? {},
+    food_info: foodInfoFingerprint(product),
     shipping_weight_g: Number(product.shipping_weight_g || 0),
   });
 }
