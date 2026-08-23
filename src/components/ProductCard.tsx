@@ -409,7 +409,13 @@ function ProductCardStateful({ product }: { product: Product }) {
   const minimumPrice = availableVariants.length ? Math.min(...availableVariants.map((item) => item.price)) : product.base_price;
   const formatLabels = [...new Set(selectableVariants.map((item) => variantLabel(item)))];
   const packagingLabels = packageOptions.map((option) => packagingLabel(option.packaging, language));
-const requiresChoice = selectableVariants.length > 1;
+  const singleVariantLabels = selectableVariants.length === 1
+    ? productVariantLabel(selectableVariants[0], language)
+        .split("·")
+        .map((label) => label.trim())
+        .filter((label) => label && label !== "Format")
+    : [];
+  const requiresChoice = selectableVariants.length > 1;
 
   return <>
     <article className="product-card product-card-compact">
@@ -485,6 +491,9 @@ const requiresChoice = selectableVariants.length > 1;
           {packagingLabels.length <= 1 && formatLabels.length > 1 && <div className="product-card-chips" aria-label={language === "fr" ? "Formats disponibles" : "Available sizes"}>
             {formatLabels.slice(0, 3).map((label) => <span key={label}>{label}</span>)}
             {formatLabels.length > 3 && <span>+{formatLabels.length - 3}</span>}
+          </div>}
+          {singleVariantLabels.length > 0 && <div className="product-card-chips product-card-single-variant-v4804" aria-label={language === "fr" ? "Format du produit" : "Product format"}>
+            {singleVariantLabels.map((label) => <span key={label}>{label}</span>)}
           </div>}
           {showStock && <p className={`product-stock-card ${totalStock <= 0 ? "sold" : totalStock <= 5 ? "low" : "available"}`}><span className="stock-dot" aria-hidden="true"></span>{stockCopy(totalStock, language)}</p>}
           {showStock && !requiresChoice && hasStock && quantityInCartForStock > 0 && (
