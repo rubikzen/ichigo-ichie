@@ -161,8 +161,8 @@ export function CartPageClient({ products }: { products: Product[] }) {
 
   const closeEditor = () => setEditingKey(null);
 
-  return <section className="cart-page cart-page-v216">
-    <div className="cart-page-head-v216">
+  return <section className="cart-page cart-page-v216 cart-page-v481" data-cart-conversion-v481>
+    <div className="cart-page-head-v216 cart-page-head-v481">
       <div className="page-heading cart-heading-v216">
         <p className="eyebrow">{cms("cart_eyebrow_fr", "cart_eyebrow_en", "ICHIGO ICHIE", "ICHIGO ICHIE")}</p>
         <h1>{cms("cart_title_fr", "cart_title_en", "Votre panier", "Your cart")}</h1>
@@ -179,7 +179,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
       <div className="cart-empty-actions-v216">
         <Link className="button primary" href="/#boutique">{language === "fr" ? "Voir la boutique" : "View shop"}</Link>
       </div>
-    </div> : <div className="cart-layout cart-layout-v216">
+    </div> : <div className="cart-layout cart-layout-v216 cart-layout-v481">
       <div className="cart-main-v216">
         <div className="cart-items cart-items-v216">
           {items.map((item) => {
@@ -300,7 +300,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <aside className="cart-summary cart-summary-v216">
+      <aside className="cart-summary cart-summary-v216 cart-summary-v481">
         <p className="eyebrow">{language === "fr" ? "RÉCAPITULATIF" : "SUMMARY"}</p>
         <h2>{language === "fr" ? "Votre commande" : "Your order"}</h2>
         <div className="cart-summary-line-v216"><span>{language === "fr" ? "Articles" : "Items"}</span><strong>{count}</strong></div>
@@ -349,15 +349,15 @@ export function CartPageClient({ products }: { products: Product[] }) {
       </aside>
 
       <div
-        className={`mobile-cart-checkout-bar-v419 ${hasStockConflict ? "has-conflict" : ""}`}
+        className={`mobile-cart-checkout-bar-v419 ${hasStockConflict ? "has-conflict" : ""} mobile-cart-checkout-bar-v481`}
         aria-label={language === "fr" ? "Accès rapide au paiement" : "Quick checkout"}
       >
-        <div className="mobile-cart-total-v419" aria-live="polite">
+        <div className="mobile-cart-total-v419 mobile-cart-total-v481" aria-live="polite">
           <small>{language === "fr" ? "Sous-total" : "Subtotal"}</small>
           <strong>{money(ritualSubtotal, language)}</strong>
         </div>
         <Link
-          className={`button primary mobile-cart-checkout-v419 ${hasStockConflict ? "is-disabled" : ""}`}
+          className={`button primary mobile-cart-checkout-v419 mobile-cart-checkout-v481 ${hasStockConflict ? "is-disabled" : ""}`}
           href="/checkout"
           aria-disabled={hasStockConflict}
           onClick={(event) => {

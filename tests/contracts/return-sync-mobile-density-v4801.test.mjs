@@ -14,7 +14,8 @@ const marker =
   "/* V480.1 — CI return-sync race and mobile card density hotfix */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V480.1 CSS marker must exist");
-const v4801 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v4801 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V480.1 tracks when payment-return URL params are ready", () => {
   assert.match(

@@ -13,7 +13,8 @@ const card = src("src/components/ProductCard.tsx");
 const marker = "/* V479.1 — Homepage Boutique card density fix */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V479.1 CSS marker must exist");
-const v4791 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v4791 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V479.1 targets the actual homepage Boutique grid that V479 missed", () => {
   assert.match(catalog, /onepage-product-grid/);

@@ -14,7 +14,8 @@ const css = src("src/app/styles/globals-04.css");
 const marker = "/* V479.2 — Mobile storefront interaction polish */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V479.2 CSS marker must exist");
-const v4792 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v4792 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V479.2 bottom dock reacts to scroll direction instead of covering products continuously", () => {
   assert.match(nav, /dockHiddenByScroll/);

@@ -15,7 +15,8 @@ const marker =
   "/* V479 — Storefront visual system and premium product cards */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V479 CSS marker must exist");
-const v479 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v479 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V479 defines a restrained reusable storefront card visual system", () => {
   assert.match(v479, /--store-card-radius-v479/);

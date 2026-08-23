@@ -619,18 +619,29 @@ export default function CheckoutPage() {
 
   if (!items.length) return <section className="checkout-page"><div className="empty-state"><h1>{language === "fr" ? "Votre panier est vide" : "Your cart is empty"}</h1><Link className="button primary" href="/#boutique">Boutique</Link></div></section>;
 
-  return <section className="checkout-page checkout-page-v460">
+  return <section className="checkout-page checkout-page-v460 checkout-page-v481" data-checkout-conversion-v481>
     <Link className="checkout-back-v460" href="/panier">← {language === "fr" ? "Retour au panier" : "Back to cart"}</Link>
-    <div className="page-heading"><p className="eyebrow">{cms("checkout_eyebrow_fr", "checkout_eyebrow_en", "ICHIGO ICHIE", "ICHIGO ICHIE")}</p><h1>{cms("checkout_title_fr", "checkout_title_en", "Finaliser la commande", "Complete order")}</h1><p>{cms("checkout_intro_fr", "checkout_intro_en", "Livraison en France métropolitaine ou retrait gratuit à Nice.", "Delivery in metropolitan France or free pickup in Nice.")}</p></div>
-    <div className="checkout-trust-strip-v460" aria-label={language === "fr" ? "Commande sécurisée" : "Secure order"}>
+    <div className="page-heading checkout-heading-v481"><p className="eyebrow">{cms("checkout_eyebrow_fr", "checkout_eyebrow_en", "ICHIGO ICHIE", "ICHIGO ICHIE")}</p><h1>{cms("checkout_title_fr", "checkout_title_en", "Finaliser la commande", "Complete order")}</h1><p>{cms("checkout_intro_fr", "checkout_intro_en", "Livraison en France métropolitaine ou retrait gratuit à Nice.", "Delivery in metropolitan France or free pickup in Nice.")}</p></div>
+    <div className="checkout-trust-strip-v460 checkout-trust-strip-v481" aria-label={language === "fr" ? "Commande sécurisée" : "Secure order"}>
       <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Paiement" : "Payment"}</small><strong>Stripe</strong></span>
       <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Livraison" : "Delivery"}</small><strong>{language === "fr" ? "Suivie" : "Tracked"}</strong></span>
       <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Retrait Nice" : "Nice pickup"}</small><strong>{language === "fr" ? "Gratuit" : "Free"}</strong></span>
     </div>
-    <div className="checkout-layout">
-      <form className="checkout-form" onSubmit={submit}>
+    <div className="checkout-mobile-overview-v481" aria-label={language === "fr" ? "Résumé rapide de la commande" : "Quick order summary"}>
+      <div>
+        <small>{language === "fr" ? "Total" : "Total"}</small>
+        <strong>{money.format(checkoutTotal)}</strong>
+      </div>
+      <span>
+        {orderType === "shipping"
+          ? (language === "fr" ? "Livraison suivie en France" : "Tracked delivery in France")
+          : (language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice")}
+      </span>
+    </div>
+    <div className="checkout-layout checkout-layout-v481">
+      <form className="checkout-form checkout-form-v481" onSubmit={submit}>
         <fieldset className="checkout-details-lock-v242" disabled={Boolean(paymentSession)}>
-        {!mustPickup && <div className="pickup-choice-block delivery-mode-block">
+        {!mustPickup && <div className="pickup-choice-block delivery-mode-block checkout-fulfilment-v481">
           <p className="checkout-step-kicker">01</p><h2>{language === "fr" ? "Comment souhaitez-vous recevoir votre commande ?" : "How would you like to receive your order?"}</h2>
           <div className="pickup-choice-grid">
             <label className={`pickup-choice ${orderType === "shipping" ? "active" : ""}`}><input type="radio" name="orderType" value="shipping" checked={orderType === "shipping"} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · livraison suivie." : "Metropolitan France · tracked delivery."}</small></span></label>
@@ -638,7 +649,7 @@ export default function CheckoutPage() {
           </div>
         </div>}
 
-        <div className="checkout-section-card customer-details-card">
+        <div className="checkout-section-card customer-details-card checkout-customer-v481">
           <p className="checkout-step-kicker">02</p>
           <div className="customer-details-title-v243"><h2>{language === "fr" ? "Vos coordonnées" : "Your details"}</h2>{customerPrefilled && <Link href="/compte" className="customer-prefill-badge-v243">✓ {language === "fr" ? "Mon compte" : "My account"}</Link>}</div>
           <div className="form-grid">
@@ -650,7 +661,7 @@ export default function CheckoutPage() {
         </div>
 
         {orderType === "shipping" ? <>
-          <div className="shipping-address-block checkout-section-card smart-address-card-v235">
+          <div className="shipping-address-block checkout-section-card smart-address-card-v235 checkout-address-v481">
             <div className="smart-section-head-v235">
               <div><p className="checkout-step-kicker">{language === "fr" ? "ADRESSE" : "ADDRESS"}</p><h2>{language === "fr" ? "Où livrer votre commande ?" : "Where should we deliver?"}</h2></div>
               {addressVerified ? <span className="smart-verified-v235">✓ {language === "fr" ? "Adresse reconnue" : "Address found"}</span> : manualAddressReady ? <span className="smart-manual-status-v2351">✓ {language === "fr" ? "Adresse saisie manuellement" : "Address entered manually"}</span> : null}
@@ -709,7 +720,7 @@ export default function CheckoutPage() {
             <div className="smart-country-v235"><span>{language === "fr" ? "Pays" : "Country"}</span><strong>France</strong><small>{language === "fr" ? "France métropolitaine" : "Metropolitan France"}</small></div>
           </div>
 
-          <div className="shipping-method-block checkout-section-card">
+          <div className="shipping-method-block checkout-section-card checkout-shipping-method-v481">
             <div className="section-inline"><div><p className="checkout-step-kicker">03</p><h2>{language === "fr" ? "Mode de livraison" : "Delivery method"}</h2></div></div>
             {quoteLoading && <p className="shipping-note">{language === "fr" ? "Calcul du tarif de livraison…" : "Calculating delivery rate…"}</p>}
             {quoteError && <p className="form-error">{quoteError}</p>}
@@ -736,7 +747,7 @@ export default function CheckoutPage() {
             promoExpanded && <div className="smart-optional-body-v235"><div className="promo-entry-v234"><input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase().replace(/\s+/g, ""))} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }} placeholder={language === "fr" ? "Ex. MATCHA10" : "E.g. MATCHA10"} maxLength={40} autoComplete="off" /><button type="button" className="button ghost" disabled={promoLoading || !promoCode.trim()} onClick={applyPromo}>{promoLoading ? "…" : (language === "fr" ? "Appliquer" : "Apply")}</button></div>{promoError && <p className="promo-error-v234">{promoError}</p>}</div>}
         </div>}
 
-        <div className="smart-payment-v235">
+        <div className="smart-payment-v235 checkout-payment-reassurance-v481">
           <span className="smart-payment-icon-v235" aria-hidden="true">✓</span>
           <div><p className="checkout-step-kicker">04 · {language === "fr" ? "PAIEMENT" : "PAYMENT"}</p><strong>{language === "fr" ? "Paiement sécurisé sur Ichigo Ichie" : "Secure payment on Ichigo Ichie"}</strong><small>{language === "fr" ? "Carte, Link et portefeuilles compatibles, traités en toute sécurité par Stripe." : "Card, Link and compatible wallets, securely processed by Stripe."}</small></div>
           <span className="secure-payment-pill">Stripe</span>
@@ -744,7 +755,7 @@ export default function CheckoutPage() {
 
         {!showNotes ? <button type="button" className="smart-text-button-v235 smart-note-trigger-v235" onClick={() => setShowNotes(true)}>+ {language === "fr" ? "Ajouter une note à la boutique" : "Add a note for the boutique"}</button> :
           <label>{language === "fr" ? "Note pour la boutique" : "Note for the boutique"}<textarea name="notes" rows={3} maxLength={1000} placeholder={language === "fr" ? "Précision, demande particulière…" : "Request, special note…"}></textarea></label>}
-        <label className="checkout-terms-v227"><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /><span>{language === "fr" ? <>J’ai lu et j’accepte les <Link href="/cgv" target="_blank">CGV</Link> ainsi que les informations <Link href="/livraison-retours" target="_blank">Livraison & retours</Link>.</> : <>I have read and accept the <Link href="/cgv" target="_blank">Terms</Link> and <Link href="/livraison-retours" target="_blank">Shipping & returns</Link> information.</>}</span></label>
+        <label className="checkout-terms-v227 checkout-terms-v481"><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /><span>{language === "fr" ? <>J’ai lu et j’accepte les <Link href="/cgv" target="_blank">CGV</Link> ainsi que les informations <Link href="/livraison-retours" target="_blank">Livraison & retours</Link>.</> : <>I have read and accept the <Link href="/cgv" target="_blank">Terms</Link> and <Link href="/livraison-retours" target="_blank">Shipping & returns</Link> information.</>}</span></label>
         </fieldset>
         {error && (errorCode || errorReference || errorDebug ? <div className="order-error-diagnostic-v2391" role="alert">
           <div className="order-error-diagnostic-v2391-head"><span aria-hidden="true">!</span><div><strong>{error}</strong><p>{language === "fr" ? "Aucun paiement n’a été effectué. Corrigez le point indiqué puis réessayez." : "No payment was taken. Fix the issue shown and try again."}</p></div></div>
@@ -754,10 +765,10 @@ export default function CheckoutPage() {
 
         {!paymentSession ? <>
           {checkoutBlocker && <p id="checkout-blocker-v405" className="checkout-blocker-v405" role="status" aria-live="polite"><span aria-hidden="true">→</span>{checkoutBlocker}</p>}
-          <button className="button primary full checkout-submit" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "checkout-blocker-v405 checkout-disclaimer-v405" : "checkout-disclaimer-v405"}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
+          <button className="button primary full checkout-submit checkout-submit-v481" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "checkout-blocker-v405 checkout-disclaimer-v405" : "checkout-disclaimer-v405"}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
           <p id="checkout-disclaimer-v405" className="checkout-disclaimer">{language === "fr" ? "Aucun débit à cette étape. Le formulaire Stripe sécurisé s’ouvrira juste ici." : "No charge at this step. The secure Stripe payment form will open here."}</p>
 
-          <div className={`mobile-checkout-paybar-v236 ${checkoutBlocker ? "has-blocker-v405" : ""}`} aria-label={language === "fr" ? "Paiement" : "Payment"}>
+          <div className={`mobile-checkout-paybar-v236 ${checkoutBlocker ? "has-blocker-v405" : ""} mobile-checkout-paybar-v481`} aria-label={language === "fr" ? "Paiement" : "Payment"}>
             <div><small>Total</small><strong>{money.format(checkoutTotal)}</strong></div>
             <button type="submit" className="button primary" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "mobile-checkout-blocker-v405" : undefined}>
               {loading
@@ -783,7 +794,7 @@ export default function CheckoutPage() {
         </div>}
       </form>
 
-      <aside className="checkout-summary checkout-summary-v29 checkout-summary-v232 checkout-summary-v236">
+      <aside className="checkout-summary checkout-summary-v29 checkout-summary-v232 checkout-summary-v236 checkout-summary-v481">
         <div className="checkout-summary-head-v460">
           <div>
             <p className="checkout-summary-kicker">{language === "fr" ? "RÉCAPITULATIF" : "ORDER SUMMARY"}</p>

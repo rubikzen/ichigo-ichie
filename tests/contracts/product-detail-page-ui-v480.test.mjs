@@ -16,7 +16,8 @@ const marker =
   "/* V480 — Product detail page visual and conversion polish */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V480 CSS marker must exist");
-const v480 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v480 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V480 adds a dedicated product-page presentation surface without replacing V431 V432 or V459", () => {
   assert.match(

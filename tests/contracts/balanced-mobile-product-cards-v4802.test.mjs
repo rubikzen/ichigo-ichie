@@ -12,7 +12,8 @@ const card = src("src/components/ProductCard.tsx");
 const marker = "/* V480.2 — Balanced mobile product-card slots */";
 const start = css.indexOf(marker);
 assert.ok(start >= 0, "V480.2 CSS marker must exist");
-const v4802 = css.slice(start);
+const v481Boundary = css.indexOf("/* V481 — Cart & checkout conversion polish */", start + 1);
+const v4802 = css.slice(start, v481Boundary >= 0 ? v481Boundary : undefined);
 
 test("V480.2 gives homepage two-column cards deterministic information rows", () => {
   assert.match(v4802, /@media \(min-width: 360px\) and \(max-width: 820px\)/);
