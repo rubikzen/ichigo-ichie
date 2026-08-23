@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { MATCHA_GUIDE_SUMMARIES } from "@/lib/matcha-guide-index";
-import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
+import {
+  MATCHA_INTENT_SUMMARIES,
+  configureMatchaIntentSummary,
+  matchaIntentVisible,
+} from "@/lib/matcha-intent-index";
 import { SeoBreadcrumbs } from "@/components/SeoBreadcrumbs";
 
 export function MatchaGuidesIndexContent() {
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
 
   return (
     <div className="matcha-guides-page-v469">
@@ -74,7 +80,10 @@ export function MatchaGuidesIndexContent() {
             <Link href="/matcha-nice">
               {language === "fr" ? "Matcha à Nice" : "Matcha in Nice"}
             </Link>
-            {MATCHA_INTENT_SUMMARIES.map((intent) => (
+            {MATCHA_INTENT_SUMMARIES.map((intent) => ({
+              ...configureMatchaIntentSummary(intent, settings),
+              hidden: !matchaIntentVisible(intent, settings),
+            })).filter((intent) => !intent.hidden).map((intent) => (
               <Link key={intent.href} href={intent.href}>
                 {language === "fr" ? intent.labelFr : intent.labelEn}
               </Link>

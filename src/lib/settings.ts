@@ -242,6 +242,9 @@ export const siteSettingDefaults: SiteSettings = {
   theme_radius: "26",
 };
 
+const matchaIntentHeavySettingKey =
+  /^matcha_(usucha|koicha|latte|ceremonial)_(title|short|eyebrow|intro|facts|selection_title|selection_intro|body|faq|meta_title|meta_description)_(fr|en)$/;
+
 const publicHeavySettingKeys = new Set([
   "legal_notice_body_fr",
   "legal_notice_body_en",
@@ -255,7 +258,11 @@ const publicHeavySettingKeys = new Set([
 
 export function toPublicSiteSettings(settings: SiteSettings): SiteSettings {
   return Object.fromEntries(
-    Object.entries(settings).filter(([key]) => !publicHeavySettingKeys.has(key)),
+    Object.entries(settings).filter(
+      ([key]) =>
+        !publicHeavySettingKeys.has(key) &&
+        !matchaIntentHeavySettingKey.test(key),
+    ),
   );
 }
 

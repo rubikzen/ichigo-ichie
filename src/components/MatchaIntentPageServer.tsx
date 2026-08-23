@@ -1,7 +1,12 @@
 import { MatchaIntentLandingContent } from "@/components/MatchaIntentLandingContent";
 import { getCachedCatalog } from "@/lib/catalog-server";
-import { getMatchaIntentPage } from "@/lib/matcha-intent-pages";
-import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
+import { getConfiguredMatchaIntentPage } from "@/lib/matcha-intent-pages";
+import {
+  MATCHA_INTENT_SUMMARIES,
+  configureMatchaIntentSummary,
+  matchaIntentVisible,
+} from "@/lib/matcha-intent-index";
+import { getSiteSettings } from "@/lib/settings";
 import { productMatchesFinderTag } from "@/lib/product-merchandising";
 import type { MatchaIntentSummary } from "@/lib/matcha-intent-index";
 
@@ -17,15 +22,22 @@ export async function MatchaIntentPageServer({
 }: {
   tag: MatchaIntentSummary["tag"];
 }) {
-  const page = getMatchaIntentPage(tag);
+  const [shop, settings] = await Promise.all([
+    getCachedCatalog("shop"),
+    getSiteSettings(),
+  ]);
+  const page = getConfiguredMatchaIntentPage(tag, settings);
   if (!page) return null;
 
-  const shop = await getCachedCatalog("shop");
   const products = shop.products.filter((product) =>
     productMatchesFinderTag(product, tag),
   );
-  const relatedPages = MATCHA_INTENT_SUMMARIES.filter(
-    (candidate) => candidate.tag !== tag,
+  const relatedPages = MATCHA_INTENT_SUMMARIES.map((candidate) =>
+    configureMatchaIntentSummary(candidate, settings),
+  ).filter(
+    (candidate) =>
+      candidate.tag !== tag &&
+      matchaIntentVisible(candidate, settings),
   );
 
   const base = siteUrl();

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import {
   MATCHA_INTENT_SUMMARIES,
+  configureMatchaIntentSummary,
   getMatchaIntentSummary,
+  matchaIntentSettingPrefix,
+  type MatchaIntentSettings,
   type MatchaIntentSummary,
 } from "@/lib/matcha-intent-index";
 
@@ -415,10 +418,276 @@ export function getMatchaIntentPage(
   return MATCHA_INTENT_PAGES.find((page) => page.tag === tag) ?? null;
 }
 
+type ParsedIntentSection = {
+  title: string;
+  paragraphs: string[];
+  bullets: string[];
+};
+
+function configuredPageValue(
+  settings: MatchaIntentSettings,
+  key: string,
+  fallback: string,
+) {
+  if (!Object.prototype.hasOwnProperty.call(settings, key)) return fallback;
+  return settings[key] ?? fallback;
+}
+
+function configuredLines(
+  settings: MatchaIntentSettings,
+  key: string,
+  fallback: string[],
+) {
+  if (!Object.prototype.hasOwnProperty.call(settings, key)) return fallback;
+  return String(settings[key] ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseIntentBody(value: string): ParsedIntentSection[] {
+  const lines = value.replace(/\r\n/g, "\n").split("\n");
+  const sections: ParsedIntentSection[] = [];
+  let current: ParsedIntentSection = { title: "", paragraphs: [], bullets: [] };
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    const text = paragraph.join(" ").trim();
+    if (text) current.paragraphs.push(text);
+    paragraph = [];
+  };
+
+  const flushSection = () => {
+    flushParagraph();
+    if (current.title || current.paragraphs.length || current.bullets.length) {
+      sections.push(current);
+    }
+    current = { title: "", paragraphs: [], bullets: [] };
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.startsWith("## ")) {
+      flushSection();
+      current.title = line.slice(3).trim();
+      continue;
+    }
+    if (line.startsWith("- ")) {
+      flushParagraph();
+      const bullet = line.slice(2).trim();
+      if (bullet) current.bullets.push(bullet);
+      continue;
+    }
+    if (!line) {
+      flushParagraph();
+      continue;
+    }
+    paragraph.push(line);
+  }
+
+  flushSection();
+  return sections;
+}
+
+export function serializeMatchaIntentBody(
+  page: MatchaIntentPage,
+  language: "fr" | "en",
+) {
+  return page.sections
+    .map((section) => {
+      const title = language === "fr" ? section.titleFr : section.titleEn;
+      const paragraphs =
+        language === "fr" ? section.paragraphsFr : section.paragraphsEn;
+      const bullets = language === "fr" ? section.bulletsFr : section.bulletsEn;
+      return [
+        `## ${title}`,
+        ...paragraphs.flatMap((paragraph) => ["", paragraph]),
+        ...(bullets?.length
+          ? ["", ...bullets.map((bullet) => `- ${bullet}`)]
+          : []),
+      ].join("\n").trim();
+    })
+    .join("\n\n");
+}
+
+function mergeIntentSections(
+  page: MatchaIntentPage,
+  bodyFr: string | undefined,
+  bodyEn: string | undefined,
+): MatchaIntentSection[] {
+  const frOverride = bodyFr == null ? null : parseIntentBody(bodyFr);
+  const enOverride = bodyEn == null ? null : parseIntentBody(bodyEn);
+  if (!frOverride && !enOverride) return page.sections;
+
+  const count = Math.max(
+    frOverride?.length ?? 0,
+    enOverride?.length ?? 0,
+    page.sections.length,
+  );
+
+  return Array.from({ length: count }, (_, index) => {
+    const fallback = page.sections[index];
+    const fr = frOverride?.[index];
+    const en = enOverride?.[index];
+
+    return {
+      titleFr: fr?.title || fallback?.titleFr || "",
+      titleEn: en?.title || fallback?.titleEn || "",
+      paragraphsFr:
+        frOverride == null ? fallback?.paragraphsFr ?? [] : fr?.paragraphs ?? [],
+      paragraphsEn:
+        enOverride == null ? fallback?.paragraphsEn ?? [] : en?.paragraphs ?? [],
+      bulletsFr: frOverride == null ? fallback?.bulletsFr : fr?.bullets,
+      bulletsEn: enOverride == null ? fallback?.bulletsEn : en?.bullets,
+    };
+  }).filter(
+    (section) =>
+      section.titleFr ||
+      section.titleEn ||
+      section.paragraphsFr.length ||
+      section.paragraphsEn.length ||
+      section.bulletsFr?.length ||
+      section.bulletsEn?.length,
+  );
+}
+
+function parseIntentFaq(
+  value: string,
+): Array<{ question: string; answer: string }> {
+  return value
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((block) => {
+      const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+      const questionLine = lines.find((line) => /^Q\s*:/i.test(line));
+      const answerIndex = lines.findIndex((line) => /^A\s*:/i.test(line));
+      if (!questionLine || answerIndex < 0) return null;
+      const question = questionLine.replace(/^Q\s*:\s*/i, "").trim();
+      const answer = [
+        lines[answerIndex].replace(/^A\s*:\s*/i, "").trim(),
+        ...lines.slice(answerIndex + 1),
+      ].join(" ").trim();
+      return question && answer ? { question, answer } : null;
+    })
+    .filter(
+      (item): item is { question: string; answer: string } => Boolean(item),
+    );
+}
+
+export function serializeMatchaIntentFaq(
+  page: MatchaIntentPage,
+  language: "fr" | "en",
+) {
+  return page.faq
+    .map((faq) =>
+      language === "fr"
+        ? `Q: ${faq.questionFr}\nA: ${faq.answerFr}`
+        : `Q: ${faq.questionEn}\nA: ${faq.answerEn}`,
+    )
+    .join("\n\n");
+}
+
+function mergeIntentFaq(
+  page: MatchaIntentPage,
+  faqFr: string | undefined,
+  faqEn: string | undefined,
+): MatchaIntentFaq[] {
+  const frOverride = faqFr == null ? null : parseIntentFaq(faqFr);
+  const enOverride = faqEn == null ? null : parseIntentFaq(faqEn);
+  if (!frOverride && !enOverride) return page.faq;
+
+  const count = Math.max(
+    frOverride?.length ?? 0,
+    enOverride?.length ?? 0,
+    page.faq.length,
+  );
+
+  return Array.from({ length: count }, (_, index) => {
+    const fallback = page.faq[index];
+    const fr = frOverride?.[index];
+    const en = enOverride?.[index];
+    return {
+      questionFr: fr?.question || fallback?.questionFr || "",
+      answerFr: fr?.answer || fallback?.answerFr || "",
+      questionEn: en?.question || fallback?.questionEn || "",
+      answerEn: en?.answer || fallback?.answerEn || "",
+    };
+  }).filter(
+    (faq) =>
+      faq.questionFr && faq.answerFr && faq.questionEn && faq.answerEn,
+  );
+}
+
+export function getConfiguredMatchaIntentPage(
+  tag: MatchaIntentSummary["tag"],
+  settings: MatchaIntentSettings,
+): MatchaIntentPage | null {
+  const page = getMatchaIntentPage(tag);
+  if (!page) return null;
+
+  const prefix = matchaIntentSettingPrefix(tag);
+  const summary = configureMatchaIntentSummary(page, settings);
+  const optional = (suffix: string) =>
+    Object.prototype.hasOwnProperty.call(settings, `${prefix}_${suffix}`)
+      ? settings[`${prefix}_${suffix}`]
+      : undefined;
+
+  return {
+    ...page,
+    ...summary,
+    eyebrowFr: configuredPageValue(settings, `${prefix}_eyebrow_fr`, page.eyebrowFr),
+    eyebrowEn: configuredPageValue(settings, `${prefix}_eyebrow_en`, page.eyebrowEn),
+    introFr: configuredPageValue(settings, `${prefix}_intro_fr`, page.introFr),
+    introEn: configuredPageValue(settings, `${prefix}_intro_en`, page.introEn),
+    factsFr: configuredLines(settings, `${prefix}_facts_fr`, page.factsFr),
+    factsEn: configuredLines(settings, `${prefix}_facts_en`, page.factsEn),
+    selectionTitleFr: configuredPageValue(
+      settings,
+      `${prefix}_selection_title_fr`,
+      page.selectionTitleFr,
+    ),
+    selectionTitleEn: configuredPageValue(
+      settings,
+      `${prefix}_selection_title_en`,
+      page.selectionTitleEn,
+    ),
+    selectionIntroFr: configuredPageValue(
+      settings,
+      `${prefix}_selection_intro_fr`,
+      page.selectionIntroFr,
+    ),
+    selectionIntroEn: configuredPageValue(
+      settings,
+      `${prefix}_selection_intro_en`,
+      page.selectionIntroEn,
+    ),
+    metaTitleFr: configuredPageValue(
+      settings,
+      `${prefix}_meta_title_fr`,
+      page.metaTitleFr,
+    ),
+    metaDescriptionFr: configuredPageValue(
+      settings,
+      `${prefix}_meta_description_fr`,
+      page.metaDescriptionFr,
+    ),
+    sections: mergeIntentSections(
+      page,
+      optional("body_fr"),
+      optional("body_en"),
+    ),
+    faq: mergeIntentFaq(page, optional("faq_fr"), optional("faq_en")),
+  };
+}
+
 export function getMatchaIntentMetadata(
   tag: MatchaIntentSummary["tag"],
+  settings: MatchaIntentSettings = {},
 ): Metadata {
-  const page = getMatchaIntentPage(tag);
+  const page =
+    Object.keys(settings).length > 0
+      ? getConfiguredMatchaIntentPage(tag, settings)
+      : getMatchaIntentPage(tag);
   if (!page) return {};
 
   return {

@@ -11,6 +11,7 @@ import {
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { broadcastSiteSettingsUpdate } from "@/lib/settings-events";
 import { SiteMediaField, SiteMediaLibrary } from "../SiteMediaField";
+import { MatchaContentAdmin } from "./MatchaContentAdmin";
 
 export function SettingsAdmin({ settings, setSettings, supabase, reload, active, onDirtyChange }: { settings: Record<string, string>; setSettings: (next: Record<string, string>) => void; supabase: NonNullable<ReturnType<typeof createBrowserSupabase>>; reload: () => Promise<void>; active: boolean; onDirtyChange: (dirty: boolean) => void }) {
   const [savingCms, setSavingCms] = useState(false);
@@ -98,6 +99,7 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
     { id: "identity", group: "Contenu", label: "Identité & navigation", hint: "Logo, marque, menus" },
     { id: "home", group: "Contenu", label: "Page d’accueil", hint: "Hero & présentation" },
     { id: "shop", group: "Contenu", label: "Boutique", hint: "Catalogue & tri" },
+    { id: "matcha", group: "Contenu", label: "Pages matcha", hint: "Usucha, Koicha, Latte, Cérémonie" },
     { id: "menu", group: "Contenu", label: "La carte", hint: "Textes du menu" },
     { id: "contact", group: "Contenu", label: "Contact", hint: "Formulaire public" },
     { id: "media", group: "Contenu", label: "Médias & images", hint: "Bibliothèque d’images" },
@@ -166,6 +168,8 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
         <div className="cms-subsection"><h3>Incontournables</h3>{bilingual("featured_eyebrow", "Petit titre")}{bilingual("featured_title", "Titre")}</div>
         <div className="cms-subsection"><h3>Présentation / La maison</h3>{bilingual("story_eyebrow", "Petit titre")}{bilingual("story_title", "Titre")}{bilingual("story_text", "Texte", true)}{bilingual("story_link", "Lien vers la carte")}{text("story_card_label", "Nom affiché sur l’image")}{bilingual("story_address_label", "Libellé adresse")}{bilingual("story_hours_label", "Libellé horaires")}{bilingual("story_phone_label", "Libellé téléphone")}{bilingual("story_maps_cta", "Bouton itinéraire")}{bilingual("story_instagram_cta", "Bouton Instagram")}<div className="cms-media-full"><SiteMediaField supabase={supabase} label="Image La maison" help="Photo de la boutique, de l’espace ou de l’univers Ichigo Ichie." slot="story" value={settings.story_image_url || ""} onChange={(value) => set("story_image_url", value)} /></div></div>
       </>)}
+
+      {panel("matcha", "Pages matcha", "Navigation, contenus éditoriaux et SEO des pages Usucha, Koicha, Latte et Cérémonie", <MatchaContentAdmin settings={settings} setValue={set} toggleValue={toggle} />)}
 
       {panel("menu", "La carte", "Présentation uniquement : aucun panier ni commande en ligne", <>{bilingual("menu_eyebrow", "Petit titre")}{bilingual("menu_title", "Titre")}{bilingual("menu_intro", "Introduction", true)}{bilingual("menu_info_note", "Message information", true)}{bilingual("menu_all", "Bouton Toutes catégories")}{bilingual("menu_empty", "Message quand aucun résultat", true)}</>)}
 

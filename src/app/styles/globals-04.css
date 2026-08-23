@@ -13587,3 +13587,165 @@
     transition: none;
   }
 }
+
+
+/* V482 — Matcha content CMS */
+.matcha-content-admin-v482 {
+  display: grid;
+  gap: 18px;
+}
+
+.matcha-cms-nav-v482 {
+  margin: 0;
+}
+
+.matcha-cms-section-head-v482 {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.matcha-cms-section-head-v482 h3,
+.matcha-cms-section-head-v482 p {
+  margin-top: 0;
+}
+
+.matcha-cms-pages-v482 {
+  display: grid;
+  gap: 10px;
+}
+
+.matcha-cms-page-v482 {
+  overflow: clip;
+  border: 1px solid rgba(35, 67, 52, .13);
+  border-radius: 18px;
+  background: #fffefa;
+}
+
+.matcha-cms-page-v482 > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 76px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.matcha-cms-page-v482 > summary::-webkit-details-marker {
+  display: none;
+}
+
+.matcha-cms-page-v482 > summary > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.matcha-cms-page-v482 > summary > div:first-child > span {
+  color: #6e786f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.matcha-cms-page-v482 > summary strong {
+  overflow: hidden;
+  color: #263e32;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matcha-cms-page-v482[open] > summary {
+  border-bottom: 1px solid rgba(35, 67, 52, .10);
+  background: #f7f8f0;
+}
+
+.matcha-cms-page-actions-v482 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.matcha-cms-page-actions-v482 > span,
+.matcha-cms-page-actions-v482 > a {
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.matcha-cms-page-actions-v482 .is-visible {
+  color: #315740;
+  background: #eaf3e8;
+}
+
+.matcha-cms-page-actions-v482 .is-hidden {
+  color: #7b5550;
+  background: #f8ece9;
+}
+
+.matcha-cms-page-actions-v482 > a {
+  color: #33483c;
+  border: 1px solid rgba(35, 67, 52, .14);
+  background: #fffefa;
+}
+
+.matcha-cms-page-body-v482 {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.matcha-cms-visible-v482 {
+  margin: 0;
+}
+
+.matcha-cms-help-v482 {
+  margin: -6px 0 0;
+  color: #748078;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.matcha-cms-divider-v482 {
+  height: 1px;
+  margin: 2px 0;
+  background: rgba(35, 67, 52, .10);
+}
+
+.matcha-content-admin-v482 textarea {
+  resize: vertical;
+}
+
+@media (max-width: 700px) {
+  .matcha-cms-page-v482 > summary {
+    align-items: flex-start;
+    min-height: 68px;
+    padding: 12px;
+  }
+
+  .matcha-cms-page-actions-v482 {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .matcha-cms-page-body-v482 {
+    gap: 14px;
+    padding: 13px;
+  }
+
+  .matcha-cms-page-actions-v482 > span,
+  .matcha-cms-page-actions-v482 > a {
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+}

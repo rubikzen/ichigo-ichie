@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
-import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import {
+  MATCHA_INTENT_SUMMARIES,
+  configureMatchaIntentSummary,
+  matchaIntentVisible,
+} from "@/lib/matcha-intent-index";
 
 const DISCOVERY_PREFIXES = ["/boutique", "/guides", "/matcha-"] as const;
 
@@ -20,6 +25,7 @@ function shouldShow(pathname: string) {
 export function MatchaExploreNav() {
   const pathname = usePathname();
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
   const fr = language === "fr";
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
 
@@ -54,24 +60,34 @@ export function MatchaExploreNav() {
   const links = [
     {
       href: "/boutique",
-      label: fr ? "Boutique" : "Shop",
+      label: fr
+        ? settings.matcha_nav_shop_fr || "Boutique"
+        : settings.matcha_nav_shop_en || "Shop",
       active: pathname === "/boutique" || pathname.startsWith("/boutique/"),
     },
     {
       href: "/matcha-nice",
-      label: fr ? "Nice" : "Nice",
+      label: fr
+        ? settings.matcha_nav_nice_fr || "Nice"
+        : settings.matcha_nav_nice_en || "Nice",
       active: pathname === "/matcha-nice",
     },
     {
       href: "/guides",
-      label: fr ? "Guides" : "Guides",
+      label: fr
+        ? settings.matcha_nav_guides_fr || "Guides"
+        : settings.matcha_nav_guides_en || "Guides",
       active: pathname === "/guides" || pathname.startsWith("/guides/"),
     },
-    ...MATCHA_INTENT_SUMMARIES.map((item) => ({
-      href: item.href,
-      label: fr ? item.labelFr : item.labelEn,
-      active: pathname === item.href,
-    })),
+    ...MATCHA_INTENT_SUMMARIES.map((item) => {
+      const configured = configureMatchaIntentSummary(item, settings);
+      return {
+        href: configured.href,
+        label: fr ? configured.labelFr : configured.labelEn,
+        active: pathname === configured.href,
+        hidden: !matchaIntentVisible(item, settings),
+      };
+    }).filter((item) => !item.hidden),
   ];
 
   return (
@@ -82,7 +98,9 @@ export function MatchaExploreNav() {
     >
       <div>
         <span className="matcha-explore-label-v472">
-          {fr ? "Explorer" : "Explore"}
+          {fr
+            ? settings.matcha_explore_label_fr || "Explorer"
+            : settings.matcha_explore_label_en || "Explore"}
         </span>
         <div className="matcha-explore-scroll-v472">
           {links.map((item) => (

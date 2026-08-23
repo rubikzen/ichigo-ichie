@@ -72,3 +72,41 @@ export function getMatchaIntentSummary(
 ) {
   return MATCHA_INTENT_SUMMARIES.find((page) => page.tag === tag) ?? null;
 }
+
+export type MatchaIntentSettings = Record<string, string>;
+
+export function matchaIntentSettingPrefix(tag: MatchaIntentSummary["tag"]) {
+  return `matcha_${tag}`;
+}
+
+function configuredIntentValue(
+  settings: MatchaIntentSettings,
+  key: string,
+  fallback: string,
+) {
+  if (!Object.prototype.hasOwnProperty.call(settings, key)) return fallback;
+  return settings[key] ?? fallback;
+}
+
+export function configureMatchaIntentSummary(
+  summary: MatchaIntentSummary,
+  settings: MatchaIntentSettings,
+): MatchaIntentSummary {
+  const prefix = matchaIntentSettingPrefix(summary.tag);
+  return {
+    ...summary,
+    labelFr: configuredIntentValue(settings, `${prefix}_label_fr`, summary.labelFr),
+    labelEn: configuredIntentValue(settings, `${prefix}_label_en`, summary.labelEn),
+    titleFr: configuredIntentValue(settings, `${prefix}_title_fr`, summary.titleFr),
+    titleEn: configuredIntentValue(settings, `${prefix}_title_en`, summary.titleEn),
+    shortFr: configuredIntentValue(settings, `${prefix}_short_fr`, summary.shortFr),
+    shortEn: configuredIntentValue(settings, `${prefix}_short_en`, summary.shortEn),
+  };
+}
+
+export function matchaIntentVisible(
+  summary: MatchaIntentSummary,
+  settings: MatchaIntentSettings,
+) {
+  return settings[`${matchaIntentSettingPrefix(summary.tag)}_visible`] !== "false";
+}
