@@ -138,7 +138,7 @@ test("V477 sticky save bar exposes dirty state and protects accidental close", (
 
 test("V477 keeps public product recovery visible without inventing a new SEO API in the drawer", () => {
   assert.match(admin, /const publicProductHref/);
-  assert.match(admin, /`\/boutique\/\$\{encodeURIComponent/);
+  assert.ok(admin.includes("productPublicPath(productDraft)"));
   assert.match(admin, /Voir la fiche publique ↗/);
   assert.match(admin, /Pilotage → SEO/);
   assert.doesNotMatch(admin, /fetch\("\/api\/admin\/seo-health/);

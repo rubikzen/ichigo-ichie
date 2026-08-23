@@ -3,6 +3,7 @@ import type {
   Product,
   Variant,
 } from "@/lib/types";
+import { productPublicSlug } from "@/lib/product-url";
 
 export type CommercialIssueLevel = "error" | "warning";
 
@@ -214,7 +215,17 @@ function normalizedComparableCopy(value: unknown) {
 }
 
 const PLACEHOLDER_RE =
-  /(?:\[?\s*(?:à|a)\s+compl[eé]ter\s*\]?|complete this section|before public launch)/i;
+  /(?:\[\s*(?:à|a)\s+compl[eé]ter\s*\]|complete this section|complete before public launch|before public launch|avant la mise en ligne publique|compl[eé]tez ici les d[eé]lais indicatifs)/i;
+
+function firstPublishedEmail(values: string[]) {
+  for (const value of values) {
+    const match = value.match(
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
+    );
+    if (match?.[0]) return match[0];
+  }
+  return "";
+}
 
 export function buildCommercialLaunchReport({
   products,
@@ -246,13 +257,14 @@ export function buildCommercialLaunchReport({
     if (food.blockers.length) blockedFoodProducts += 1;
     issues.push(...food.blockers, ...food.warnings);
 
-    const identity = `${product.name_fr} ${product.slug}`.toLocaleLowerCase("fr");
-    if (/(^|\W)(test|copie|copy)(\W|$)/i.test(identity)) {
+    const publicIdentity =
+      `${product.name_fr} ${product.name_en}`.toLocaleLowerCase("fr");
+    if (/(^|\W)(test|copie|copy)(\W|$)/i.test(publicIdentity)) {
       issues.push(
         simpleIssue(
           "catalog_test_copy_active",
           "error",
-          "Produit actif avec nom/slug de test ou copie",
+          "Produit actif avec un nom public de test ou copie",
           "catalog",
           "products",
           product,
@@ -279,6 +291,31 @@ export function buildCommercialLaunchReport({
           "catalog_image_missing",
           "warning",
           "Aucune image produit",
+          "catalog",
+          "products",
+          product,
+        ),
+      );
+    }
+  }
+
+  const productsByPublicSlug = new Map<string, Product[]>();
+  for (const product of activeProducts) {
+    const publicSlug = productPublicSlug(product);
+    productsByPublicSlug.set(publicSlug, [
+      ...(productsByPublicSlug.get(publicSlug) ?? []),
+      product,
+    ]);
+  }
+
+  for (const [publicSlug, owners] of productsByPublicSlug) {
+    if (owners.length < 2) continue;
+    for (const product of owners) {
+      issues.push(
+        simpleIssue(
+          "catalog_public_slug_collision",
+          "error",
+          `URL publique en conflit : /boutique/${publicSlug}`,
           "catalog",
           "products",
           product,
@@ -356,7 +393,13 @@ export function buildCommercialLaunchReport({
     );
   }
 
-  if (!text(settings.support_email)) {
+  const publishedSupportEmail =
+    text(settings.support_email) ||
+    firstPublishedEmail(
+      legalFields.map(([key]) => text(settings[key])),
+    );
+
+  if (!publishedSupportEmail) {
     issues.push(
       simpleIssue(
         "legal_support_email_missing",

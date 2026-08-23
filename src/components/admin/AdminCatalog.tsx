@@ -15,6 +15,7 @@ import {
 } from "@/lib/product-content";
 import { productSellabilityPreflight } from "@/lib/product-sellability";
 import { foodCommercialPreflight } from "@/lib/commercial-launch";
+import { productPublicPath } from "@/lib/product-url";
 import { useAdminCatalog } from "./useAdminCatalog";
 
 type ProductEditorSection =
@@ -204,10 +205,8 @@ export function AdminCatalog({
           productDraft.image_url,
       );
   const publicProductHref =
-    draftCategory?.kind === "shop" &&
-    productDraft.id &&
-    productDraft.slug.trim()
-      ? `/boutique/${encodeURIComponent(productDraft.slug.trim())}`
+    draftCategory?.kind === "shop" && productDraft.id
+      ? productPublicPath(productDraft)
       : null;
 
   function editorFieldHint(

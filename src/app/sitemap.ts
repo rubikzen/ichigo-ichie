@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
 import { MATCHA_INTENT_SUMMARIES } from "@/lib/matcha-intent-index";
+import { productPublicPath } from "@/lib/product-url";
 
 function siteUrl() {
   return (
@@ -14,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const shop = await getCachedCatalog("shop");
 
   const productPages: MetadataRoute.Sitemap = shop.products.map((product) => ({
-    url: `${base}/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}`,
+    url: `${base}${productPublicPath(product)}`,
     changeFrequency: "daily",
     priority: 0.8,
   }));

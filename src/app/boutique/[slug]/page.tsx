@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getCachedCatalog } from "@/lib/catalog-server";
 import { ProductPageContent } from "@/components/ProductPageContent";
 import type { Product, Variant } from "@/lib/types";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
 import { getProductReviewSeoSnapshot } from "@/lib/product-review-seo";
+import {
+  normalizeProductSlug,
+  productPublicPath,
+  productPublicSlug,
+} from "@/lib/product-url";
 
 export const revalidate = 30;
 
@@ -26,11 +31,11 @@ function absoluteUrl(value: string | null | undefined) {
 }
 
 function normalizedSlug(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeProductSlug(value);
 }
 
 function productPath(product: Product) {
-  return `/boutique/${encodeURIComponent(normalizedSlug(product.slug))}`;
+  return productPublicPath(product);
 }
 
 async function getProductContext(slug: string) {
@@ -38,7 +43,9 @@ async function getProductContext(slug: string) {
   const requestedSlug = normalizedSlug(slug);
   const product =
     catalog.products.find(
-      (item) => normalizedSlug(item.slug) === requestedSlug,
+      (item) =>
+        normalizedSlug(item.slug) === requestedSlug ||
+        productPublicSlug(item) === requestedSlug,
     ) ?? null;
   const category = product
     ? catalog.categories.find((item) => item.id === product.category_id) ?? null
@@ -96,9 +103,18 @@ function productOffers(product: Product) {
 
 export async function generateStaticParams() {
   const catalog = await getCachedCatalog("shop");
-  return catalog.products.map((product) => ({
+  const storedSlugs = catalog.products.map((product) => ({
     slug: normalizedSlug(product.slug),
   }));
+  const publicSlugs = catalog.products.map((product) => ({
+    slug: productPublicSlug(product),
+  }));
+
+  return Array.from(
+    new Map(
+      [...storedSlugs, ...publicSlugs].map((item) => [item.slug, item]),
+    ).values(),
+  );
 }
 
 export async function generateMetadata({
@@ -146,6 +162,12 @@ export default async function ProductPage({ params }: ProductPageParams) {
   const { product, category } = await getProductContext(slug);
 
   if (!product) notFound();
+
+  const requestedSlug = normalizedSlug(slug);
+  const canonicalSlug = productPublicSlug(product);
+  if (requestedSlug !== canonicalSlug) {
+    permanentRedirect(productPath(product));
+  }
 
   const path = productPath(product);
   const description = productDescription(product);

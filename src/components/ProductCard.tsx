@@ -13,6 +13,7 @@ import { RestockNotify } from "./RestockNotify";
 import { trackConversion } from "@/lib/conversion-analytics";
 import { matchaFinderLabel, productMatchaFinderTags } from "@/lib/product-merchandising";
 import { useProductReviewSummary } from "./ReviewSummaryProvider";
+import { productPublicPath } from "@/lib/product-url";
 
 const moneyFormatters = {
   fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
@@ -445,7 +446,7 @@ function ProductCardStateful({ product }: { product: Product }) {
             </button>
             <Link
               className="product-title-link-v4792"
-              href={`/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}`}
+              href={productPublicPath(product)}
               aria-label={language === "fr" ? `Voir ${name}` : `View ${name}`}
             >
               {name}
@@ -469,7 +470,7 @@ function ProductCardStateful({ product }: { product: Product }) {
 
         <Link
           className="product-permalink-v431"
-          href={`/boutique/${encodeURIComponent(product.slug.trim().toLowerCase())}`}
+          href={productPublicPath(product)}
         >
           <span>{language === "fr" ? "Voir la page produit" : "View product page"}</span>
           <span aria-hidden="true">→</span>

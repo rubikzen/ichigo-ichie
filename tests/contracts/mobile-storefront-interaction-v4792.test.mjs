@@ -70,10 +70,7 @@ test("V479.2 adds a canonical title link while preserving the historical modal t
   assert.match(card, /className="product-title-button-v415"/);
   assert.match(card, /openProductDetails\(event\.currentTarget\)/);
   assert.match(card, /className="product-title-link-v4792"/);
-  assert.match(
-    card,
-    /href=\{`\/boutique\/\$\{encodeURIComponent\(product\.slug\.trim\(\)\.toLowerCase\(\)\)\}`\}/,
-  );
+  assert.match(card, /href=\{productPublicPath\(product\)\}/);
 });
 
 test("V479.2 mobile two-column homepage cards use title as product-page entry and remove duplicate permalink line", () => {

@@ -54,10 +54,11 @@ test("dedicated product page reuses ProductCard instead of duplicating purchase 
 
 test("storefront cards expose permanent product links and sitemap lists them", () => {
   assert.match(card, /className="product-permalink-v431"/);
-  assert.match(card, /product\.slug\.trim\(\)\.toLowerCase\(\)/);
+  assert.match(card, /productPublicPath\(product\)/);
   assert.match(sitemap, /getCachedCatalog\("shop"\)/);
-  assert.match(sitemap, /product\.slug\.trim\(\)\.toLowerCase\(\)/);
+  assert.match(sitemap, /productPublicPath\(product\)/);
   assert.match(route, /slug: normalizedSlug\(product\.slug\)/);
+  assert.match(route, /slug: productPublicSlug\(product\)/);
   assert.match(sitemap, /priority: 0\.8/);
 });
 
