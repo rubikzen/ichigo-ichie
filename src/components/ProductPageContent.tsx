@@ -53,6 +53,35 @@ export function ProductPageContent({
   const activeImage =
     gallery[Math.min(imageIndex, gallery.length - 1)] ||
     "/product-placeholder.svg";
+  const foodInfo = product.food_info ?? {};
+  const variantNetQuantities = [
+    ...new Set(
+      product.variants
+        .filter((variant) => variant.active)
+        .map((variant) => String(variant.weight ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const foodNetQuantity =
+    String(foodInfo.net_quantity ?? "").trim() ||
+    variantNetQuantities.join(" · ");
+  const hasFoodInformation =
+    product.type === "product" &&
+    Boolean(
+      foodInfo.legal_name_fr ||
+        foodInfo.legal_name_en ||
+        foodInfo.ingredients_fr ||
+        foodInfo.ingredients_en ||
+        foodInfo.allergens_fr ||
+        foodInfo.allergens_en ||
+        foodNetQuantity ||
+        foodInfo.storage_fr ||
+        foodInfo.storage_en ||
+        foodInfo.operator_fr ||
+        foodInfo.operator_en ||
+        foodInfo.preparation_fr ||
+        foodInfo.preparation_en,
+    );
 
   return (
     <main
@@ -278,6 +307,129 @@ export function ProductPageContent({
                     {product.ideal_for.map((item) => (
                       <span key={item}>{item}</span>
                     ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        )}
+
+        {hasFoodInformation && (
+          <section
+            className="product-page-food-v483"
+            aria-labelledby="product-page-food-title-v483"
+            data-product-food-info-v483
+          >
+            <div className="product-page-section-heading-v480">
+              <p className="eyebrow">
+                {language === "fr"
+                  ? "INFORMATIONS ALIMENTAIRES"
+                  : "FOOD INFORMATION"}
+              </p>
+              <h2 id="product-page-food-title-v483">
+                {language === "fr"
+                  ? "Informations avant achat"
+                  : "Information before purchase"}
+              </h2>
+            </div>
+
+            <dl className="product-page-food-grid-v483">
+              {(language === "fr"
+                ? foodInfo.legal_name_fr
+                : foodInfo.legal_name_en || foodInfo.legal_name_fr) && (
+                <div>
+                  <dt>{language === "fr" ? "Dénomination" : "Legal name"}</dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.legal_name_fr
+                      : foodInfo.legal_name_en || foodInfo.legal_name_fr}
+                  </dd>
+                </div>
+              )}
+
+              {foodNetQuantity && (
+                <div>
+                  <dt>{language === "fr" ? "Quantité nette" : "Net quantity"}</dt>
+                  <dd>{foodNetQuantity}</dd>
+                </div>
+              )}
+
+              {product.origin && (
+                <div>
+                  <dt>{language === "fr" ? "Origine" : "Origin"}</dt>
+                  <dd>{product.origin}</dd>
+                </div>
+              )}
+
+              {(language === "fr"
+                ? foodInfo.ingredients_fr
+                : foodInfo.ingredients_en || foodInfo.ingredients_fr) && (
+                <div className="wide">
+                  <dt>{language === "fr" ? "Ingrédients" : "Ingredients"}</dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.ingredients_fr
+                      : foodInfo.ingredients_en || foodInfo.ingredients_fr}
+                  </dd>
+                </div>
+              )}
+
+              {(language === "fr"
+                ? foodInfo.allergens_fr
+                : foodInfo.allergens_en || foodInfo.allergens_fr) && (
+                <div className="wide">
+                  <dt>{language === "fr" ? "Allergènes" : "Allergens"}</dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.allergens_fr
+                      : foodInfo.allergens_en || foodInfo.allergens_fr}
+                  </dd>
+                </div>
+              )}
+
+              {(language === "fr"
+                ? foodInfo.storage_fr
+                : foodInfo.storage_en || foodInfo.storage_fr) && (
+                <div className="wide">
+                  <dt>{language === "fr" ? "Conservation" : "Storage"}</dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.storage_fr
+                      : foodInfo.storage_en || foodInfo.storage_fr}
+                  </dd>
+                </div>
+              )}
+
+              {(language === "fr"
+                ? foodInfo.operator_fr
+                : foodInfo.operator_en || foodInfo.operator_fr) && (
+                <div className="wide">
+                  <dt>
+                    {language === "fr"
+                      ? "Opérateur responsable"
+                      : "Responsible operator"}
+                  </dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.operator_fr
+                      : foodInfo.operator_en || foodInfo.operator_fr}
+                  </dd>
+                </div>
+              )}
+
+              {(language === "fr"
+                ? foodInfo.preparation_fr
+                : foodInfo.preparation_en || foodInfo.preparation_fr) && (
+                <div className="wide">
+                  <dt>
+                    {language === "fr"
+                      ? "Utilisation / préparation"
+                      : "Use / preparation"}
+                  </dt>
+                  <dd>
+                    {language === "fr"
+                      ? foodInfo.preparation_fr
+                      : foodInfo.preparation_en || foodInfo.preparation_fr}
                   </dd>
                 </div>
               )}

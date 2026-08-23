@@ -14,12 +14,14 @@ import {
   safeContentFixCount,
 } from "@/lib/product-content";
 import { productSellabilityPreflight } from "@/lib/product-sellability";
+import { foodCommercialPreflight } from "@/lib/commercial-launch";
 import { useAdminCatalog } from "./useAdminCatalog";
 
 type ProductEditorSection =
   | "essential"
   | "sale"
   | "content"
+  | "food"
   | "photos"
   | "quality"
   | "advanced";
@@ -31,6 +33,7 @@ const PRODUCT_EDITOR_SECTIONS: Array<{
   { id: "essential", label: "Essentiel" },
   { id: "sale", label: "Vente" },
   { id: "content", label: "Contenu" },
+  { id: "food", label: "Infos alimentaires" },
   { id: "photos", label: "Photos" },
   { id: "quality", label: "SEO & qualité" },
   { id: "advanced", label: "Avancé" },
@@ -60,6 +63,7 @@ function productDraftFingerprint(product: AdminProduct) {
     ideal_for: (product.ideal_for ?? []).map((value) =>
       String(value).trim(),
     ),
+    food_info: product.food_info ?? {},
     shipping_weight_g: Number(product.shipping_weight_g || 0),
   });
 }
@@ -129,6 +133,11 @@ export function AdminCatalog({
     : null;
   const draftSellabilityBlockers = draftSellability?.blockers ?? [];
   const draftSellabilityWarnings = draftSellability?.warnings ?? [];
+  const draftCommercial = draftCategory?.kind === "shop"
+    ? foodCommercialPreflight(productDraft, selectedVariants)
+    : null;
+  const draftCommercialBlockers = draftCommercial?.blockers ?? [];
+  const draftCommercialWarnings = draftCommercial?.warnings ?? [];
   const draftCompletion = draftCategory?.kind === "shop"
     ? productContentCompletion({ ...productDraft, kind: "shop" })
     : null;
@@ -292,12 +301,17 @@ export function AdminCatalog({
       kind === "shop"
         ? productSellabilityPreflight(product, productVariants)
         : null;
+    const commercial =
+      kind === "shop"
+        ? foodCommercialPreflight(product, productVariants)
+        : null;
 
     if (
       !product.active &&
       kind === "shop" &&
       (productContentIssues(product).length > 0 ||
-        Boolean(sellability?.blockers.length))
+        Boolean(sellability?.blockers.length) ||
+        Boolean(commercial?.blockers.length))
     ) {
       chooseProduct(product);
       return;
@@ -1048,12 +1062,326 @@ export function AdminCatalog({
             </section>
 
             <section
+              className="product-editor-section-v477 product-editor-food-v483"
+              id="product-editor-food-v477"
+              data-product-food-editor-v483
+            >
+              <div className="product-editor-section-head-v477">
+                <div>
+                  <span>04</span>
+                  <div>
+                    <h3>Informations alimentaires</h3>
+                    <p>
+                      Obligatoires avant la vente en ligne pour les produits
+                      alimentaires préemballés. Vérifiez toujours le texte avec
+                      l’étiquette réelle du produit.
+                    </p>
+                  </div>
+                </div>
+                {draftCategory?.kind === "shop" &&
+                productDraft.type === "product" ? (
+                  <span
+                    className={`product-commercial-status-v483 ${
+                      draftCommercialBlockers.length ? "blocked" : "ready"
+                    }`}
+                  >
+                    {draftCommercialBlockers.length
+                      ? `${draftCommercialBlockers.length} à compléter`
+                      : "Prêt"}
+                  </span>
+                ) : (
+                  <span className="product-commercial-status-v483 optional">
+                    Non requis
+                  </span>
+                )}
+              </div>
+
+              {draftCategory?.kind === "shop" &&
+              productDraft.type === "product" ? (
+                <>
+                  {draftCommercialBlockers.length > 0 && (
+                    <div className="product-commercial-alert-v483 blocked">
+                      <strong>Publication commerciale bloquée</strong>
+                      <ul>
+                        {draftCommercialBlockers.map((issue) => (
+                          <li key={issue.code}>{issue.label}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {draftCommercialWarnings.length > 0 && (
+                    <div className="product-commercial-alert-v483 warning">
+                      <strong>À améliorer</strong>
+                      <ul>
+                        {draftCommercialWarnings.map((issue) => (
+                          <li key={issue.code}>{issue.label}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="form-grid">
+                    <label>
+                      Dénomination légale · FR
+                      <input
+                        value={productDraft.food_info?.legal_name_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              legal_name_fr: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ex. Thé vert matcha en poudre"
+                      />
+                    </label>
+                    <label>
+                      Legal name · EN
+                      <input
+                        value={productDraft.food_info?.legal_name_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              legal_name_en: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ex. Powdered green tea (matcha)"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Ingrédients · FR
+                      <textarea
+                        rows={4}
+                        value={productDraft.food_info?.ingredients_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              ingredients_fr: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Ingredients · EN
+                      <textarea
+                        rows={4}
+                        value={productDraft.food_info?.ingredients_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              ingredients_en: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Allergènes · FR
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.allergens_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              allergens_fr: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Renseignez le texte exact de l’étiquette."
+                      />
+                    </label>
+                    <label>
+                      Allergens · EN
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.allergens_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              allergens_en: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Quantité nette
+                      <input
+                        value={productDraft.food_info?.net_quantity ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              net_quantity: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ex. 30 g · laissez vide si tous les formats ont un poids"
+                      />
+                    </label>
+                    <label>
+                      Origine
+                      <input value={productDraft.origin ?? ""} readOnly />
+                      <small>
+                        Modifiez l’origine dans la section Contenu. Elle fait
+                        partie du contrôle commercial.
+                      </small>
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Conservation · FR
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.storage_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              storage_fr: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Storage · EN
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.storage_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              storage_en: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Opérateur responsable / adresse · FR
+                      <textarea
+                        rows={4}
+                        value={productDraft.food_info?.operator_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              operator_fr: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Nom ou raison sociale + adresse figurant sur l’étiquette"
+                      />
+                    </label>
+                    <label>
+                      Responsible operator / address · EN
+                      <textarea
+                        rows={4}
+                        value={productDraft.food_info?.operator_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              operator_en: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      Utilisation / préparation · FR
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.preparation_fr ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              preparation_fr: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Use / preparation · EN
+                      <textarea
+                        rows={3}
+                        value={productDraft.food_info?.preparation_en ?? ""}
+                        onChange={(e) =>
+                          setProductDraft({
+                            ...productDraft,
+                            food_info: {
+                              ...(productDraft.food_info ?? {}),
+                              preparation_en: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <p className="product-commercial-note-v483">
+                    V483 ne génère ni ne devine ces informations. Recopiez les
+                    données validées de l’étiquette ou de votre documentation
+                    fournisseur.
+                  </p>
+                </>
+              ) : (
+                <p className="product-commercial-note-v483">
+                  Cette section est activée pour les produits alimentaires de la
+                  Boutique. Les accessoires et les articles de la Carte ne sont
+                  pas bloqués par ce contrôle.
+                </p>
+              )}
+            </section>
+
+            <section
               className="product-editor-section-v477"
               id="product-editor-photos-v477"
             >
               <div className="product-editor-section-head-v477">
                 <div>
-                  <span>04</span>
+                  <span>05</span>
                   <div>
                     <h3>Photos</h3>
                     <p>
@@ -1084,7 +1412,7 @@ export function AdminCatalog({
             >
               <div className="product-editor-section-head-v477">
                 <div>
-                  <span>05</span>
+                  <span>06</span>
                   <div>
                     <h3>SEO & qualité</h3>
                     <p>
@@ -1345,7 +1673,7 @@ export function AdminCatalog({
             >
               <div className="product-editor-section-head-v477">
                 <div>
-                  <span>06</span>
+                  <span>07</span>
                   <div>
                     <h3>Avancé</h3>
                     <p>

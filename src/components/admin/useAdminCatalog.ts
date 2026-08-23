@@ -10,6 +10,10 @@ import {
 } from "@/lib/product-content";
 import { productSellabilityPreflight } from "@/lib/product-sellability";
 import {
+  foodCommercialPreflight,
+  normalizedFoodInformation,
+} from "@/lib/commercial-launch";
+import {
   blankProduct,
   inferProductPreset,
   slugify,
@@ -129,7 +133,11 @@ export function useAdminCatalog(
     )?.kind;
     if (kind === "menu" || kind === "shop") setCatalogZone(kind);
     setSelectedId(product.id);
-    setProductDraft({ ...product, ideal_for: product.ideal_for ?? [] });
+    setProductDraft({
+      ...product,
+      ideal_for: product.ideal_for ?? [],
+      food_info: normalizedFoodInformation(product.food_info),
+    });
   }
 
   function changeDraftCategory(categoryId: string) {
@@ -197,6 +205,7 @@ export function useAdminCatalog(
       sort_order: Number(productDraft.sort_order),
       image_url: productDraft.image_url || null,
       ideal_for: normalizeIdealFor(productDraft.ideal_for),
+      food_info: normalizedFoodInformation(productDraft.food_info),
       shipping_weight_g: Number(productDraft.shipping_weight_g || 0),
     };
 
@@ -228,6 +237,18 @@ export function useAdminCatalog(
         setSaving(false);
         setMessage(
           `Publication bloquée · ${sellability.blockers.length} point${sellability.blockers.length > 1 ? "s" : ""} de vente à corriger.`,
+        );
+        return null;
+      }
+
+      const commercial = foodCommercialPreflight(
+        { ...productDraft, ...payload },
+        variants.filter((variant) => variant.product_id === productDraft.id),
+      );
+      if (commercial.blockers.length > 0) {
+        setSaving(false);
+        setMessage(
+          `Publication bloquée · ${commercial.blockers.length} information${commercial.blockers.length > 1 ? "s" : ""} commerciale${commercial.blockers.length > 1 ? "s" : ""} à compléter.`,
         );
         return null;
       }
@@ -356,6 +377,7 @@ export function useAdminCatalog(
           .length + 1,
       image_url: product.image_url,
       ideal_for: product.ideal_for ?? [],
+      food_info: normalizedFoodInformation(product.food_info),
       shipping_weight_g: Number(product.shipping_weight_g || 0),
     };
 

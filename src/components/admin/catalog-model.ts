@@ -1,4 +1,4 @@
-import type { Category, ProductType } from "@/lib/types";
+import type { Category, FoodInformation, ProductType } from "@/lib/types";
 
 export type AdminProduct = {
   id: string;
@@ -22,6 +22,7 @@ export type AdminProduct = {
   sort_order: number;
   image_url: string | null;
   ideal_for: string[];
+  food_info: FoodInformation;
   shipping_weight_g: number;
 };
 
@@ -47,6 +48,7 @@ export const blankProduct: AdminProduct = {
   sort_order: 1,
   image_url: "",
   ideal_for: [],
+  food_info: {},
   shipping_weight_g: 0,
 };
 

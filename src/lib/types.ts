@@ -49,6 +49,22 @@ export type OptionGroup = {
   values: OptionValue[];
 };
 
+export type FoodInformation = {
+  legal_name_fr?: string;
+  legal_name_en?: string;
+  ingredients_fr?: string;
+  ingredients_en?: string;
+  allergens_fr?: string;
+  allergens_en?: string;
+  net_quantity?: string;
+  storage_fr?: string;
+  storage_en?: string;
+  operator_fr?: string;
+  operator_en?: string;
+  preparation_fr?: string;
+  preparation_en?: string;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -72,6 +88,7 @@ export type Product = {
   image_url?: string | null;
   images?: ProductImage[];
   ideal_for: string[];
+  food_info?: FoodInformation | null;
   variants: Variant[];
   option_groups: OptionGroup[];
 };
