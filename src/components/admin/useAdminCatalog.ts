@@ -255,22 +255,48 @@ export function useAdminCatalog(
     }
 
     if (productDraft.id) {
-      const { error } = await supabase
+      const { data: persistedRow, error } = await supabase
         .from("products")
         .update(payload)
-        .eq("id", productDraft.id);
+        .eq("id", productDraft.id)
+        .select("*")
+        .single();
 
-      setSaving(false);
       if (error) {
+        setSaving(false);
         setMessage(error.message);
         return null;
       }
 
-      const restock = await processRestock(productDraft.id);
-      setMessage(savedWithRestock(restock?.sent ?? 0));
-      await loadProducts();
-      const savedProduct = { ...productDraft, ...payload } as AdminProduct;
+      if (!persistedRow) {
+        setSaving(false);
+        setMessage("Enregistrement impossible.");
+        return null;
+      }
+
+      const savedProduct = {
+        ...(persistedRow as AdminProduct),
+        ideal_for: persistedRow.ideal_for ?? [],
+        food_info: normalizedFoodInformation(persistedRow.food_info),
+      } as AdminProduct;
+
+      // The editor baseline and draft must come from the exact persisted row.
+      // Never reconstruct a "saved" object from pre-save client state: database
+      // normalization can otherwise make a successful save appear dirty.
+      setProducts((current) =>
+        current.map((product) =>
+          product.id === savedProduct.id ? savedProduct : product,
+        ),
+      );
       setProductDraft(savedProduct);
+      setSaving(false);
+
+      const restock = await processRestock(savedProduct.id);
+      setMessage(savedWithRestock(restock?.sent ?? 0));
+
+      // Keep the wider catalogue synchronized as before. The returned row above
+      // already cleared the editor dirty state before this background refresh.
+      await loadProducts();
       return savedProduct;
     }
 
