@@ -12817,3 +12817,263 @@
     margin-top: 8px !important;
   }
 }
+
+
+/* V480.2 — Balanced mobile product-card slots */
+
+/*
+  V480.1 correctly removed whole-card stretching. V480.2 keeps that compact
+  behavior but gives the information area predictable semantic rows:
+  title/price, optional rating, usage, format+stock, CTA.
+  Missing content leaves only its small reserved slot rather than stretching
+  arbitrary whitespace through the card.
+*/
+@media (min-width: 360px) and (max-width: 820px) {
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-copy {
+    display: grid !important;
+    grid-template-rows: 40px 16px 22px minmax(56px, auto) minmax(48px, auto);
+    row-gap: 5px;
+    flex: 0 0 auto !important;
+    align-content: start;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-title-row {
+    grid-row: 1;
+    min-height: 0 !important;
+    height: 40px;
+    align-items: start !important;
+    overflow: hidden;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-title-row h3 {
+    display: -webkit-box;
+    max-height: 40px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-price {
+    align-self: start;
+    white-space: nowrap;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-rating-v4661 {
+    grid-row: 2;
+    align-self: center;
+    min-height: 0;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-merchandising-v462 {
+    grid-row: 3;
+    min-height: 22px;
+    margin: 0 !important;
+    align-self: start;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-meta {
+    grid-row: 4;
+    display: grid !important;
+    grid-template-rows: 30px 20px auto;
+    gap: 3px !important;
+    min-height: 56px !important;
+    margin: 0 !important;
+    align-content: start;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-chips {
+    grid-row: 1;
+    align-self: start;
+    min-height: 30px;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-stock-card {
+    grid-row: 2;
+    align-self: center;
+    min-height: 20px !important;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-cart-stock-note {
+    grid-row: 3;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-card-cta {
+    grid-row: 5;
+    align-self: end;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    > .product-copy
+    > .restock-notify-v425 {
+    grid-row: 5;
+    align-self: end;
+    min-height: 48px;
+    margin-top: 0 !important;
+  }
+}
+
+@media (min-width: 360px) and (max-width: 640px) {
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-copy {
+    display: grid !important;
+    grid-template-rows: 40px 16px 22px minmax(56px, auto) minmax(48px, auto);
+    row-gap: 5px;
+    flex: 0 0 auto !important;
+    align-content: start;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-title-row {
+    grid-row: 1;
+    min-height: 0 !important;
+    height: 40px;
+    align-items: start !important;
+    overflow: hidden;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-title-row h3 {
+    display: -webkit-box;
+    max-height: 40px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-price {
+    align-self: start;
+    white-space: nowrap;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-rating-v4661 {
+    grid-row: 2;
+    align-self: center;
+    min-height: 0;
+    margin: 0 !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-merchandising-v462 {
+    grid-row: 3;
+    min-height: 22px;
+    margin: 0 !important;
+    align-self: start;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-meta {
+    grid-row: 4;
+    display: grid !important;
+    grid-template-rows: 30px 20px auto;
+    gap: 3px !important;
+    min-height: 56px !important;
+    margin: 0 !important;
+    align-content: start;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-chips {
+    grid-row: 1;
+    align-self: start;
+    min-height: 30px;
+    margin: 0 !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-stock-card {
+    grid-row: 2;
+    align-self: center;
+    min-height: 20px !important;
+    margin: 0 !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-cart-stock-note {
+    grid-row: 3;
+    margin: 0 !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-card-cta {
+    grid-row: 5;
+    align-self: end;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    > .product-copy
+    > .restock-notify-v425 {
+    grid-row: 5;
+    align-self: end;
+    min-height: 48px;
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 359px) {
+  .onepage-catalog-shop
+    .onepage-product-grid
+    .product-card.product-card-compact
+    .product-copy,
+  .shop-collection-grid-v473
+    .product-card.product-card-compact
+    .product-copy {
+    display: flex !important;
+  }
+}
