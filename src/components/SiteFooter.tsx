@@ -57,6 +57,9 @@ export function SiteFooter() {
         <strong>{t("footer_legal_title_fr", "footer_legal_title_en")}</strong>
         <Link href="/mentions-legales">{t("legal_notice_label_fr", "legal_notice_label_en")}</Link>
         <Link href="/cgv">{t("terms_label_fr", "terms_label_en")}</Link>
+        <Link href="/retractation">
+          {language === "fr" ? "Renoncer au contrat ici" : "Withdraw from contract"}
+        </Link>
         <Link href="/confidentialite">{t("privacy_label_fr", "privacy_label_en")}</Link>
         <Link href="/livraison-retours">{t("shipping_returns_label_fr", "shipping_returns_label_en")}</Link>
       </div>

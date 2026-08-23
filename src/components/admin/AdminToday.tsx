@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CommercialLaunchAdmin } from "./CommercialLaunchAdmin";
+import { WithdrawalAdmin } from "./WithdrawalAdmin";
 
 export type AdminArea =
   | "today"
@@ -296,6 +297,8 @@ export function AdminToday({
         supabase={supabase}
         onNavigate={onNavigate}
       />
+
+      <WithdrawalAdmin supabase={supabase} />
 
       <section className="admin-today-shortcuts-v476">
         <div className="admin-today-section-title-v476">
