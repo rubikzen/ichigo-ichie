@@ -9,6 +9,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 const page = src("src/app/page.tsx");
 const compact = src("src/lib/home-catalog.ts");
 const shopProjection = compact.slice(compact.indexOf("export function compactShopProductForHome"));
+const trafficAnalytics = src("src/components/VercelTrafficAnalytics.tsx");
 
 test("V491 compacts shop products before they cross the homepage server/client boundary", () => {
   assert.match(page, /compactShopProductForHome/);
@@ -27,4 +28,13 @@ test("V491 keeps storefront interactions while removing backend-only shop payloa
   assert.doesNotMatch(shopProjection, /sku: variant\.sku/);
   assert.doesNotMatch(shopProjection, /shipping_weight_g: variant\.shipping_weight_g/);
   assert.doesNotMatch(shopProjection, /image_url: variant\.image_url/);
+});
+
+test("V491 keeps first-party traffic immediate while deferring the secondary Vercel script", () => {
+  assert.match(trafficAnalytics, /recordFirstPartyPageview\(currentPath\)/);
+  assert.match(trafficAnalytics, /requestIdleCallback\(appendScript, \{ timeout: 1500 \}\)/);
+  assert.match(trafficAnalytics, /setTimeout\(appendScript, 600\)/);
+  assert.match(trafficAnalytics, /document\.readyState === "complete"/);
+  assert.match(trafficAnalytics, /addEventListener\("load", scheduleScript/);
+  assert.match(trafficAnalytics, /script\.src = "\/_vercel\/insights\/script\.js"/);
 });
