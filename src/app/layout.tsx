@@ -64,6 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = settings.seo_title || "Ichigo Ichie | Matcha japonais à Nice";
   const description = settings.seo_description || "Maison de matcha japonais dans le Vieux Nice : matcha latte, boissons japonaises, matcha cérémonie et accessoires. Découvrez notre carte et notre boutique en ligne.";
   const previewImage = absoluteUrl(settings.home_hero_image_url, "/brand-mark.svg");
+  const favicon = settings.brand_logo_url?.trim() || "/brand-mark.svg";
   const googleVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim();
 
   return {
@@ -86,7 +87,7 @@ export async function generateMetadata(): Promise<Metadata> {
     publisher: brand,
     alternates: { canonical: "/" },
     formatDetection: { email: false, address: false, telephone: false },
-    icons: { icon: "/brand-mark.svg", shortcut: "/brand-mark.svg", apple: "/brand-mark.svg" },
+    icons: { icon: favicon, shortcut: favicon, apple: favicon },
     ...(googleVerification ? { verification: { google: googleVerification } } : {}),
     openGraph: {
       type: "website",
