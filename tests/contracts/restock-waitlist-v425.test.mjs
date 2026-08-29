@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 const notify = readFileSync(resolve(root, "src/components/RestockNotify.tsx"), "utf8");
 const api = readFileSync(resolve(root, "src/app/api/restock/subscribe/route.ts"), "utf8");
 const migration = readFileSync(resolve(root, "supabase/migrations/20260815184000_restock_waitlist.sql"), "utf8");
@@ -42,8 +43,8 @@ test("sold-out storefront cards replace dead unavailable CTA with a restock acti
 });
 
 test("sold-out modal also offers the same restock action without restoring its price", () => {
-  assert.match(product, /\) : !hasStock \? \([\s\S]*?<RestockNotify/);
-  assert.match(product, /context="modal"/);
+  assert.match(modal, /\) : !hasStock \? \([\s\S]*?<RestockNotify/);
+  assert.match(modal, /context="modal"/);
   assert.match(v423, /exposes restock recovery/);
 });
 
