@@ -37,6 +37,10 @@
     "eslint-config-next": "16.2.12",
     "typescript": "6.0.3"
   },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
+  },
   "engines": {
     "node": "24.x"
   }
