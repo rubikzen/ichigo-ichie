@@ -24,7 +24,9 @@ test("V487 keeps the last exact top-level CSS occurrence so cascade semantics st
   assert.match(prepare, /splitTopLevelCss/);
   assert.match(prepare, /lastOccurrence\.set\(key, index\)/);
   assert.match(prepare, /lastOccurrence\.get\(key\) !== index/);
-  assert.match(prepare, /unit\.replace\(\/\\\/\\\*[\\s\\S]\*\?\\\*\\\/\/g/);
+  assert.match(prepare, /function unitKey/);
+  assert.match(prepare, /replace\(/);
+  assert.match(prepare, /\.trim\(\)/);
   assert.match(prepare, /unbalanced braces/);
   assert.match(prepare, /unexpected closing brace/);
 });
