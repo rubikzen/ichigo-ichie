@@ -5,8 +5,6 @@ const PERIODS = new Set([7, 30]);
 
 type TrafficRow = {
   session_id: string;
-  occurred_at: string;
-  path: string;
   variant_id: string | null;
   transaction_ref: string | null;
 };
@@ -36,18 +34,28 @@ export async function GET(request: Request) {
     const days = PERIODS.has(requestedDays) ? requestedDays : 30;
     const until = new Date();
     const since = new Date(until.getTime() - days * 86_400_000);
+    const sinceIso = since.toISOString();
 
-    const { data, error } = await supabase
-      .from("conversion_events")
-      .select("session_id,occurred_at,path,variant_id,transaction_ref")
-      .eq("event", "product_view")
-      .is("product_id", null)
-      .like("session_id", "traffic-%")
-      .gte("occurred_at", since.toISOString())
-      .order("occurred_at", { ascending: true })
-      .limit(20_000);
+    const [trafficResult, clickResult] = await Promise.all([
+      supabase
+        .from("conversion_events")
+        .select("session_id,variant_id,transaction_ref")
+        .eq("event", "product_view")
+        .is("product_id", null)
+        .like("session_id", "traffic-%")
+        .gte("occurred_at", sinceIso)
+        .limit(20_000),
+      supabase
+        .from("conversion_events")
+        .select("session_id,product_id")
+        .eq("event", "product_view")
+        .eq("source", "product_modal")
+        .not("product_id", "is", null)
+        .gte("occurred_at", sinceIso)
+        .limit(20_000),
+    ]);
 
-    if (error) {
+    if (trafficResult.error) {
       return NextResponse.json(
         {
           available: false,
@@ -60,7 +68,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const rows = (data ?? []) as TrafficRow[];
+    const rows = (trafficResult.data ?? []) as TrafficRow[];
     const pageviews = rows.length;
     const visits = new Set(rows.map((row) => row.session_id)).size;
 
@@ -104,20 +112,13 @@ export async function GET(request: Request) {
       .sort((a, b) => b.visits - a.visits || b.pageviews - a.pageviews)
       .slice(0, 10);
 
-    const { data: clickData, error: clickError } = await supabase
-      .from("conversion_events")
-      .select("session_id,product_id")
-      .eq("event", "product_view")
-      .eq("source", "product_modal")
-      .not("product_id", "is", null)
-      .gte("occurred_at", since.toISOString())
-      .limit(20_000);
-
-    if (clickError) {
-      console.warn("Admin product click analytics unavailable", clickError.message);
+    if (clickResult.error) {
+      console.warn("Admin product click analytics unavailable", clickResult.error.message);
     }
 
-    const clickRows = (clickError ? [] : clickData ?? []) as ProductClickRow[];
+    const clickRows = (
+      clickResult.error ? [] : clickResult.data ?? []
+    ) as ProductClickRow[];
     const clickBuckets = new Map<
       string,
       { clicks: number; sessions: Set<string> }
@@ -135,7 +136,16 @@ export async function GET(request: Request) {
       clickBuckets.set(productId, bucket);
     }
 
-    const productIds = [...clickBuckets.keys()].slice(0, 100);
+    const totalProductClicks = clickRows.length;
+    const rankedProductClicks = [...clickBuckets.entries()]
+      .sort(
+        (a, b) =>
+          b[1].clicks - a[1].clicks ||
+          b[1].sessions.size - a[1].sessions.size,
+      )
+      .slice(0, 10);
+
+    const productIds = rankedProductClicks.map(([productId]) => productId);
     const productNames = new Map<string, string>();
     if (productIds.length) {
       const { data: products } = await supabase
@@ -150,27 +160,23 @@ export async function GET(request: Request) {
       }
     }
 
-    const totalProductClicks = clickRows.length;
-    const topProductClicks = [...clickBuckets.entries()]
-      .map(([productId, bucket]) => ({
-        productId,
-        name: productNames.get(productId) || "Produit",
-        clicks: bucket.clicks,
-        sessions: bucket.sessions.size,
-        share:
-          totalProductClicks > 0
-            ? (bucket.clicks / totalProductClicks) * 100
-            : 0,
-      }))
-      .sort((a, b) => b.clicks - a.clicks || b.sessions - a.sessions)
-      .slice(0, 10);
+    const topProductClicks = rankedProductClicks.map(([productId, bucket]) => ({
+      productId,
+      name: productNames.get(productId) || "Produit",
+      clicks: bucket.clicks,
+      sessions: bucket.sessions.size,
+      share:
+        totalProductClicks > 0
+          ? (bucket.clicks / totalProductClicks) * 100
+          : 0,
+    }));
 
     return NextResponse.json(
       {
         available: true,
         source: "first_party",
         periodDays: days,
-        since: since.toISOString(),
+        since: sinceIso,
         until: until.toISOString(),
         visits,
         pageviews,
