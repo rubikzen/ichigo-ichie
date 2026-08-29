@@ -2,125 +2,59 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 
 const PERIODS = new Set([7, 30]);
-const DEFAULT_PROJECT_ID = "prj_XFGEhBxRHx4j8MrvKWi18MnPjbnR";
-const DEFAULT_TEAM_ID = "team_x1tAIKgv9n1PAV51FYz3E9Q0";
 
-type VercelCountPayload = {
-  data?: {
-    visitors?: number;
-    pageviews?: number;
-  };
-  error?: {
-    code?: string;
-    message?: string;
-  };
+type TrafficRow = {
+  session_id: string;
+  occurred_at: string;
+  path: string;
 };
-
-function analyticsToken() {
-  return (
-    process.env.VERCEL_ANALYTICS_TOKEN?.trim() ||
-    process.env.VERCEL_ACCESS_TOKEN?.trim() ||
-    ""
-  );
-}
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin(request);
-
+    const { supabase } = await requireAdmin(request);
     const requestUrl = new URL(request.url);
     const requestedDays = Number(requestUrl.searchParams.get("days") || 30);
     const days = PERIODS.has(requestedDays) ? requestedDays : 30;
-    const token = analyticsToken();
-
-    if (!token) {
-      return NextResponse.json(
-        {
-          configured: false,
-          available: false,
-          periodDays: days,
-          code: "VERCEL_ANALYTICS_TOKEN_MISSING",
-          message:
-            "La collecte peut fonctionner, mais l’affichage dans l’admin nécessite VERCEL_ANALYTICS_TOKEN côté serveur.",
-        },
-        { headers: { "cache-control": "no-store" } },
-      );
-    }
-
     const until = new Date();
     const since = new Date(until.getTime() - days * 86_400_000);
-    const projectId =
-      process.env.VERCEL_ANALYTICS_PROJECT_ID?.trim() ||
-      process.env.VERCEL_PROJECT_ID?.trim() ||
-      DEFAULT_PROJECT_ID;
-    const teamId =
-      process.env.VERCEL_ANALYTICS_TEAM_ID?.trim() || DEFAULT_TEAM_ID;
 
-    const endpoint = new URL(
-      "https://api.vercel.com/v1/query/web-analytics/visits/count",
-    );
-    endpoint.searchParams.set("projectId", projectId);
-    endpoint.searchParams.set("teamId", teamId);
-    endpoint.searchParams.set("since", since.toISOString());
-    endpoint.searchParams.set("until", until.toISOString());
+    const { data, error } = await supabase
+      .from("conversion_events")
+      .select("session_id,occurred_at,path")
+      .eq("event", "product_view")
+      .is("product_id", null)
+      .like("session_id", "traffic-%")
+      .gte("occurred_at", since.toISOString())
+      .order("occurred_at", { ascending: true })
+      .limit(20_000);
 
-    const response = await fetch(endpoint, {
-      headers: {
-        authorization: `Bearer ${token}`,
-        accept: "application/json",
-      },
-      cache: "no-store",
-    });
-
-    let payload: VercelCountPayload = {};
-    try {
-      payload = (await response.json()) as VercelCountPayload;
-    } catch {
-      payload = {};
-    }
-
-    if (!response.ok) {
+    if (error) {
       return NextResponse.json(
         {
-          configured: true,
           available: false,
           periodDays: days,
-          code: payload.error?.code || `VERCEL_ANALYTICS_${response.status}`,
+          code: "TRAFFIC_STORAGE_UNAVAILABLE",
           message:
-            payload.error?.message ||
-            "Vercel Web Analytics n’est pas encore disponible pour ce projet.",
+            "Le stockage analytics first-party n’est pas disponible pour le moment.",
         },
-        { headers: { "cache-control": "no-store" } },
+        { status: 503, headers: { "cache-control": "no-store" } },
       );
     }
 
-    const visitors = Number(payload.data?.visitors);
-    const pageviews = Number(payload.data?.pageviews);
-
-    if (!Number.isFinite(visitors) || !Number.isFinite(pageviews)) {
-      return NextResponse.json(
-        {
-          configured: true,
-          available: false,
-          periodDays: days,
-          code: "VERCEL_ANALYTICS_EMPTY",
-          message:
-            "Aucune donnée de trafic n’est encore disponible. Les premières visites apparaîtront après l’activation de Web Analytics et le nouveau déploiement.",
-        },
-        { headers: { "cache-control": "no-store" } },
-      );
-    }
+    const rows = (data ?? []) as TrafficRow[];
+    const pageviews = rows.length;
+    const visits = new Set(rows.map((row) => row.session_id)).size;
 
     return NextResponse.json(
       {
-        configured: true,
         available: true,
+        source: "first_party",
         periodDays: days,
         since: since.toISOString(),
         until: until.toISOString(),
-        visitors,
+        visits,
         pageviews,
-        pagesPerVisitor: visitors > 0 ? pageviews / visitors : 0,
+        pagesPerVisit: visits > 0 ? pageviews / visits : 0,
       },
       { headers: { "cache-control": "no-store" } },
     );
