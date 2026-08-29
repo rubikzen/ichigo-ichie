@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 const notify = readFileSync(resolve(root, "src/components/RestockNotify.tsx"), "utf8");
 const subscribe = readFileSync(resolve(root, "src/app/api/restock/subscribe/route.ts"), "utf8");
 const stockHub = readFileSync(resolve(root, "src/components/admin/AdminStockHub.tsx"), "utf8");
@@ -21,17 +22,17 @@ test("restock form carries an optional exact variant target to the public API", 
 });
 
 test("sold-out packaging and formats remain selectable specifically for restock alerts", () => {
-  assert.match(product, /!option\.available \? "is-sold-out-option-v429"/);
-  assert.match(product, /item\.stock <= 0 \? "is-sold-out-option-v429"/);
-  assert.match(product, /Sélectionner pour créer une alerte/);
-  assert.doesNotMatch(product, /onClick=\{\(\) => setVariantId\(item\.id\)\} disabled=\{item\.stock <= 0\}/);
-  assert.doesNotMatch(product, /onClick=\{\(\) => selectPackaging\(option\.key\)\} disabled=\{!option\.available\}/);
+  assert.match(modal, /!option\.available \? "is-sold-out-option-v429"/);
+  assert.match(modal, /item\.stock <= 0 \? "is-sold-out-option-v429"/);
+  assert.match(modal, /Sélectionner pour créer une alerte/);
+  assert.doesNotMatch(modal, /onClick=\{\(\) => setVariantId\(item\.id\)\} disabled=\{item\.stock <= 0\}/);
+  assert.doesNotMatch(modal, /onClick=\{\(\) => selectPackaging\(option\.key\)\} disabled=\{!option\.available\}/);
 });
 
 test("modal restock recovery targets the exact selected variant while sold-out cards keep product-level recovery", () => {
-  assert.match(product, /variantId=\{variant\?\.id\}/);
-  assert.match(product, /variantName=\{variant \? productVariantLabel\(variant, language\) : undefined\}/);
-  assert.match(product, /context="modal"/);
+  assert.match(modal, /variantId=\{variant\?\.id\}/);
+  assert.match(modal, /variantName=\{variant \? productVariantLabel\(variant, language\) : undefined\}/);
+  assert.match(modal, /context="modal"/);
   assert.match(product, /context="card"/);
   assert.match(product, /productId=\{product\.id\}/);
 });
