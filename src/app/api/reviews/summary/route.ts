@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
-import { readJsonBody } from "@/lib/public-api";
+import { publicApiErrorInfo, readJsonBody } from "@/lib/public-api";
 import { settingEnabled, siteSettingDefaults } from "@/lib/settings";
 
 export const runtime = "nodejs";
@@ -96,10 +96,21 @@ export async function POST(request: Request) {
       { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } },
     );
   } catch (error) {
-    console.error("Review summary API failed", error);
+    const publicError = publicApiErrorInfo(error);
+    if (publicError) {
+      return NextResponse.json(
+        { error: publicError.message, code: publicError.code, summaries: {} },
+        { status: publicError.status, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    console.warn(
+      "Review summary API unavailable",
+      error instanceof Error ? error.message : String(error),
+    );
     return NextResponse.json(
       { summaries: {} },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
+      { headers: { "Cache-Control": "no-store" } },
     );
   }
 }
