@@ -15,6 +15,8 @@ type AnalyticsFunction = (command: string, callback?: AnalyticsCallback) => void
 type AnalyticsWindow = Window & {
   va?: AnalyticsFunction;
   vaq?: AnalyticsQueueItem[];
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  cancelIdleCallback?: (handle: number) => void;
 };
 
 const PRODUCTION_HOSTS = new Set([
@@ -115,11 +117,39 @@ export function VercelTrafficAnalytics() {
       return;
     }
 
-    const script = document.createElement("script");
-    script.defer = true;
-    script.src = "/_vercel/insights/script.js";
-    script.dataset.ichigoVercelAnalytics = "v489";
-    document.head.appendChild(script);
+    let idleHandle: number | undefined;
+    let timeoutHandle: number | undefined;
+
+    const appendScript = () => {
+      if (document.querySelector('script[data-ichigo-vercel-analytics="v489"]')) {
+        return;
+      }
+      const script = document.createElement("script");
+      script.defer = true;
+      script.src = "/_vercel/insights/script.js";
+      script.dataset.ichigoVercelAnalytics = "v489";
+      document.head.appendChild(script);
+    };
+
+    const scheduleScript = () => {
+      if (analyticsWindow.requestIdleCallback) {
+        idleHandle = analyticsWindow.requestIdleCallback(appendScript, { timeout: 1500 });
+      } else {
+        timeoutHandle = window.setTimeout(appendScript, 600);
+      }
+    };
+
+    if (document.readyState === "complete") {
+      scheduleScript();
+    } else {
+      window.addEventListener("load", scheduleScript, { once: true });
+    }
+
+    return () => {
+      window.removeEventListener("load", scheduleScript);
+      if (idleHandle !== undefined) analyticsWindow.cancelIdleCallback?.(idleHandle);
+      if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
+    };
   }, []);
 
   useEffect(() => {

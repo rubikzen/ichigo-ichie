@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
-import { compactMenuProductForHome } from "@/lib/home-catalog";
+import { compactMenuProductForHome, compactShopProductForHome } from "@/lib/home-catalog";
 import { HomePageContent } from "@/components/HomePageContent";
 
 export const revalidate = 30;
@@ -21,8 +21,9 @@ export default async function Home() {
     getCachedCatalog("menu"),
     getCachedCatalog("shop"),
   ]);
-  const highlightedShopProducts = shop.products.filter((product) => product.featured);
-  const shopFeatured = (highlightedShopProducts.length ? highlightedShopProducts : shop.products).slice(0, 3);
+  const compactShopProducts = shop.products.map(compactShopProductForHome);
+  const highlightedShopProducts = compactShopProducts.filter((product) => product.featured);
+  const shopFeatured = (highlightedShopProducts.length ? highlightedShopProducts : compactShopProducts).slice(0, 3);
   const compactMenuProducts = menu.products.map(compactMenuProductForHome);
 
   return (
@@ -31,7 +32,7 @@ export default async function Home() {
       menuCategories={menu.categories}
       menuProducts={compactMenuProducts}
       shopCategories={shop.categories}
-      shopProducts={shop.products}
+      shopProducts={compactShopProducts}
     />
   );
 }
