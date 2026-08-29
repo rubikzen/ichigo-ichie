@@ -5,25 +5,24 @@ import test from "node:test";
 
 const root = process.cwd();
 const src = (path) => readFileSync(resolve(root, path), "utf8");
+const menuCard = src("src/components/MenuInfoCard.tsx");
 const catalog = src("src/components/UnifiedCatalogSections.tsx");
 
-test("V495 defers the homepage menu catalog until it approaches the viewport", () => {
-  assert.match(catalog, /const \[menuMounted, setMenuMounted\] = useState\(false\)/);
-  assert.match(catalog, /new IntersectionObserver/);
-  assert.match(catalog, /rootMargin: "800px 0px"/);
-  assert.match(catalog, /menuMounted \? \(\s*<CatalogBlock id="menu"/);
-  assert.match(catalog, /ref=\{menuSentinelRef\}/);
-  assert.match(catalog, /id="menu"/);
+test("V495 lets the browser skip layout and paint for offscreen compact menu cards", () => {
+  assert.match(menuCard, /contentVisibility: "auto"/);
+  assert.match(menuCard, /containIntrinsicSize: "auto 112px"/);
+  assert.match(menuCard, /style=\{compact \? compactRenderStyle : undefined\}/);
 });
 
-test("V495 keeps menu cards out of the initial homepage client bundle", () => {
-  assert.match(catalog, /dynamic\(/);
-  assert.match(catalog, /import\("\.\/MenuInfoCard"\)/);
-  assert.match(catalog, /\{ ssr: false \}/);
-  assert.doesNotMatch(catalog, /import \{ MenuInfoCard \} from "\.\/MenuInfoCard"/);
+test("V495 keeps the optimization scoped to compact homepage menu cards", () => {
+  assert.match(menuCard, /compact = false/);
+  assert.match(menuCard, /menu-info-card-compact-v449/);
+  assert.match(menuCard, /loading="lazy"/);
 });
 
-test("V495 preserves the shop catalog as the immediately rendered catalog", () => {
-  assert.match(catalog, /<CatalogBlock id="boutique" kind="shop"/);
-  assert.match(catalog, /<RitualBundleBuilder products=\{products\} \/>/);
+test("V495 preserves the full menu catalog and anchor in the homepage render tree", () => {
+  assert.match(catalog, /import \{ MenuInfoCard \} from "\.\/MenuInfoCard"/);
+  assert.match(catalog, /<CatalogBlock id="menu" kind="menu"/);
+  assert.doesNotMatch(catalog, /IntersectionObserver/);
+  assert.doesNotMatch(catalog, /menuMounted/);
 });
