@@ -1,0 +1,23 @@
+/* Ichigo Ichie V4.86 — safe storefront rendering deferral.
+   Off-screen content stays in the DOM/SEO/accessibility tree; browsers that
+   support content-visibility can skip its initial layout/paint work. */
+@supports (content-visibility: auto) {
+  .boutique-menu-bridge-v449,
+  .onepage-catalog-menu,
+  .matcha-guides-teaser-v469,
+  .mobile-home-after-catalog-v4491,
+  .house-section-v226,
+  .contact-section-v228 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 760px;
+  }
+
+  .matcha-guides-teaser-v469,
+  .boutique-menu-bridge-v449 {
+    contain-intrinsic-size: auto 420px;
+  }
+
+  .contact-section-v228 {
+    contain-intrinsic-size: auto 680px;
+  }
+}
