@@ -39,24 +39,29 @@ export async function GET(request: Request) {
     }
 
     const rows = (data ?? []) as EventRow[];
+    const conversionRows = rows.filter(
+      (row) =>
+        row.event !== "product_view" ||
+        Boolean(row.product_id && UUID_RE.test(row.product_id)),
+    );
     const count = (event: EventRow["event"]) =>
-      rows.filter((row) => row.event === event).length;
+      conversionRows.filter((row) => row.event === event).length;
 
     const views = count("product_view");
     const adds = count("add_to_cart");
     const checkouts = count("begin_checkout");
     const purchases = count("purchase");
-    const revenue = rows
+    const revenue = conversionRows
       .filter((row) => row.event === "purchase")
       .reduce((sum, row) => sum + Math.max(0, Number(row.value || 0)), 0);
-    const sessions = new Set(rows.map((row) => row.session_id)).size;
+    const sessions = new Set(conversionRows.map((row) => row.session_id)).size;
 
     const productStats = new Map<
       string,
       { productId: string; views: number; adds: number }
     >();
 
-    for (const row of rows) {
+    for (const row of conversionRows) {
       if (!row.product_id || !UUID_RE.test(row.product_id)) continue;
       if (row.event !== "product_view" && row.event !== "add_to_cart") continue;
       const current = productStats.get(row.product_id) ?? {
