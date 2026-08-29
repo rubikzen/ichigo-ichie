@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type TrafficData = {
-  configured: boolean;
   available: boolean;
+  source?: "first_party";
   periodDays: number;
-  visitors?: number;
+  visits?: number;
   pageviews?: number;
-  pagesPerVisitor?: number;
+  pagesPerVisit?: number;
   since?: string;
   until?: string;
   code?: string;
@@ -60,7 +60,9 @@ export function TrafficAnalyticsAdmin({
         });
         const body = (await response.json()) as TrafficData;
         if (!response.ok) {
-          throw new Error(body.error || "Statistiques de trafic indisponibles.");
+          throw new Error(
+            body.message || body.error || "Statistiques de trafic indisponibles.",
+          );
         }
         if (!cancelled) setData(body);
       } catch (loadError) {
@@ -90,7 +92,7 @@ export function TrafficAnalyticsAdmin({
           <p className="eyebrow">TRAFIC</p>
           <h3>Visites du site</h3>
           <p className="muted">
-            Visiteurs et pages vues en production. L’administration et les API ne sont pas comptées.
+            Sessions et pages vues en production. L’administration et les API ne sont pas comptées.
           </p>
         </div>
         <div className="conversion-analytics-actions-v464">
@@ -126,43 +128,24 @@ export function TrafficAnalyticsAdmin({
         </div>
       )}
 
-      {!loading && data && !data.available && (
-        <div className="conversion-analytics-empty-v464">
-          <strong>
-            {data.configured ? "En attente des premières données" : "Connexion Vercel à terminer"}
-          </strong>
-          <span>{data.message || "Les statistiques ne sont pas encore disponibles."}</span>
-          {!data.configured && (
-            <small>
-              Ajoutez VERCEL_ANALYTICS_TOKEN dans les variables serveur du projet Vercel. Le token n’est jamais envoyé au navigateur.
-            </small>
-          )}
-          {data.configured && data.code === "VERCEL_ANALYTICS_EMPTY" && (
-            <small>
-              Dans Vercel, ouvrez le projet Ichigo Ichie → Analytics et vérifiez que Web Analytics est activé.
-            </small>
-          )}
-        </div>
-      )}
-
       {!loading && data?.available && (
         <>
           <div className="conversion-kpis-v464">
             <article>
-              <span>Visiteurs</span>
-              <strong>{integer(data.visitors)}</strong>
+              <span>Visites</span>
+              <strong>{integer(data.visits)}</strong>
             </article>
             <article>
               <span>Pages vues</span>
               <strong>{integer(data.pageviews)}</strong>
             </article>
             <article>
-              <span>Pages / visiteur</span>
-              <strong>{decimal(data.pagesPerVisitor)}</strong>
+              <span>Pages / visite</span>
+              <strong>{decimal(data.pagesPerVisit)}</strong>
             </article>
           </div>
           <p className="muted">
-            Source : Vercel Web Analytics. Sur le plan Hobby, l’historique consultable est limité à environ 30 jours.
+            Compteur first-party Ichigo Ichie par session, sans identité client. Vercel Web Analytics reste actif en parallèle pour l’analyse détaillée.
           </p>
         </>
       )}
