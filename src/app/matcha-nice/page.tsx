@@ -102,7 +102,7 @@ export default async function MatchaNicePage() {
   };
 
   const shopProducts = shop.products
-    .filter((product) => product.type === "product")
+    .filter((product) => product.type === "product" && searchableMatcha(product))
     .sort(
       (a, b) =>
         Number(availableStock(b) > 0) - Number(availableStock(a) > 0),
