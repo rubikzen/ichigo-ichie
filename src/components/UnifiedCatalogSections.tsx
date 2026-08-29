@@ -1,22 +1,17 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "./ProductCard";
 import { RitualBundleBuilder } from "./RitualBundleBuilder";
+import { MenuInfoCard } from "./MenuInfoCard";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
 import { MATCHA_FINDER_TAGS, matchaFinderLabel, productMatchesFinderTag, productMatchaFinderTags, type MatchaFinderTag } from "@/lib/product-merchandising";
 import { categoryCollectionPath } from "@/lib/shop-collection-seo";
-
-const MenuInfoCard = dynamic(
-  () => import("./MenuInfoCard").then((module) => module.MenuInfoCard),
-  { ssr: false },
-);
 
 type CatalogBlockProps = {
   id: "menu" | "boutique";
@@ -227,38 +222,12 @@ export function UnifiedCatalogSections({
   shopProducts: Product[];
 }) {
   const { language } = useLanguage();
-  const { settings } = useSiteSettings();
   const router = useRouter();
-  const [menuMounted, setMenuMounted] = useState(false);
-  const menuSentinelRef = useRef<HTMLElement | null>(null);
 
   useEffect(
     () => subscribeCatalogUpdate(() => router.refresh()),
     [router],
   );
-
-  useEffect(() => {
-    if (menuMounted) return;
-    const target = menuSentinelRef.current;
-    if (!target) return;
-
-    if (!("IntersectionObserver" in window)) {
-      setMenuMounted(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setMenuMounted(true);
-        observer.disconnect();
-      },
-      { rootMargin: "800px 0px" },
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [menuMounted]);
 
   const tasting = language === "fr"
     ? {
@@ -273,11 +242,6 @@ export function UnifiedCatalogSections({
         text: "Discover our drinks and desserts prepared in Nice, then find your favourite matchas in the Shop.",
         cta: "Explore the menu",
       };
-
-  const menuValue = (suffix: string, fallbackFr: string, fallbackEn: string) =>
-    settings[`menu_${suffix}_${language}`]
-    || settings[`menu_${suffix}_fr`]
-    || (language === "fr" ? fallbackFr : fallbackEn);
 
   return (
     <>
@@ -295,25 +259,7 @@ export function UnifiedCatalogSections({
         </a>
       </section>
 
-      {menuMounted ? (
-        <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />
-      ) : (
-        <section
-          ref={menuSentinelRef}
-          className="onepage-catalog onepage-catalog-menu onepage-catalog-menu-compact-v449 onepage-catalog-menu-deferred-v495"
-          id="menu"
-          aria-busy="true"
-        >
-          <div className="onepage-section-heading">
-            <div>
-              <p className="eyebrow">{menuValue("eyebrow", "NOTRE CARTE", "OUR MENU")}</p>
-              <h2>{menuValue("title", "Boissons & douceurs", "Drinks & sweets")}</h2>
-              <p>{menuValue("intro", "Préparés à Nice.", "Prepared in Nice.")}</p>
-            </div>
-            <a className="onepage-backtop" href="#top" aria-label={language === "fr" ? "Retour en haut" : "Back to top"}>↑</a>
-          </div>
-        </section>
-      )}
+      <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />
     </>
   );
 }
