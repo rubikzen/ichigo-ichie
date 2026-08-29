@@ -1,9 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { SafeImage } from "./SafeImage";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useMemo, useState } from "react";
 import type { CartChoice, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, packagingLabel, productVariantLabel, variantLabel } from "@/lib/product-label";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
@@ -14,6 +14,11 @@ import { trackConversion } from "@/lib/conversion-analytics";
 import { matchaFinderLabel, productMatchaFinderTags } from "@/lib/product-merchandising";
 import { useProductReviewSummary } from "./ReviewSummaryProvider";
 import { productPublicPath } from "@/lib/product-url";
+
+const ProductModal = dynamic(
+  () => import("./ProductModal").then((module) => module.ProductModal),
+  { ssr: false },
+);
 
 const moneyFormatters = {
   fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
@@ -29,6 +34,7 @@ const packagingKey = (variant: Variant): PackagingKey => {
   if (variant.packaging === "can" || variant.packaging === "bag") return variant.packaging;
   return "other";
 };
+
 function stockCopy(stock: number, language: "fr" | "en") {
   if (stock <= 0) return language === "fr" ? "Rupture de stock" : "Sold out";
   if (stock <= 5) return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
@@ -56,9 +62,7 @@ function ProductCardStateful({ product }: { product: Product }) {
   }, [product.images, product.image_url]);
 
   const [open, setOpen] = useState(false);
-  const openerRef = useRef<HTMLElement | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
   const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
   const [imageIndex, setImageIndex] = useState(0);
@@ -68,8 +72,9 @@ function ProductCardStateful({ product }: { product: Product }) {
   })));
   const [justAdded, setJustAdded] = useState(false);
 
-  const openProductDetails = (opener: HTMLElement) => {
-    openerRef.current = opener;
+  const closeProductDetails = useCallback(() => setOpen(false), []);
+  const openProductDetails = (openerElement: HTMLElement) => {
+    setOpener(openerElement);
     trackConversion(
       "product_view",
       {
@@ -82,31 +87,6 @@ function ProductCardStateful({ product }: { product: Product }) {
     );
     setOpen(true);
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-      if (event.key === "ArrowLeft" && gallery.length > 1) setImageIndex((current) => (current - 1 + gallery.length) % gallery.length);
-      if (event.key === "ArrowRight" && gallery.length > 1) setImageIndex((current) => (current + 1) % gallery.length);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.cancelAnimationFrame(focusFrame);
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-
-      const opener = openerRef.current;
-      window.requestAnimationFrame(() => {
-        if (opener?.isConnected) opener.focus();
-      });
-    };
-  }, [open, gallery.length]);
 
   const name = language === "fr" ? product.name_fr : product.name_en;
   const shortDescription = sanitizeStorefrontProductText(
@@ -153,7 +133,6 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const price = (variant?.price ?? product.base_price) + choices.reduce((sum, choice) => sum + choice.priceDelta, 0);
   const coverImage = gallery[0] || "/product-placeholder.svg";
-  const image = gallery[Math.min(imageIndex, gallery.length - 1)] || coverImage;
   const currentStock = variant ? Number(variant.stock) : Number(product.stock);
   const totalStock = selectableVariants.length ? selectableVariants.reduce((sum, item) => sum + Math.max(0, Number(item.stock)), 0) : Number(product.stock);
   const hasStock = currentStock > 0;
@@ -227,185 +206,8 @@ function ProductCardStateful({ product }: { product: Product }) {
     else handleAdd();
   };
 
-  const isShopProduct = product.type === "product" || product.type === "accessory";
-  const hasProductFacts = Boolean(product.origin || product.cultivar || product.ideal_for.length);
   const merchandisingTags = productMatchaFinderTags(product);
   const isSoldOut = totalStock <= 0;
-
-  const modal = open && mounted ? createPortal(
-    <div className="modal-backdrop product-detail-backdrop" onMouseDown={() => setOpen(false)} role="presentation">
-      <div className="product-modal product-modal-v28" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label={name}>
-        <button ref={closeButtonRef} className="modal-close" onClick={() => setOpen(false)} aria-label={language === "fr" ? "Fermer" : "Close"}>×</button>
-
-        <div className="modal-media product-gallery-media product-gallery-v28">
-          <div className="gallery-stage">
-            <SafeImage
-              src={image}
-              alt={`${name} ${imageIndex + 1}`}
-              fill
-              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 45vw, 540px"
-            />
-            {gallery.length > 1 && <>
-              <button type="button" className="gallery-arrow previous" aria-label={language === "fr" ? "Image précédente" : "Previous image"} onClick={() => setImageIndex((current) => (current - 1 + gallery.length) % gallery.length)}>‹</button>
-              <button type="button" className="gallery-arrow next" aria-label={language === "fr" ? "Image suivante" : "Next image"} onClick={() => setImageIndex((current) => (current + 1) % gallery.length)}>›</button>
-            </>}
-            {gallery.length > 1 && <span className="gallery-counter">{imageIndex + 1} / {gallery.length}</span>}
-          </div>
-          {gallery.length > 1 && <div className="gallery-thumbnails gallery-thumbnails-v28" aria-label={language === "fr" ? "Photos du produit" : "Product photos"}>
-            {gallery.slice(0, 3).map((url, index) => <button type="button" key={`${url}-${index}`} className={imageIndex === index ? "active" : ""} onClick={() => setImageIndex(index)}><SafeImage src={url} alt="" width={240} height={180} sizes="(max-width: 720px) 30vw, 160px" /></button>)}
-          </div>}
-        </div>
-
-        <div className="modal-content product-detail-content">
-          <div className="product-detail-scroll">
-            <header className="product-detail-header">
-              {product.badge && <p className="eyebrow">{product.badge}</p>}
-              <h2>{name}</h2>
-              {shortDescription && <p className="product-detail-lead">{shortDescription}</p>}
-            </header>
-
-            {isShopProduct && hasProductFacts && <div className="product-facts" aria-label={language === "fr" ? "Informations produit" : "Product information"}>
-              {product.origin && <div><span>{language === "fr" ? "Origine" : "Origin"}</span><strong>{product.origin}</strong></div>}
-              {product.cultivar && <div><span>Cultivar</span><strong>{product.cultivar}</strong></div>}
-              {product.ideal_for.length > 0 && <div className="product-fact-ideal"><span>{language === "fr" ? "Idéal pour" : "Ideal for"}</span><div>{product.ideal_for.map((item) => <em key={item}>{item}</em>)}</div></div>}
-            </div>}
-
-            <section className="product-buy-panel" aria-label={language === "fr" ? "Choix du produit" : "Product choices"}>
-              {packageOptions.length > 1 && <div className="option-group variant-dimension compact-option-group">
-                <span className="option-label">{language === "fr" ? "Conditionnement" : "Packaging"}</span>
-                <div className="option-pills packaging-pills">{packageOptions.map((option) => <button
-                  type="button"
-                  key={option.key}
-                  className={`${selectedPackaging === option.key ? "active " : ""}${!option.available ? "is-sold-out-option-v429" : ""}`.trim()}
-                  onClick={() => selectPackaging(option.key)}
-                  title={!option.available ? (language === "fr" ? "Sélectionner pour créer une alerte" : "Select to create a restock alert") : undefined}
-                >
-                  <span>{packagingLabel(option.packaging, language)}</span>
-                  {!option.available && <small>{language === "fr" ? "Épuisé" : "Sold out"}</small>}
-                </button>)}</div>
-              </div>}
-
-              {variantsForPackaging.length > 1 && <div className="option-group variant-dimension compact-option-group">
-                <span className="option-label">{language === "fr" ? "Format" : "Size"}</span>
-                <div className="option-pills format-pills-v28">{variantsForPackaging.map((item) => <button
-                  type="button"
-                  key={item.id}
-                  className={`${variantId === item.id ? "active " : ""}${item.stock <= 0 ? "is-sold-out-option-v429" : ""}`.trim()}
-                  onClick={() => setVariantId(item.id)}
-                  title={item.stock <= 0 ? (language === "fr" ? "Sélectionner pour créer une alerte" : "Select to create a restock alert") : undefined}
-                >
-                  <span>{variantLabel(item)}</span>
-                  {item.stock > 0 && <small>{money(item.price, language)}</small>}
-                  {item.stock <= 0 && <b>{language === "fr" ? "Épuisé" : "Sold out"}</b>}
-                </button>)}</div>
-              </div>}
-
-              {selectableVariants.length === 1 && variant && <div className="selected-variant-summary selected-variant-v28">
-                <span>{packagingLabel(variant.packaging, language)}</span><strong>{variantLabel(variant)}</strong>
-              </div>}
-
-              {packageOptions.length > 1 && variantsForPackaging.length === 1 && variant && <div className="selected-variant-summary selected-variant-v28">
-                <span>{language === "fr" ? "Format" : "Size"}</span><strong>{variantLabel(variant)}</strong>
-              </div>}
-
-              {showStock && <div className={`product-stock-detail product-stock-v28 ${currentStock <= 0 ? "sold" : currentStock <= 5 ? "low" : "available"}`}>
-                <span className="stock-dot" aria-hidden="true"></span>
-                <strong>{stockCopy(currentStock, language)}</strong>
-                {variant && <small>{packagingLabel(variant.packaging, language)} · {variantLabel(variant)}</small>}
-              </div>}
-
-              {product.option_groups.map((group) => <div className="option-group compact-option-group" key={group.id}>
-                <span className="option-label">{language === "fr" ? group.name_fr : group.name_en}{group.required ? " *" : ""}</span>
-                <div className="option-pills">{group.values.map((value) => {
-                  const active = selected[group.id]?.includes(value.id);
-                  return <button type="button" key={value.id} className={active ? "active" : ""} onClick={() => toggleOption(group.id, value.id, group.max_select)}>
-                    {language === "fr" ? value.label_fr : value.label_en}{value.price_delta ? ` +${money(value.price_delta, language)}` : ""}
-                  </button>;
-                })}</div>
-              </div>)}
-            </section>
-
-            {fullDescription && fullDescription !== shortDescription && <details className="product-about-details">
-              <summary>{language === "fr" ? "En savoir plus sur ce produit" : "More about this product"}<span>+</span></summary>
-              <p className="product-modal-description">{fullDescription}</p>
-            </details>}
-          </div>
-
-          <div className={`modal-footer product-buy-footer ${cartQuantity > 0 ? "product-buy-footer-added" : ""}`}>
-            {cartQuantity > 0 ? (
-              <div className="product-cart-confirmation">
-                <div className={`product-cart-success ${justAdded ? "is-new" : ""}`} role="status" aria-live="polite">
-                  <span className="product-cart-success-icon" aria-hidden="true">✓</span>
-                  <div>
-                    <strong>{language === "fr" ? "Ajouté au panier" : "Added to cart"}</strong>
-                    <small>
-                      {language === "fr"
-                        ? `${cartQuantity} × cette configuration · ${money(price * cartQuantity, language)}`
-                        : `${cartQuantity} × this configuration · ${money(price * cartQuantity, language)}`}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="product-cart-actions">
-                  <div className="product-inline-qty" aria-label={language === "fr" ? "Quantité dans le panier" : "Quantity in cart"}>
-                    <button type="button" onClick={decreaseCartQuantity} aria-label={language === "fr" ? "Diminuer la quantité" : "Decrease quantity"}>−</button>
-                    <strong>{cartQuantity}</strong>
-                    <button
-                      type="button"
-                      onClick={increaseCartQuantity}
-                      disabled={showStock && quantityInCartForStock >= currentStock}
-                      aria-label={language === "fr" ? "Augmenter la quantité" : "Increase quantity"}
-                    >+</button>
-                  </div>
-
-                  <Link className="button primary product-view-cart" href="/panier" onClick={() => setOpen(false)}>
-                    <span>{language === "fr" ? "Voir le panier" : "View cart"}</span>
-                    <b>{count}</b>
-                  </Link>
-                </div>
-
-                <button type="button" className="product-continue-button" onClick={() => setOpen(false)}>
-                  {language === "fr" ? "Continuer mes achats" : "Continue shopping"}
-                </button>
-              </div>
-            ) : !hasStock ? (
-              <RestockNotify
-                productId={product.id}
-                productName={name}
-                variantId={variant?.id}
-                variantName={variant ? productVariantLabel(variant, language) : undefined}
-                language={language}
-                context="modal"
-              />
-            ) : (
-              <>
-                <div className="product-price-block">
-                  <span>{language === "fr" ? "Prix" : "Price"}</span>
-                  <strong>{money(price, language)}</strong>
-                </div>
-                <button
-  type="button"
-  className="button primary product-buy-button"
-  disabled={!canAdd}
-  onClick={handleAdd}
->
-  {stockLimitReached
-    ? language === "fr"
-      ? "Quantité maximale atteinte"
-      : "Maximum quantity reached"
-    : language === "fr"
-      ? `Ajouter au panier · ${money(price, language)}`
-      : `Add to cart · ${money(price, language)}`}
-</button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  ) : null;
-
   const availableVariants = selectableVariants.filter((item) => item.stock > 0);
   const minimumPrice = availableVariants.length ? Math.min(...availableVariants.map((item) => item.price)) : product.base_price;
   const formatLabels = [...new Set(selectableVariants.map((item) => variantLabel(item)))];
@@ -515,42 +317,79 @@ function ProductCardStateful({ product }: { product: Product }) {
           />
         ) : (
           <button
-  type="button"
-  className={`button full product-card-cta primary ${
-    !requiresChoice && justAdded ? "is-added-v381" : ""
-  }`}
-  disabled={!requiresChoice && stockLimitReached}
-  aria-live="polite"
-  onClick={(event) => {
-    if (!requiresChoice && stockLimitReached) return;
+            type="button"
+            className={`button full product-card-cta primary ${
+              !requiresChoice && justAdded ? "is-added-v381" : ""
+            }`}
+            disabled={!requiresChoice && stockLimitReached}
+            aria-live="polite"
+            onClick={(event) => {
+              if (!requiresChoice && stockLimitReached) return;
 
-    if (requiresChoice) {
-      openProductDetails(event.currentTarget);
-      return;
-    }
+              if (requiresChoice) {
+                openProductDetails(event.currentTarget);
+                return;
+              }
 
-    handleAdd();
-  }}
->
-  {!requiresChoice && justAdded
-    ? language === "fr"
-      ? "✓ Ajouté au panier"
-      : "✓ Added to cart"
-    : !requiresChoice && stockLimitReached
-      ? language === "fr"
-        ? "Quantité maximale atteinte"
-        : "Maximum quantity reached"
-    : requiresChoice
-      ? language === "fr"
-        ? "Choisir"
-        : "Choose"
-      : language === "fr"
-        ? `Ajouter · ${money(minimumPrice, language)}`
-        : `Add · ${money(minimumPrice, language)}`}
-</button>
+              handleAdd();
+            }}
+          >
+            {!requiresChoice && justAdded
+              ? language === "fr"
+                ? "✓ Ajouté au panier"
+                : "✓ Added to cart"
+              : !requiresChoice && stockLimitReached
+                ? language === "fr"
+                  ? "Quantité maximale atteinte"
+                  : "Maximum quantity reached"
+                : requiresChoice
+                  ? language === "fr"
+                    ? "Choisir"
+                    : "Choose"
+                  : language === "fr"
+                    ? `Ajouter · ${money(minimumPrice, language)}`
+                    : `Add · ${money(minimumPrice, language)}`}
+          </button>
         )}
       </div>
     </article>
-    {modal}
+
+    {open && (
+      <ProductModal
+        product={product}
+        language={language}
+        name={name}
+        shortDescription={shortDescription}
+        fullDescription={fullDescription}
+        gallery={gallery}
+        imageIndex={imageIndex}
+        setImageIndex={setImageIndex}
+        opener={opener}
+        onClose={closeProductDetails}
+        packageOptions={packageOptions}
+        selectedPackaging={selectedPackaging}
+        onPackagingSelect={selectPackaging}
+        variantsForPackaging={variantsForPackaging}
+        variantId={variantId}
+        onVariantSelect={setVariantId}
+        selectableVariants={selectableVariants}
+        variant={variant}
+        showStock={showStock}
+        currentStock={currentStock}
+        selected={selected}
+        onToggleOption={toggleOption}
+        cartQuantity={cartQuantity}
+        justAdded={justAdded}
+        price={price}
+        onDecreaseCartQuantity={decreaseCartQuantity}
+        onIncreaseCartQuantity={increaseCartQuantity}
+        quantityInCartForStock={quantityInCartForStock}
+        count={count}
+        hasStock={hasStock}
+        canAdd={canAdd}
+        stockLimitReached={stockLimitReached}
+        onAdd={handleAdd}
+      />
+    )}
   </>;
 }
