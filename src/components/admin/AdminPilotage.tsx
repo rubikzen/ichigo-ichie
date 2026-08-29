@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { OrderStatistics } from "@/components/OrderStatistics";
 import { ConversionAnalyticsAdmin } from "./ConversionAnalyticsAdmin";
+import { TrafficAnalyticsAdmin } from "./TrafficAnalyticsAdmin";
 import { ProductReviewsAdmin } from "./ProductReviewsAdmin";
 import { SeoHealthAdmin } from "./SeoHealthAdmin";
 import type { AdminNavigate } from "./AdminToday";
@@ -10,6 +11,7 @@ import type { AdminNavigate } from "./AdminToday";
 export type PilotageSection =
   | "overview"
   | "sales"
+  | "traffic"
   | "conversion"
   | "seo"
   | "reviews";
@@ -20,6 +22,7 @@ const PILOTAGE_SECTIONS: Array<{
 }> = [
   { id: "overview", label: "Vue d’ensemble" },
   { id: "sales", label: "Ventes" },
+  { id: "traffic", label: "Trafic" },
   { id: "conversion", label: "Conversion" },
   { id: "seo", label: "SEO" },
   { id: "reviews", label: "Avis" },
@@ -84,6 +87,15 @@ export function AdminPilotage({
             <b>Analyser →</b>
           </button>
 
+          <button type="button" onClick={() => onSectionChange("traffic")}>
+            <span>TRAFIC</span>
+            <strong>Visiteurs & pages vues</strong>
+            <small>
+              Audience réelle du site en production, hors administration et API.
+            </small>
+            <b>Analyser →</b>
+          </button>
+
           <button type="button" onClick={() => onSectionChange("conversion")}>
             <span>CONVERSION</span>
             <strong>Parcours d’achat</strong>
@@ -124,6 +136,10 @@ export function AdminPilotage({
 
       {section === "sales" && (
         <OrderStatistics supabase={supabase} refreshKey="pilotage-v476" />
+      )}
+
+      {section === "traffic" && (
+        <TrafficAnalyticsAdmin supabase={supabase} />
       )}
 
       {section === "conversion" && (
