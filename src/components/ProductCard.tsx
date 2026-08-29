@@ -64,7 +64,6 @@ function ProductCardStateful({ product }: { product: Product }) {
 
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLElement | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
   const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
@@ -257,7 +256,6 @@ function ProductCardStateful({ product }: { product: Product }) {
       image={image}
       imageIndex={imageIndex}
       setImageIndex={setImageIndex}
-      closeButtonRef={closeButtonRef}
       onClose={() => setOpen(false)}
       packageOptions={packageOptions}
       selectedPackaging={selectedPackaging}
