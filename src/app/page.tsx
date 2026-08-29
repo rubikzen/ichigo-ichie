@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
+import { compactMenuProductForHome } from "@/lib/home-catalog";
 import { HomePageContent } from "@/components/HomePageContent";
 
 export const revalidate = 30;
@@ -22,12 +23,13 @@ export default async function Home() {
   ]);
   const highlightedShopProducts = shop.products.filter((product) => product.featured);
   const shopFeatured = (highlightedShopProducts.length ? highlightedShopProducts : shop.products).slice(0, 3);
+  const compactMenuProducts = menu.products.map(compactMenuProductForHome);
 
   return (
     <HomePageContent
       shopFeatured={shopFeatured}
       menuCategories={menu.categories}
-      menuProducts={menu.products}
+      menuProducts={compactMenuProducts}
       shopCategories={shop.categories}
       shopProducts={shop.products}
     />
