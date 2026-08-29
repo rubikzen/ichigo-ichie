@@ -10,6 +10,7 @@ const language = src("src/components/LanguageProvider.tsx");
 const cart = src("src/components/CartProvider.tsx");
 const mobileNav = src("src/components/MobileBottomNav.tsx");
 const productCard = src("src/components/ProductCard.tsx");
+const productModal = src("src/components/ProductModal.tsx");
 const layout = src("src/app/layout.tsx");
 const e2e = src("tests/e2e/hydration-stability-v4803.spec.ts");
 
@@ -47,12 +48,13 @@ test("V480.3 keeps location hash deterministic during server hydration", () => {
   );
 });
 
-test("V480.3 keeps client-only ProductCard portal state behind an explicit server snapshot", () => {
-  assert.match(
-    productCard,
-    /useSyncExternalStore\(\(\) => \(\) => \{\}, \(\) => true, \(\) => false\)/,
-  );
-  assert.match(productCard, /createPortal/);
+test("V480.3 keeps the portal client-only through the lazy ProductModal boundary", () => {
+  assert.match(productCard, /const ProductModal = dynamic\(/);
+  assert.match(productCard, /import\("\.\/ProductModal"\)/);
+  assert.match(productCard, /\{ ssr: false \}/);
+  assert.doesNotMatch(productCard, /createPortal/);
+  assert.match(productModal, /import \{ createPortal \} from "react-dom"/);
+  assert.match(productModal, /createPortal\(/);
 });
 
 test("V480.3 browser guard covers React 418 and general hydration mismatch messages", () => {
@@ -75,7 +77,7 @@ test("V480.3 browser guard covers home, shop, canonical product, persisted EN an
 });
 
 test("V480.3 does not silence hydration warnings in production markup", () => {
-  for (const source of [language, cart, mobileNav, productCard, layout]) {
+  for (const source of [language, cart, mobileNav, productCard, productModal, layout]) {
     assert.doesNotMatch(source, /suppressHydrationWarning/);
   }
 });
