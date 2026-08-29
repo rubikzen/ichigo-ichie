@@ -13,6 +13,7 @@ const prepare = src("scripts/prepare-css-v487.mjs");
 const gitignore = src(".gitignore");
 const adminLayout = src("src/app/admin/layout.tsx");
 const customerLayout = src("src/app/compte/layout.tsx");
+const checkoutLayout = src("src/app/checkout/layout.tsx");
 
 execFileSync(process.execPath, ["scripts/prepare-css-v487.mjs"], { cwd: root, stdio: "pipe" });
 const full = src("src/app/styles/globals-04.full.generated.css");
@@ -26,6 +27,7 @@ test("V487 generates separate storefront and compatibility styles before dev/bui
   assert.doesNotMatch(globals, /globals-04\.full\.generated\.css/);
   assert.match(adminLayout, /globals-04\.full\.generated\.css/);
   assert.match(customerLayout, /globals-04\.full\.generated\.css/);
+  assert.match(checkoutLayout, /globals-04\.full\.generated\.css/);
   assert.match(gitignore, /globals-04\.full\.generated\.css/);
   assert.match(gitignore, /globals-04\.storefront\.generated\.css/);
 });
@@ -39,11 +41,14 @@ test("V487 keeps the last exact top-level CSS occurrence so cascade semantics st
   assert.match(prepare, /unexpected closing brace/);
 });
 
-test("V487 removes only route-anchored account/admin rules from the storefront bundle", () => {
+test("V487 removes only route-anchored account, admin and checkout rules from storefront", () => {
   assert.match(full, /\.customer-order-top-v243\b/);
   assert.doesNotMatch(storefront, /\.customer-order-top-v243\b/);
   assert.match(full, /\.admin-stats-shell-v247\b/);
   assert.doesNotMatch(storefront, /\.admin-stats-shell-v247\b/);
+  assert.match(full, /\.checkout-page-v481\b/);
+  assert.doesNotMatch(storefront, /\.checkout-page-v481\b/);
+  assert.match(prepare, /checkout:\s*\[\/\^checkout-/);
   assert.match(prepare, /ROUTE_ANCHORS/);
   assert.match(prepare, /routeForUnit/);
 });
@@ -61,5 +66,6 @@ test("V487 reports source, full, storefront, duplicate and route extraction metr
   assert.match(prepare, /full=\$\{fullBytes\}B/);
   assert.match(prepare, /storefront=\$\{storefrontBytes\}B/);
   assert.match(prepare, /routeExtracted=\$\{routeSavedBytes\}B/);
+  assert.match(prepare, /checkout=\$\{extracted\.checkout\.units\}/);
   assert.match(prepare, /savedFromStorefront=\$\{totalStorefrontSavedBytes\}B/);
 });
