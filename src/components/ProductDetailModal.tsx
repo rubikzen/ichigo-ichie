@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { useEffect, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import type { Product, Variant } from "@/lib/types";
 import { packagingLabel, productVariantLabel, variantLabel } from "@/lib/product-label";
 import { SafeImage } from "./SafeImage";
@@ -26,7 +26,6 @@ type ProductDetailModalProps = {
   image: string;
   imageIndex: number;
   setImageIndex: Dispatch<SetStateAction<number>>;
-  closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   packageOptions: ProductModalPackageOption[];
   selectedPackaging: ProductModalPackagingKey;
@@ -75,7 +74,6 @@ export function ProductDetailModal({
   image,
   imageIndex,
   setImageIndex,
-  closeButtonRef,
   onClose,
   packageOptions,
   selectedPackaging,
@@ -99,6 +97,7 @@ export function ProductDetailModal({
   stockLimitReached,
   onAdd,
 }: ProductDetailModalProps) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const isShopProduct = product.type === "product" || product.type === "accessory";
   const hasProductFacts = Boolean(product.origin || product.cultivar || product.ideal_for.length);
   const showStock = isShopProduct;
@@ -107,7 +106,7 @@ export function ProductDetailModal({
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [closeButtonRef]);
+  }, []);
 
   return createPortal(
     <div className="modal-backdrop product-detail-backdrop" onMouseDown={onClose} role="presentation">
