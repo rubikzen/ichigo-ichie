@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { SafeImage } from "./SafeImage";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { CartChoice, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, packagingLabel, productVariantLabel, variantLabel } from "@/lib/product-label";
 import { sanitizeStorefrontProductText } from "@/lib/product-content";
@@ -62,7 +62,7 @@ function ProductCardStateful({ product }: { product: Product }) {
   }, [product.images, product.image_url]);
 
   const [open, setOpen] = useState(false);
-  const openerRef = useRef<HTMLElement | null>(null);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
   const [variantId, setVariantId] = useState(firstAvailable?.id ?? "");
   const [selectedPackaging, setSelectedPackaging] = useState<PackagingKey>(firstAvailable ? packagingKey(firstAvailable) : "other");
   const [imageIndex, setImageIndex] = useState(0);
@@ -73,8 +73,8 @@ function ProductCardStateful({ product }: { product: Product }) {
   const [justAdded, setJustAdded] = useState(false);
 
   const closeProductDetails = useCallback(() => setOpen(false), []);
-  const openProductDetails = (opener: HTMLElement) => {
-    openerRef.current = opener;
+  const openProductDetails = (openerElement: HTMLElement) => {
+    setOpener(openerElement);
     trackConversion(
       "product_view",
       {
@@ -364,7 +364,7 @@ function ProductCardStateful({ product }: { product: Product }) {
         gallery={gallery}
         imageIndex={imageIndex}
         setImageIndex={setImageIndex}
-        opener={openerRef.current}
+        opener={opener}
         onClose={closeProductDetails}
         packageOptions={packageOptions}
         selectedPackaging={selectedPackaging}
