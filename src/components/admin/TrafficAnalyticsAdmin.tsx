@@ -86,7 +86,11 @@ export function TrafficAnalyticsAdmin({
   }, [days, refreshKey, supabase]);
 
   return (
-    <section className="conversion-analytics-v464" aria-label="Trafic du site">
+    <section
+      className="conversion-analytics-v464"
+      aria-label="Trafic du site"
+      data-traffic-version="v4892"
+    >
       <div className="conversion-analytics-head-v464">
         <div>
           <p className="eyebrow">TRAFIC</p>
