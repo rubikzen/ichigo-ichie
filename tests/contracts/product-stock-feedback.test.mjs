@@ -5,13 +5,15 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const card = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8");
+const storefront = `${card}\n${modal}`;
 
 test("storefront uses clear maximum quantity wording in French and English", () => {
-  assert.doesNotMatch(card, /Maximum dans le panier/);
-  assert.doesNotMatch(card, /Maximum in cart/);
-  assert.equal((card.match(/Quantité maximale atteinte/g) ?? []).length, 2);
-  assert.equal((card.match(/Maximum quantity reached/g) ?? []).length, 2);
+  assert.doesNotMatch(storefront, /Maximum dans le panier/);
+  assert.doesNotMatch(storefront, /Maximum in cart/);
+  assert.equal((storefront.match(/Quantité maximale atteinte/g) ?? []).length, 2);
+  assert.equal((storefront.match(/Maximum quantity reached/g) ?? []).length, 2);
 });
 
 test("single-stock product cards explain how much inventory is already in the cart", () => {
