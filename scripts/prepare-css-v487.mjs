@@ -10,6 +10,7 @@ const storefrontOutputPath = resolve(root, "src/app/styles/globals-04.storefront
 const ROUTE_ANCHORS = {
   admin: [/^admin-/i, /-admin(?:-|$)/i],
   customer: [/^customer-/i],
+  checkout: [/^checkout-/i],
 };
 
 function splitTopLevelCss(source) {
@@ -171,7 +172,11 @@ for (let index = 0; index < units.length; index += 1) {
   fullUnits.push(unit);
 }
 
-const extracted = { admin: { units: 0, bytes: 0 }, customer: { units: 0, bytes: 0 } };
+const extracted = {
+  admin: { units: 0, bytes: 0 },
+  customer: { units: 0, bytes: 0 },
+  checkout: { units: 0, bytes: 0 },
+};
 const storefrontUnits = [];
 
 for (const unit of fullUnits) {
@@ -204,6 +209,7 @@ const totalSavedPercent = sourceBytes ? ((totalStorefrontSavedBytes / sourceByte
 console.log(
   `[V487 CSS] source=${sourceBytes}B full=${fullBytes}B storefront=${storefrontBytes}B ` +
   `duplicates=${duplicateUnits}/${duplicateSavedBytes}B routeExtracted=${routeSavedBytes}B ` +
-  `(admin=${extracted.admin.units}/${extracted.admin.bytes}B customer=${extracted.customer.units}/${extracted.customer.bytes}B) ` +
+  `(admin=${extracted.admin.units}/${extracted.admin.bytes}B customer=${extracted.customer.units}/${extracted.customer.bytes}B ` +
+  `checkout=${extracted.checkout.units}/${extracted.checkout.bytes}B) ` +
   `savedFromStorefront=${totalStorefrontSavedBytes}B (${totalSavedPercent}%)`,
 );
