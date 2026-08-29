@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 const root = process.cwd();
 const src = (path) => readFileSync(resolve(root, path), "utf8");
 const card = src("src/components/ProductCard.tsx");
+const modal = src("src/components/ProductModal.tsx");
 const css = src("src/app/styles/globals-04.css");
 
 test("V480.4 derives a visible label set for exactly one active variant", () => {
@@ -83,6 +84,8 @@ test("V480.4 does not change choice, cart, stock or modal behavior", () => {
   assert.match(card, /handleAdd\(\)/);
   assert.match(card, /addItem\(/);
   assert.match(card, /RestockNotify/);
-  assert.match(card, /product-modal product-modal-v28/);
+  assert.match(card, /import\("\.\/ProductModal"\)/);
+  assert.match(modal, /product-modal product-modal-v28/);
   assert.doesNotMatch(card, /suppressHydrationWarning/);
+  assert.doesNotMatch(modal, /suppressHydrationWarning/);
 });
