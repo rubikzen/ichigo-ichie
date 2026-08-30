@@ -11,7 +11,7 @@
     "e2e": "playwright test",
     "e2e:local": "E2E_LOCAL=1 playwright test",
     "e2e:headed": "playwright test --headed",
-    "test:contracts": "node --test tests/contracts/hydration-stability-v4803.test.mjs tests/contracts/mobile-product-detail-v418.test.mjs tests/contracts/mobile-storefront-interaction-v4792.test.mjs tests/contracts/product-card-state-v400.test.mjs tests/contracts/product-stock-feedback.test.mjs tests/contracts/restock-variant-v429.test.mjs tests/contracts/restock-waitlist-v425.test.mjs tests/contracts/single-variant-card-visibility-v4804.test.mjs tests/contracts/sold-out-price-visibility-v423.test.mjs tests/contracts/storefront-images-v401.test.mjs tests/contracts/v495-deferred-menu.test.mjs"
+    "test:contracts": "node --test tests/contracts/*.test.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.0",
