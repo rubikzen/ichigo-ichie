@@ -8,6 +8,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 
 const css = src("src/app/styles/globals-04.css");
 const card = src("src/components/ProductCard.tsx");
+const modal = src("src/components/ProductModal.tsx");
 const collection = src("src/components/ShopCollectionContent.tsx");
 const header = src("src/components/SiteHeader.tsx");
 
@@ -113,7 +114,8 @@ test("V479 preserves all ProductCard commerce and accessibility behavior", () =>
   assert.match(card, /setQuantity\(/);
   assert.match(card, /removeItem\(/);
   assert.match(card, /RestockNotify/);
-  assert.match(card, /product-modal product-modal-v28/);
+  assert.match(card, /import\("\.\/ProductModal"\)/);
+  assert.match(modal, /product-modal product-modal-v28/);
   assert.match(card, /aria-label=\{name\}/);
 });
 
