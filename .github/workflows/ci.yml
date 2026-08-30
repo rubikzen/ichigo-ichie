@@ -14,136 +14,55 @@ concurrency:
 
 jobs:
   verify:
-    name: Contract family isolation
+    name: Build and browser tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     env:
       NEXT_PUBLIC_SITE_URL: https://www.ichigoichiematcha.fr
+      # Public, CI-only HMAC key so invalid restock-management signatures can be
+      # verified deterministically. Never reuse this value in production.
       RESTOCK_UNSUBSCRIBE_SECRET: ci-only-restock-management-key-not-for-production
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
         run: npm ci
 
-      - name: B balanced
-        if: always()
-        run: node --test tests/contracts/balanced-*.test.mjs
-      - name: B boutique collection
-        if: always()
-        run: node --test tests/contracts/boutique-collection-*.test.mjs
-      - name: B boutique first
-        if: always()
-        run: node --test tests/contracts/boutique-first-*.test.mjs
-      - name: B boutique toolbar
-        if: always()
-        run: node --test tests/contracts/boutique-toolbar-*.test.mjs
+      - name: Lint
+        run: npm run lint
 
-      - name: C cart
-        if: always()
-        run: node --test tests/contracts/cart-*.test.mjs
-      - name: C checkout
-        if: always()
-        run: node --test tests/contracts/checkout-*.test.mjs
-      - name: C ci
-        if: always()
-        run: node --test tests/contracts/ci-*.test.mjs
-      - name: C clean
-        if: always()
-        run: node --test tests/contracts/clean-*.test.mjs
-      - name: C commerce
-        if: always()
-        run: node --test tests/contracts/commerce-*.test.mjs
-      - name: C commercial
-        if: always()
-        run: node --test tests/contracts/commercial-*.test.mjs
-      - name: C conversion
-        if: always()
-        run: node --test tests/contracts/conversion-*.test.mjs
-      - name: C customer
-        if: always()
-        run: node --test tests/contracts/customer-*.test.mjs
+      - name: Build
+        run: npm run build
 
-      - name: P payment
-        if: always()
-        run: node --test tests/contracts/payment-*.test.mjs
-      - name: P pickup
-        if: always()
-        run: node --test tests/contracts/pickup-*.test.mjs
-      - name: P product card
-        if: always()
-        run: node --test tests/contracts/product-card-*.test.mjs
-      - name: P product content
-        if: always()
-        run: node --test tests/contracts/product-content-*.test.mjs
-      - name: P product detail
-        if: always()
-        run: node --test tests/contracts/product-detail-*.test.mjs
-      - name: P product editor
-        if: always()
-        run: node --test tests/contracts/product-editor-*.test.mjs
-      - name: P product format
-        if: always()
-        run: node --test tests/contracts/product-format-*.test.mjs
-      - name: P product image
-        if: always()
-        run: node --test tests/contracts/product-image-*.test.mjs
-      - name: P product page
-        if: always()
-        run: node --test tests/contracts/product-page-*.test.mjs
-      - name: P product review
-        if: always()
-        run: node --test tests/contracts/product-review*.test.mjs
-      - name: P product sellability
-        if: always()
-        run: node --test tests/contracts/product-sellability-*.test.mjs
-      - name: P product stock
-        if: always()
-        run: node --test tests/contracts/product-stock-*.test.mjs
-      - name: P product title
-        if: always()
-        run: node --test tests/contracts/product-title-*.test.mjs
+      - name: Shipping lifecycle contract tests
+        run: npm run test:contracts
 
-      - name: S secondary
-        if: always()
-        run: node --test tests/contracts/secondary-*.test.mjs
-      - name: S secure
-        if: always()
-        run: node --test tests/contracts/secure-*.test.mjs
-      - name: S shipping
-        if: always()
-        run: node --test tests/contracts/shipping-*.test.mjs
-      - name: S shop
-        if: always()
-        run: node --test tests/contracts/shop-*.test.mjs
-      - name: S single
-        if: always()
-        run: node --test tests/contracts/single-*.test.mjs
-      - name: S site
-        if: always()
-        run: node --test tests/contracts/site-*.test.mjs
-      - name: S sold
-        if: always()
-        run: node --test tests/contracts/sold-*.test.mjs
-      - name: S staff
-        if: always()
-        run: node --test tests/contracts/staff-*.test.mjs
-      - name: S storefront
-        if: always()
-        run: node --test tests/contracts/storefront-*.test.mjs
-      - name: S stripe
-        if: always()
-        run: node --test tests/contracts/stripe-*.test.mjs
-      - name: S structured
-        if: always()
-        run: node --test tests/contracts/structured-*.test.mjs
-      - name: S supabase
-        if: always()
-        run: node --test tests/contracts/supabase-*.test.mjs
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests on current commit
+        run: npm run e2e:local
+
+      - name: Production API smoke
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run smoke
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
