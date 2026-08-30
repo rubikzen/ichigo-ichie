@@ -1,7 +1,7 @@
 /* Phase 4C1: globals.css split into ordered chunks.
-   Keep this import order unchanged to preserve the existing CSS cascade. */
+   V487 keeps route-only admin/customer rules out of the public storefront bundle. */
 @import "./styles/globals-01.css";
 @import "./styles/globals-02.css";
 @import "./styles/globals-03.css";
-@import "./styles/globals-04.css";
+@import "./styles/globals-04.storefront.generated.css";
 @import "./styles/performance-v486.css";
