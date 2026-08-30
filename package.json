@@ -11,7 +11,7 @@
     "e2e": "playwright test",
     "e2e:local": "E2E_LOCAL=1 playwright test",
     "e2e:headed": "playwright test --headed",
-    "test:contracts": "node scripts/run-contract-tests.mjs"
+    "test:contracts": "node --test tests/contracts/*.test.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.0",
