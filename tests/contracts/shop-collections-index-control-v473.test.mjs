@@ -8,6 +8,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 
 const seo = src("src/lib/shop-collection-seo.ts");
 const collection = src("src/components/ShopCollectionContent.tsx");
+const collectionProducts = src("src/components/ShopCollectionProducts.tsx");
 const boutique = src("src/app/boutique/page.tsx");
 const category = src("src/app/boutique/categorie/[slug]/page.tsx");
 const homepageCatalog = src("src/components/UnifiedCatalogSections.tsx");
@@ -28,6 +29,7 @@ test("V473 query states are noindex follow and canonicalized instead of becoming
   assert.match(boutique, /index: false, follow: true/);
   assert.match(boutique, /canonicalForShopQuery/);
   assert.doesNotMatch(collection, /useSearchParams|router\.push|history\.pushState/);
+  assert.doesNotMatch(collectionProducts, /useSearchParams|router\.push|history\.pushState/);
 });
 
 test("V473 category and usage query states canonicalize to existing clean destinations", () => {
@@ -56,11 +58,21 @@ test("V473 category collection query variants stay noindex with the clean catego
 });
 
 test("V473 collection pages reuse ProductCard and batch reviews while keeping sort local-only", () => {
-  assert.match(collection, /<ReviewSummaryProvider/);
-  assert.match(collection, /<ProductCard key=\{product\.id\} product=\{product\} \/>/);
-  assert.match(collection, /const \[sortMode, setSortMode\] = useState/);
-  assert.match(collection, /setSortMode\(event\.target\.value as SortMode\)/);
-  assert.doesNotMatch(collection, /addItem\(|setQuantity\(|\/api\/orders|\/api\/stripe/);
+  assert.match(collection, /<ShopCollectionProducts products=\{products\} \/>/);
+  assert.match(collectionProducts, /<ReviewSummaryProvider/);
+  assert.match(
+    collectionProducts,
+    /<ProductCard key=\{product\.id\} product=\{product\} \/>/,
+  );
+  assert.match(collectionProducts, /const \[sortMode, setSortMode\] = useState/);
+  assert.match(
+    collectionProducts,
+    /setSortMode\(event\.target\.value as SortMode\)/,
+  );
+  assert.doesNotMatch(
+    collectionProducts,
+    /addItem\(|setQuantity\(|\/api\/orders|\/api\/stripe/,
+  );
 });
 
 test("V473 homepage category headings expose crawlable clean collection links", () => {
@@ -73,7 +85,10 @@ test("V473 collection structured data stays editorial and avoids duplicate Produ
   assert.match(seo, /"@type": "CollectionPage"/);
   assert.match(seo, /"@type": "ItemList"/);
   assert.match(seo, /"@type": "BreadcrumbList"/);
-  assert.doesNotMatch(seo, /"@type": "Product"|"@type": "Offer"|AggregateRating|"@type": "Review"/);
+  assert.doesNotMatch(
+    seo,
+    /"@type": "Product"|"@type": "Offer"|AggregateRating|"@type": "Review"/,
+  );
 });
 
 test("V473 discovery and sitemap expose only clean Boutique and category collection URLs", () => {
@@ -84,7 +99,15 @@ test("V473 discovery and sitemap expose only clean Boutique and category collect
 });
 
 test("V473 collections are responsive and do not mutate checkout order or stock", () => {
-  const combined = [seo, collection, boutique, category, homepageCatalog, explore].join("\n");
+  const combined = [
+    seo,
+    collection,
+    collectionProducts,
+    boutique,
+    category,
+    homepageCatalog,
+    explore,
+  ].join("\n");
   assert.match(css, /V473 — canonical shop collections and facet index control/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /@media \(max-width: 640px\)/);
