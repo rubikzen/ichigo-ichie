@@ -7,6 +7,7 @@ const root = process.cwd();
 const src = (path) => readFileSync(resolve(root, path), "utf8");
 
 const collection = src("src/components/ShopCollectionContent.tsx");
+const collectionProducts = src("src/components/ShopCollectionProducts.tsx");
 const explore = src("src/components/MatchaExploreNav.tsx");
 const productCard = src("src/components/ProductCard.tsx");
 const css = src("src/app/styles/globals-04.css");
@@ -14,8 +15,8 @@ const css = src("src/app/styles/globals-04.css");
 test("V478 gives category and usage distinct hierarchy without changing clean collection links", () => {
   assert.match(collection, /shop-collection-taxonomy-row-v478/);
   assert.match(collection, /shop-collection-taxonomy-label-v478/);
-  assert.match(collection, /\{fr \? "Catégorie" : "Category"\}/);
-  assert.match(collection, /\{fr \? "Usage" : "Use"\}/);
+  assert.match(collection, /LocalizedText fr="Catégorie" en="Category"/);
+  assert.match(collection, /LocalizedText fr="Usage" en="Use"/);
   assert.match(collection, /categoryCollectionPath\(category\)/);
   assert.match(collection, /MATCHA_INTENT_SUMMARIES\.map/);
   assert.doesNotMatch(collection, /\?category=|\?usage=/);
@@ -33,7 +34,9 @@ test("V478 desktop hero keeps editorial content while removing the stranded righ
 });
 
 test("V478 mobile collection path visually removes breadcrumb and compacts hero without deleting semantic source", () => {
-  assert.match(collection, /<SeoBreadcrumbs/);
+  assert.match(collection, /data-seo-breadcrumbs-v472/);
+  assert.match(collection, /<nav/);
+  assert.match(collection, /<ol>/);
   assert.match(css, /\.shop-collection-breadcrumb-v473 \{\s*display: none;/);
   assert.match(css, /-webkit-line-clamp: 4/);
   assert.match(
@@ -43,14 +46,17 @@ test("V478 mobile collection path visually removes breadcrumb and compacts hero 
 });
 
 test("V478 mobile count and sort share one compact row before products", () => {
-  assert.match(collection, /shop-collection-count-v478/);
-  assert.match(collection, /shop-collection-sort-v478/);
+  assert.match(collectionProducts, /shop-collection-count-v478/);
+  assert.match(collectionProducts, /shop-collection-sort-v478/);
   assert.match(
     css,
     /\.shop-collection-toolbar-v473 \{[\s\S]*?flex-direction: row;[\s\S]*?justify-content: space-between;/,
   );
   assert.match(css, /\.shop-collection-sort-v478 > span \{\s*display: none;/);
-  assert.match(collection, /setSortMode\(event\.target\.value as SortMode\)/);
+  assert.match(
+    collectionProducts,
+    /setSortMode\(event\.target\.value as SortMode\)/,
+  );
 });
 
 test("V478 makes horizontal discovery overflow intentional and centers active mobile destination", () => {
@@ -69,29 +75,31 @@ test("V478 reserves floating bottom-navigation clearance without moving historic
     /var\(--mobile-nav-space, 94px\)[\s\S]*?env\(safe-area-inset-bottom, 0px\)/,
   );
   assert.doesNotMatch(collection, /mobile-bottom-nav/);
+  assert.doesNotMatch(collectionProducts, /mobile-bottom-nav/);
   assert.doesNotMatch(explore, /mobile-bottom-nav/);
 });
 
 test("V478 keeps products on existing ProductCard and one batch review provider", () => {
-  assert.match(collection, /<ReviewSummaryProvider/);
+  assert.match(collection, /<ShopCollectionProducts products=\{products\} \/>/);
+  assert.match(collectionProducts, /<ReviewSummaryProvider/);
   assert.match(
-    collection,
+    collectionProducts,
     /<ProductCard key=\{product\.id\} product=\{product\} \/>/,
   );
   assert.match(productCard, /export function ProductCard/);
-  assert.doesNotMatch(collection, /addItem\(|setQuantity\(/);
+  assert.doesNotMatch(collectionProducts, /addItem\(|setQuantity\(/);
 });
 
 test("V478 does not turn local sort or taxonomy into crawlable query-state facets", () => {
-  assert.match(collection, /const \[sortMode, setSortMode\] = useState/);
+  assert.match(collectionProducts, /const \[sortMode, setSortMode\] = useState/);
   assert.doesNotMatch(
-    collection,
+    [collection, collectionProducts].join("\n"),
     /useSearchParams|router\.push|history\.pushState|\?sort=/,
   );
 });
 
 test("V478 is presentation-only with no commerce schema or database mutation", () => {
-  const combined = [collection, explore].join("\n");
+  const combined = [collection, collectionProducts, explore].join("\n");
   assert.match(css, /V478 — Boutique collection UI polish/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /@media \(max-width: 640px\)/);

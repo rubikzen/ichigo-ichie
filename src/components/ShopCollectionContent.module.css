@@ -1,0 +1,23 @@
+.fr {
+  display: inline;
+}
+
+.en {
+  display: none;
+}
+
+:global(html[data-language="fr"]) .fr {
+  display: inline;
+}
+
+:global(html[data-language="fr"]) .en {
+  display: none;
+}
+
+:global(html[data-language="en"]) .fr {
+  display: none;
+}
+
+:global(html[data-language="en"]) .en {
+  display: inline;
+}
