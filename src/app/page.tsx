@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
 import { compactMenuProductForHome, compactShopProductForHome } from "@/lib/home-catalog";
 import { HomePageContent } from "@/components/HomePageContent";
+import "./styles/home-mobile-v496.css";
 
 export const revalidate = 30;
 
