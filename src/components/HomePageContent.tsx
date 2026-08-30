@@ -14,13 +14,13 @@ import { SafeImage } from "./SafeImage";
 import { MatchaGuidesTeaser } from "./MatchaGuidesTeaser";
 
 export function HomePageContent({
-  shopFeatured,
+  shopFeaturedIds,
   menuCategories,
   menuProducts,
   shopCategories,
   shopProducts,
 }: {
-  shopFeatured: Product[];
+  shopFeaturedIds: string[];
   menuCategories: Category[];
   menuProducts: Product[];
   shopCategories: Category[];
@@ -30,6 +30,10 @@ export function HomePageContent({
   const { settings } = useSiteSettings();
   const t = (fr: string, en: string) =>
     settings[language === "fr" ? fr : en] || settings[fr] || "";
+  const shopProductsById = new Map(shopProducts.map((product) => [product.id, product]));
+  const shopFeatured = shopFeaturedIds
+    .map((id) => shopProductsById.get(id))
+    .filter((product): product is Product => Boolean(product));
 
   const mobile = language === "fr"
     ? {
