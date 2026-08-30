@@ -1,17 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "./ProductCard";
-import { RitualBundleBuilder } from "./RitualBundleBuilder";
 import { MenuInfoCard } from "./MenuInfoCard";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
 import { MATCHA_FINDER_TAGS, matchaFinderLabel, productMatchesFinderTag, productMatchaFinderTags, type MatchaFinderTag } from "@/lib/product-merchandising";
 import { categoryCollectionPath } from "@/lib/shop-collection-seo";
+
+// V499: keep the visible bundle server-rendered while moving its interaction code
+// into a separate client chunk instead of the initial homepage catalogue graph.
+const RitualBundleBuilder = dynamic(() =>
+  import("./RitualBundleBuilder").then((module) => module.RitualBundleBuilder),
+);
 
 type CatalogBlockProps = {
   id: "menu" | "boutique";
