@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { Product } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { SafeImage } from "./SafeImage";
@@ -11,6 +12,11 @@ const moneyFormatters = {
 
 const money = (value: number, language: "fr" | "en") =>
   moneyFormatters[language].format(value);
+
+const compactRenderStyle: CSSProperties = {
+  contentVisibility: "auto",
+  containIntrinsicSize: "auto 112px",
+};
 
 function badgeLengthClass(value: string) {
   const length = value.trim().length;
@@ -36,6 +42,7 @@ export function MenuInfoCard({
   return (
     <article
       className={`menu-info-card${compact ? " menu-info-card-compact-v449" : ""}`}
+      style={compact ? compactRenderStyle : undefined}
     >
       <div className="menu-info-media">
         <SafeImage

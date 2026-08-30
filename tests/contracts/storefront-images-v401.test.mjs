@@ -13,6 +13,10 @@ const product = readFileSync(
   resolve(root, "src/components/ProductCard.tsx"),
   "utf8",
 );
+const modal = readFileSync(
+  resolve(root, "src/components/ProductModal.tsx"),
+  "utf8",
+);
 const home = readFileSync(
   resolve(root, "src/components/HomePageContent.tsx"),
   "utf8",
@@ -32,12 +36,15 @@ test("SafeImage optimizes local and Supabase media while preserving arbitrary CM
   assert.match(safeImage, /onError=\{handleError\}/);
 });
 
-test("ProductCard storefront images use SafeImage with responsive sizing", () => {
+test("ProductCard and lazy ProductModal storefront images use SafeImage with responsive sizing", () => {
   assert.match(product, /import \{ SafeImage \} from "\.\/SafeImage";/);
-  assert.match(product, /<SafeImage\s+src=\{image\}[\s\S]*?\sfill\s+sizes=/);
-  assert.match(product, /<SafeImage src=\{url\} alt="" width=\{240\} height=\{180\}/);
   assert.match(product, /className="product-image"[\s\S]*?width=\{800\}[\s\S]*?height=\{656\}/);
   assert.doesNotMatch(product, /<img\b/);
+
+  assert.match(modal, /import \{ SafeImage \} from "\.\/SafeImage";/);
+  assert.match(modal, /<SafeImage[\s\S]*?src=\{image\}[\s\S]*?\sfill\s+sizes=/);
+  assert.match(modal, /<SafeImage src=\{url\} alt="" width=\{240\} height=\{180\}/);
+  assert.doesNotMatch(modal, /<img\b/);
 });
 
 test("homepage story media uses SafeImage without changing the existing hero Image", () => {

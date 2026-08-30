@@ -5,14 +5,18 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 const media = readFileSync(resolve(root, "src/components/SiteMediaField.tsx"), "utf8");
 const checkout = readFileSync(resolve(root, "src/app/checkout/page.tsx"), "utf8");
 const eslint = readFileSync(resolve(root, "eslint.config.mjs"), "utf8");
 
-test("ProductCard detects hydration without setState in a mount effect", () => {
-  assert.match(product, /useSyncExternalStore/);
-  assert.match(product, /const mounted = useSyncExternalStore/);
+test("ProductCard keeps modal hydration client-only without a mount-state effect", () => {
+  assert.match(product, /import dynamic from "next\/dynamic"/);
+  assert.match(product, /import\("\.\/ProductModal"\)/);
+  assert.match(product, /\{ ssr: false \}/);
   assert.doesNotMatch(product, /useEffect\(\(\) => setMounted\(true\)/);
+  assert.doesNotMatch(product, /createPortal/);
+  assert.match(modal, /createPortal/);
 });
 
 test("media upload input id uses React useId instead of render-time randomness", () => {

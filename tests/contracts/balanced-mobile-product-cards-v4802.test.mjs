@@ -8,6 +8,7 @@ const src = (path) => readFileSync(resolve(root, path), "utf8");
 
 const css = src("src/app/styles/globals-04.css");
 const card = src("src/components/ProductCard.tsx");
+const modal = src("src/components/ProductModal.tsx");
 
 const marker = "/* V480.2 — Balanced mobile product-card slots */";
 const start = css.indexOf(marker);
@@ -60,6 +61,7 @@ test("V480.2 leaves commerce behavior untouched", () => {
   assert.match(card, /setQuantity\(/);
   assert.match(card, /removeItem\(/);
   assert.match(card, /RestockNotify/);
-  assert.match(card, /product-modal product-modal-v28/);
+  assert.match(card, /import\("\.\/ProductModal"\)/);
+  assert.match(modal, /product-modal product-modal-v28/);
   assert.doesNotMatch(v4802, /supabase|checkout|stripe|order_items|orders/);
 });

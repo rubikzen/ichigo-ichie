@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 const root = process.cwd();
 const css = readFileSync(resolve(root, "src/app/styles/globals-04.css"), "utf8");
 const card = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 
 test("desktop product media uses a compact 4 by 5 frame", () => {
   assert.match(css, /Ichigo Ichie V4\.11 — Compact desktop product media/);
@@ -30,5 +31,6 @@ test("V411 leaves product data stock cart and modal behavior untouched", () => {
   assert.match(card, /<SafeImage[\s\S]*className="product-image"/);
   assert.match(card, /const stockLimitReached =/);
   assert.match(card, /const handleAdd = \(\) =>/);
-  assert.match(card, /product-modal product-modal-v28/);
+  assert.match(card, /import\("\.\/ProductModal"\)/);
+  assert.match(modal, /product-modal product-modal-v28/);
 });

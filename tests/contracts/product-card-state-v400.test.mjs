@@ -8,6 +8,10 @@ const product = readFileSync(
   resolve(root, "src/components/ProductCard.tsx"),
   "utf8",
 );
+const modal = readFileSync(
+  resolve(root, "src/components/ProductModal.tsx"),
+  "utf8",
+);
 
 test("ProductCard remount key follows product identity and option configuration", () => {
   assert.match(
@@ -53,7 +57,9 @@ test("ProductCard no longer synchronizes local selection state from props inside
     /\}, \[product\.id\]\); \/\/ eslint-disable-line react-hooks\/exhaustive-deps/,
   );
 
-  // The modal effect remains because it synchronizes with document.body and keyboard events.
-  assert.match(product, /document\.body\.style\.overflow = "hidden"/);
-  assert.match(product, /window\.addEventListener\("keydown", onKeyDown\)/);
+  // V492 moved document and keyboard side-effects into the lazy ProductModal chunk.
+  assert.doesNotMatch(product, /document\.body\.style\.overflow = "hidden"/);
+  assert.doesNotMatch(product, /window\.addEventListener\("keydown", onKeyDown\)/);
+  assert.match(modal, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(modal, /window\.addEventListener\("keydown", onKeyDown\)/);
 });

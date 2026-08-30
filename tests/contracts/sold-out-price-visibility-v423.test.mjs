@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { resolve } from "node:path";
 
-const product = readFileSync(resolve(process.cwd(), "src/components/ProductCard.tsx"), "utf8");
+const root = process.cwd();
+const product = readFileSync(resolve(root, "src/components/ProductCard.tsx"), "utf8");
+const modal = readFileSync(resolve(root, "src/components/ProductModal.tsx"), "utf8");
 
 test("fully sold-out product cards do not render a storefront price", () => {
   assert.match(product, /const isSoldOut = totalStock <= 0/);
@@ -23,17 +25,17 @@ test("From price is calculated only from variants that can actually be purchased
 
 test("sold-out variant choices show Sold out instead of their price", () => {
   assert.match(
-    product,
+    modal,
     /\{item\.stock > 0 && <small>\{money\(item\.price, language\)\}<\/small>\}/,
   );
   assert.match(
-    product,
+    modal,
     /\{item\.stock <= 0 && <b>\{language === "fr" \? "Épuisé" : "Sold out"\}<\/b>\}/,
   );
 });
 
 test("sold-out product modal hides its main price block and exposes restock recovery", () => {
-  assert.match(product, /\) : !hasStock \? \([\s\S]*?<RestockNotify/);
-  assert.match(product, /productName=\{name\}[\s\S]*?context="modal"/);
-  assert.match(product, /\) : \([\s\S]*?<div className="product-price-block">/);
+  assert.match(modal, /\) : !hasStock \? \([\s\S]*?<RestockNotify/);
+  assert.match(modal, /productName=\{name\}[\s\S]*?context="modal"/);
+  assert.match(modal, /\) : \([\s\S]*?<div className="product-price-block">/);
 });
