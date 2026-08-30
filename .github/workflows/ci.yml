@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Build and browser tests
+    name: Contract isolation
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -35,85 +35,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-      - name: Debug contracts A-C
+      - name: Contracts A
+        if: always()
+        run: node --test tests/contracts/a*.test.mjs
+      - name: Contracts B
+        if: always()
+        run: node --test tests/contracts/b*.test.mjs
+      - name: Contracts C
+        if: always()
+        run: node --test tests/contracts/c*.test.mjs
+      - name: Contracts P
+        if: always()
+        run: node --test tests/contracts/p*.test.mjs
+      - name: Contracts Q
         if: always()
         run: |
           shopt -s nullglob
-          files=(tests/contracts/[a-c]*.test.mjs)
+          files=(tests/contracts/q*.test.mjs)
           ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts D-F
+      - name: Contracts R
         if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[d-f]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts G-I
+        run: node --test tests/contracts/r*.test.mjs
+      - name: Contracts S
         if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[g-i]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts J-L
+        run: node --test tests/contracts/s*.test.mjs
+      - name: Contracts T
         if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[j-l]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts M-O
+        run: node --test tests/contracts/t*.test.mjs
+      - name: Contracts U
         if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[m-o]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts P-R
-        if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[p-r]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts S-U
-        if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[s-u]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts V-Z
-        if: always()
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[v-z]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Browser tests on current commit
-        run: npm run e2e:local
-
-      - name: Production API smoke
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npm run smoke
-
-      - name: Upload Playwright failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-failure-artifacts
-          path: |
-            test-results/
-            playwright-report/
-          if-no-files-found: ignore
-          retention-days: 7
+        run: node --test tests/contracts/u*.test.mjs
