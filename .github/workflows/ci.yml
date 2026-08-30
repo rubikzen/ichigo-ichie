@@ -43,61 +43,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Debug contracts A-C
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[a-c]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts D-F
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[d-f]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts G-I
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[g-i]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts J-L
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[j-l]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts M-O
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[m-o]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts P-R
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[p-r]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts S-U
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[s-u]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
-
-      - name: Debug contracts V-Z
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          files=(tests/contracts/[v-z]*.test.mjs)
-          ((${#files[@]} == 0)) || node --test "${files[@]}"
+      - name: Shipping lifecycle contract tests
+        run: npm run test:contracts
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
