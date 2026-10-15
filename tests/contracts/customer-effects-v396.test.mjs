@@ -9,7 +9,7 @@ const account = readFileSync(resolve(root, "src/components/CustomerAccount.tsx")
 const tracker = readFileSync(resolve(root, "src/components/OrderTracker.tsx"), "utf8");
 
 test("checkout defers synchronous effect state resets with cancellation guards", () => {
-  assert.match(checkout, /if \(!mustPickup\) return;[\s\S]*queueMicrotask/);
+  assert.match(checkout, /const nextMode = !canShip \? "pickup" : !canPickup \? "shipping" : null;[\s\S]*queueMicrotask/);
   assert.match(checkout, /setQuote\(null\);[\s\S]*setQuoteError\(""\);[\s\S]*setShippingMethodId\(""\)/);
   assert.match(checkout, /setAddressSuggestions\(\[\]\)/);
   assert.match(checkout, /setCitySuggestions\(\[\]\)/);

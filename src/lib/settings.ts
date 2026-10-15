@@ -171,6 +171,9 @@ export const siteSettingDefaults: SiteSettings = {
   cart_empty_text_fr: "Ajoutez un matcha, un accessoire ou un coffret depuis la Boutique.",
   cart_empty_text_en: "Add matcha, accessories or a gift set from the Shop.",
 
+  checkout_pickup_enabled: "true",
+  checkout_shipping_enabled: "true",
+
   checkout_eyebrow_fr: "ICHIGO ICHIE",
   checkout_eyebrow_en: "ICHIGO ICHIE",
   checkout_title_fr: "Finaliser la commande",

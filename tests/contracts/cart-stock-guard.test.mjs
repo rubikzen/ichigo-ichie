@@ -36,8 +36,8 @@ test("cart quantity controls include sibling configurations in the stock limit",
 
 test("legacy overstock carts cannot proceed to checkout", () => {
   assert.match(cartPage, /const hasStockConflict = items\.some/);
-  assert.match(cartPage, /aria-disabled=\{hasStockConflict\}/);
-  assert.match(cartPage, /if \(hasStockConflict\) event\.preventDefault\(\)/);
+  assert.match(cartPage, /aria-disabled=\{hasStockConflict \|\| checkoutUnavailable\}/);
+  assert.match(cartPage, /if \(hasStockConflict \|\| checkoutUnavailable\) event\.preventDefault\(\)/);
   assert.match(cartPage, /Corriger les quantités/);
 });
 

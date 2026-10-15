@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import { checkoutFulfilmentModes } from "@/lib/checkout-fulfilment";
 import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, normalizeLegacyProductLabel, packagingLabel, variantLabel } from "@/lib/product-label";
@@ -70,6 +71,8 @@ export function CartPageClient({ products }: { products: Product[] }) {
   const editingProduct = editingItem ? productMap.get(editingItem.productId) : undefined;
   const hasPickupOnly = items.some((item) => item.pickupOnly);
   const hasShippingItems = items.some((item) => !item.pickupOnly);
+  const { pickupEnabled, shippingEnabled } = checkoutFulfilmentModes(settings);
+  const checkoutUnavailable = !pickupEnabled && (!shippingEnabled || hasPickupOnly);
   const ritualBundlePercent = ritualBundlePercentFromSetting(
     settings.shop_ritual_bundle_discount_percent,
   );
@@ -310,25 +313,34 @@ export function CartPageClient({ products }: { products: Product[] }) {
             <strong>− {money(ritualDiscount, language)}</strong>
           </div>
         )}
-<div className="cart-summary-line-v216 cart-shipping-preview-v254">
+{shippingEnabled && <div className="cart-summary-line-v216 cart-shipping-preview-v254">
   <span>{language === "fr" ? "Livraison" : "Shipping"}</span>
   <strong>
     {language === "fr"
       ? "Calculée ensuite"
       : "Calculated next"}
   </strong>
-</div>
+</div>}
         <div className="cart-fulfilment-v216">
-          {hasPickupOnly && <p><b>●</b>{language === "fr" ? " Cette commande contient un article à retirer en boutique." : " This order contains an item requiring boutique pickup."}</p>}
-          {!hasPickupOnly && hasShippingItems && <p><b>●</b>{language === "fr" ? " Livraison ou retrait à choisir à l’étape suivante." : " Choose shipping or pickup at the next step."}</p>}
+          {checkoutUnavailable
+            ? <p role="status"><b>●</b>{language === "fr" ? " Les commandes sont temporairement indisponibles pour ce panier." : " Ordering is temporarily unavailable for this cart."}</p>
+            : hasPickupOnly
+              ? <p><b>●</b>{language === "fr" ? " Cette commande nécessite un retrait boutique." : " This order requires boutique pickup."}</p>
+              : hasShippingItems && <p><b>●</b>{
+                  shippingEnabled && pickupEnabled
+                    ? (language === "fr" ? " Livraison ou retrait à choisir à l’étape suivante." : " Choose shipping or pickup at the next step.")
+                    : shippingEnabled
+                      ? (language === "fr" ? " Livraison disponible." : " Delivery available.")
+                      : (language === "fr" ? " Retrait boutique disponible." : " Boutique pickup available.")
+                }</p>}
         </div>
 
         <Link
-          className={`button primary full cart-checkout-v216 ${hasStockConflict ? "is-disabled" : ""}`}
+          className={`button primary full cart-checkout-v216 ${hasStockConflict || checkoutUnavailable ? "is-disabled" : ""}`}
           href="/checkout"
-          aria-disabled={hasStockConflict}
+          aria-disabled={hasStockConflict || checkoutUnavailable}
           onClick={(event) => {
-            if (hasStockConflict) event.preventDefault();
+            if (hasStockConflict || checkoutUnavailable) event.preventDefault();
           }}
         >
           <span>{hasStockConflict
@@ -340,16 +352,16 @@ export function CartPageClient({ products }: { products: Product[] }) {
               : "Proceed to checkout"}</span>
           <strong>{money(ritualSubtotal, language)}</strong>
         </Link>
-        <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>
+        {shippingEnabled && <small className="cart-summary-note-v216">{language === "fr" ? "Les frais de livraison seront calculés au checkout." : "Shipping costs are calculated at checkout."}</small>}
         <div className="cart-trust-v460" aria-label={language === "fr" ? "Informations de confiance" : "Trust information"}>
           <span><b aria-hidden="true">✓</b>{language === "fr" ? "Paiement sécurisé par Stripe" : "Secure Stripe payment"}</span>
-          <span><b aria-hidden="true">✓</b>{language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice"}</span>
-          <span><b aria-hidden="true">✓</b>{language === "fr" ? "Livraison suivie en France" : "Tracked delivery in France"}</span>
+          {pickupEnabled && <span><b aria-hidden="true">✓</b>{language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice"}</span>}
+          {shippingEnabled && <span><b aria-hidden="true">✓</b>{language === "fr" ? "Livraison suivie en France" : "Tracked delivery in France"}</span>}
         </div>
       </aside>
 
       <div
-        className={`mobile-cart-checkout-bar-v419 ${hasStockConflict ? "has-conflict" : ""} mobile-cart-checkout-bar-v481`}
+        className={`mobile-cart-checkout-bar-v419 ${hasStockConflict || checkoutUnavailable ? "has-conflict" : ""} mobile-cart-checkout-bar-v481`}
         aria-label={language === "fr" ? "Accès rapide au paiement" : "Quick checkout"}
       >
         <div className="mobile-cart-total-v419 mobile-cart-total-v481" aria-live="polite">
@@ -357,11 +369,11 @@ export function CartPageClient({ products }: { products: Product[] }) {
           <strong>{money(ritualSubtotal, language)}</strong>
         </div>
         <Link
-          className={`button primary mobile-cart-checkout-v419 mobile-cart-checkout-v481 ${hasStockConflict ? "is-disabled" : ""}`}
+          className={`button primary mobile-cart-checkout-v419 mobile-cart-checkout-v481 ${hasStockConflict || checkoutUnavailable ? "is-disabled" : ""}`}
           href="/checkout"
-          aria-disabled={hasStockConflict}
+          aria-disabled={hasStockConflict || checkoutUnavailable}
           onClick={(event) => {
-            if (hasStockConflict) event.preventDefault();
+            if (hasStockConflict || checkoutUnavailable) event.preventDefault();
           }}
         >
           {hasStockConflict

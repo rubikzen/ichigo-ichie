@@ -24,7 +24,7 @@ test("V460 adds compact bilingual trust reassurance to the cart summary", () => 
 test("V460 keeps the canonical cart stock blocker and checkout destination untouched", () => {
   assert.match(cart, /hasStockConflict/);
   assert.match(cart, /href="\/checkout"/);
-  assert.match(cart, /if \(hasStockConflict\) event\.preventDefault\(\)/);
+  assert.match(cart, /if \(hasStockConflict \|\| checkoutUnavailable\) event\.preventDefault\(\)/);
   assert.doesNotMatch(cart, /fetch\("\/api\/orders"/);
 });
 

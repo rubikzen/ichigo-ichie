@@ -255,7 +255,20 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
         <div className="cms-subsection"><h3>Checkout</h3>{bilingual("checkout_eyebrow", "Petit titre")}{bilingual("checkout_title", "Titre")}{bilingual("checkout_intro", "Introduction", true)}</div>
       </>)}
 
-      {settingsPanel === "shipping" && <section className="cms-panel-v238"><div className="cms-panel-head-v238" id="settings-panel-top-v238"><div><span>VENTE</span><h3>Livraison & tarifs</h3><p>Modes de livraison, seuils de gratuité et tranches de poids.</p></div><small>Modes & poids</small></div><div className="cms-panel-body-v238 cms-panel-body-shipping-v238"><ShippingRatesAdmin supabase={supabase} /></div></section>}
+      {settingsPanel === "shipping" && <section className="cms-panel-v238"><div className="cms-panel-head-v238" id="settings-panel-top-v238"><div><span>VENTE</span><h3>Livraison & tarifs</h3><p>Modes de livraison, seuils de gratuité et tranches de poids.</p></div><small>Modes & poids</small></div><div className="cms-panel-body-v238 cms-panel-body-shipping-v238">
+          <div className="cms-subsection">
+            <h3>Modes de réception au checkout</h3>
+            <p className="muted">Activez ou désactivez chaque mode indépendamment. Enregistrez les réglages pour appliquer les changements sur le site.</p>
+            <div className="cms-toggle-grid">
+              <label><input type="checkbox" checked={settings.checkout_pickup_enabled !== "false"} onChange={() => toggle("checkout_pickup_enabled")} /> Retrait boutique — 14 rue Centrale, Nice</label>
+              <label><input type="checkbox" checked={settings.checkout_shipping_enabled !== "false"} onChange={() => toggle("checkout_shipping_enabled")} /> Livraison — France métropolitaine</label>
+            </div>
+            {settings.checkout_pickup_enabled === "false" && settings.checkout_shipping_enabled === "false" && (
+              <p role="status" className="setup-warning compact-warning-v227">Les deux modes sont désactivés : les clients ne pourront plus passer de nouvelles commandes.</p>
+            )}
+          </div>
+          <ShippingRatesAdmin supabase={supabase} />
+        </div></section>}
 
       {panel("footer", "Boutique & pied de page", "Adresse, contact, réseaux et liens légaux", <><div className="cms-toggle-row"><label><input type="checkbox" checked={settings.footer_show_logo !== "false"} onChange={() => toggle("footer_show_logo")} /> Afficher le logo dans le pied de page</label></div><div className="form-grid">{text("store_address", "Adresse affichée")}{text("store_maps_url", "Lien Google Maps (optionnel)", "https://maps.app.goo.gl/…")}{text("opening_hours", "Horaires")}{text("phone", "Téléphone")}{text("support_email", "Email service client")}{text("instagram", "Instagram · URL ou @compte")}</div>{text("footer_brand", "Nom dans le footer")}{bilingual("footer_tagline", "Phrase dans le footer")}{bilingual("footer_open_prefix", "Mot avant les horaires")}{bilingual("footer_nav_title", "Titre colonne navigation")}{bilingual("footer_visit_title", "Titre colonne visite")}{bilingual("footer_follow_title", "Titre colonne réseaux")}{bilingual("footer_legal_title", "Titre colonne informations")}{bilingual("footer_maps_label", "Nom du lien Maps")}{bilingual("footer_location", "Localisation bas de page")}{text("footer_copyright_name", "Nom copyright")}</>)}
 

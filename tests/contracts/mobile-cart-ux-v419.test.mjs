@@ -17,10 +17,10 @@ test("mobile cart exposes subtotal and checkout without requiring a long scroll"
 test("mobile checkout shortcut preserves the existing aggregate stock guard", () => {
   assert.match(
     cart,
-    /mobile-cart-checkout-v419[\s\S]*?aria-disabled=\{hasStockConflict\}[\s\S]*?if \(hasStockConflict\) event\.preventDefault\(\)/,
+    /mobile-cart-checkout-v419[\s\S]*?aria-disabled=\{hasStockConflict \|\| checkoutUnavailable\}[\s\S]*?if \(hasStockConflict \|\| checkoutUnavailable\) event\.preventDefault\(\)/,
   );
   assert.match(cart, /"Corriger les quantités"[\s\S]*?"Fix quantities"/);
-  assert.match(cart, /mobile-cart-checkout-bar-v419 \$\{hasStockConflict \? "has-conflict" : ""\}/);
+  assert.match(cart, /mobile-cart-checkout-bar-v419 \$\{hasStockConflict \|\| checkoutUnavailable \? "has-conflict" : ""\}/);
 });
 
 test("mobile checkout bar sits above the existing bottom navigation reservation", () => {
