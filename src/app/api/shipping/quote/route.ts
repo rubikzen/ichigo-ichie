@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
 import { OrderValidationError, resolveCart, type PayloadItem } from "@/lib/order-calculation";
 import { getPackagingWeightG, getShippingQuotes } from "@/lib/shipping";
+import { loadCheckoutFulfilmentModes } from "@/lib/checkout-fulfilment";
 import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
 export async function POST(request: Request) {
@@ -10,6 +11,9 @@ export async function POST(request: Request) {
     if (!supabase) return NextResponse.json({ error: "Supabase non configuré." }, { status: 503 });
     const rateLimit = await consumeRateLimit(request, supabase, { scope: "shipping:quote", limit: 60, windowSeconds: 600 });
     if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+
+    const { shippingEnabled } = await loadCheckoutFulfilmentModes(supabase);
+    if (!shippingEnabled) throw new OrderValidationError("La livraison est temporairement indisponible.");
 
     const body = await readJsonBody<Record<string, unknown>>(request, 48_000);
     const items = (body.items ?? []) as PayloadItem[];
