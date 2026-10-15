@@ -10,7 +10,7 @@ import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { trackConversion } from "@/lib/conversion-analytics";
-import { formatParisDateTimeInput, isWithinPickupHours, parseParisDateTimeInput } from "@/lib/pickup-time";
+import { formatParisDateTimeInput, formatParisPickupDateTime, isWithinPickupHours, parseParisDateTimeInput } from "@/lib/pickup-time";
 import {
   cartBundleDiscount,
   ritualBundleModeFromSetting,
@@ -624,7 +624,7 @@ export default function CheckoutPage() {
     <p>{language === "fr" ? "Numéro de commande" : "Order number"}: <strong>{result.orderNumber}</strong></p>
     {result.orderType === "shipping"
       ? <p className="success-pickup"><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><br />{result.shippingMethodName}</p>
-      : <p className="success-pickup">{result.pickupTime ? `${language === "fr" ? "Retrait" : "Pickup"}: ${new Date(result.pickupTime).toLocaleString(language === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}` : (language === "fr" ? "Retrait : dès que possible" : "Pickup: as soon as possible")}</p>}
+      : <p className="success-pickup">{result.pickupTime ? `${language === "fr" ? "Retrait" : "Pickup"}: ${formatParisPickupDateTime(result.pickupTime, language)}` : (language === "fr" ? "Retrait : dès que possible" : "Pickup: as soon as possible")}</p>}
     {typeof result.total === "number" && <p className="success-total">Total <strong>{money.format(result.total)}</strong></p>}
     {result.demo && <p>Mode aperçu: la commande n’est pas encore envoyée à Supabase.</p>}
     <div className="success-actions">
