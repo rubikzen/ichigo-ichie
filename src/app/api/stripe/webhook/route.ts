@@ -12,12 +12,14 @@ async function syncRefund(supabase: NonNullable<ReturnType<typeof createServiceS
   if (!orderId) return;
 
   if (refund.status === "succeeded") {
-    await supabase.from("orders").update({
+    // Preserve the original refund completion timestamp on replayed events.
+    const { error: refundUpdateError } = await supabase.from("orders").update({
       status: "refunded",
       payment_status: "refunded",
       stripe_refund_id: refund.id,
       refunded_at: new Date().toISOString(),
-    }).eq("id", orderId);
+    }).eq("id", orderId).neq("payment_status", "refunded");
+    if (refundUpdateError) throw refundUpdateError;
     try { await issueAndEmailCreditNote(supabase, orderId); }
     catch (invoiceError) { console.error("Credit note error", invoiceError); }
     try { await sendOrderEmail(supabase, orderId, "refund"); }
@@ -26,17 +28,19 @@ async function syncRefund(supabase: NonNullable<ReturnType<typeof createServiceS
   }
 
   if (refund.status === "failed" || refund.status === "canceled") {
-    await supabase.from("orders").update({
+    const { error: refundFailureError } = await supabase.from("orders").update({
       payment_status: "refund_failed",
       stripe_refund_id: refund.id,
-    }).eq("id", orderId);
+    }).eq("id", orderId).neq("payment_status", "refunded");
+    if (refundFailureError) throw refundFailureError;
     return;
   }
 
-  await supabase.from("orders").update({
+  const { error: refundPendingError } = await supabase.from("orders").update({
     payment_status: "refund_pending",
     stripe_refund_id: refund.id,
-  }).eq("id", orderId);
+  }).eq("id", orderId).neq("payment_status", "refunded");
+  if (refundPendingError) throw refundPendingError;
 }
 
 export async function POST(request: Request) {
