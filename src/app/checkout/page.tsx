@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
+import { checkoutFulfilmentModes } from "@/lib/checkout-fulfilment";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -136,6 +137,9 @@ export default function CheckoutPage() {
           : `Matcha + accessory · −${ritualBundlePercentText}%`;
   const cms = (fr: string, en: string, fallbackFr: string, fallbackEn: string) => settings[language === "fr" ? fr : en] || (language === "fr" ? fallbackFr : fallbackEn);
   const mustPickup = items.some((item) => item.pickupOnly);
+  const { pickupEnabled, shippingEnabled } = checkoutFulfilmentModes(settings);
+  const canPickup = pickupEnabled;
+  const canShip = shippingEnabled && !mustPickup;
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OrderResult | null>(null);
   const [error, setError] = useState("");
@@ -149,7 +153,13 @@ export default function CheckoutPage() {
     total: number;
     trackingUrl?: string | null;
   } | null>(null);
-  const [orderType, setOrderType] = useState<"pickup" | "shipping">(mustPickup ? "pickup" : "shipping");
+  const [orderType, setOrderType] = useState<"pickup" | "shipping">(mustPickup || !shippingEnabled ? "pickup" : "shipping");
+  const fulfilmentUnavailable = !canPickup && !canShip;
+  const unavailableMessage = fulfilmentUnavailable
+    ? (language === "fr" ? "Les commandes en ligne sont temporairement indisponibles." : "Online ordering is temporarily unavailable.")
+    : (!canPickup && orderType === "pickup") || (!canShip && orderType === "shipping")
+      ? (language === "fr" ? "Ce mode de réception est temporairement indisponible." : "This fulfilment option is temporarily unavailable.")
+      : "";
   const [pickupMode, setPickupMode] = useState<"asap" | "scheduled">("asap");
   const clientReferenceRef = useRef<string | null>(null);
   const beginCheckoutTracked = useRef(false);
@@ -197,13 +207,12 @@ export default function CheckoutPage() {
   }, [items, subtotal, orderType]);
 
   useEffect(() => {
-    if (!mustPickup) return;
+    const nextMode = !canShip ? "pickup" : !canPickup ? "shipping" : null;
+    if (!nextMode || orderType === nextMode) return;
     let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) setOrderType("pickup");
-    });
+    queueMicrotask(() => { if (!cancelled) setOrderType(nextMode); });
     return () => { cancelled = true; };
-  }, [mustPickup]);
+  }, [canPickup, canShip, orderType]);
 
   // V2.43 — A signed-in customer gets their verified profile and default address
   // prefilled without making account creation mandatory for checkout.
@@ -244,7 +253,7 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    if (orderType !== "shipping" || mustPickup || !items.length) {
+    if (orderType !== "shipping" || !canShip || !items.length) {
       let cancelled = false;
       queueMicrotask(() => {
         if (cancelled) return;
@@ -277,7 +286,7 @@ export default function CheckoutPage() {
     }
     loadQuote();
     return () => { active = false; };
-  }, [orderType, mustPickup, items]);
+  }, [orderType, canShip, items]);
 
   useEffect(() => {
     if (orderType !== "shipping" || addressEntryMode === "manual") {
@@ -393,8 +402,11 @@ export default function CheckoutPage() {
   const shippingAddressReady = orderType !== "shipping" || (address1.trim().length >= 3 && /^\d{5}$/.test(postalCode) && city.trim().length >= 2);
   const underMinimumOnlinePayment = checkoutTotal > 0 && checkoutTotal < MIN_ONLINE_PAYMENT_EUR;
   const submitDisabled = loading || underMinimumOnlinePayment || !acceptedTerms || (orderType === "shipping" && (quoteLoading || !selectedShipping || !shippingAddressReady));
+  const modeSubmitBlocked = Boolean(unavailableMessage);
   const checkoutBlocker = loading || paymentSession
     ? ""
+    : unavailableMessage
+      ? unavailableMessage
     : orderType === "shipping" && quoteLoading
       ? (language === "fr" ? "Calcul de la livraison en cours…" : "Calculating delivery…")
       : orderType === "shipping" && quoteError
@@ -493,6 +505,10 @@ export default function CheckoutPage() {
     event.preventDefault();
     const clientReference = clientReferenceRef.current ?? window.crypto.randomUUID();
     clientReferenceRef.current = clientReference;
+    if (unavailableMessage) {
+      setError(unavailableMessage);
+      return;
+    }
     if (!acceptedTerms) {
       setError(language === "fr" ? "Veuillez accepter les CGV avant de confirmer la commande." : "Please accept the terms before confirming your order.");
       return;
@@ -640,8 +656,8 @@ export default function CheckoutPage() {
     <div className="page-heading checkout-heading-v481"><p className="eyebrow">{cms("checkout_eyebrow_fr", "checkout_eyebrow_en", "ICHIGO ICHIE", "ICHIGO ICHIE")}</p><h1>{cms("checkout_title_fr", "checkout_title_en", "Finaliser la commande", "Complete order")}</h1><p>{cms("checkout_intro_fr", "checkout_intro_en", "Livraison en France métropolitaine ou retrait gratuit à Nice.", "Delivery in metropolitan France or free pickup in Nice.")}</p></div>
     <div className="checkout-trust-strip-v460 checkout-trust-strip-v481" aria-label={language === "fr" ? "Commande sécurisée" : "Secure order"}>
       <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Paiement" : "Payment"}</small><strong>Stripe</strong></span>
-      <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Livraison" : "Delivery"}</small><strong>{language === "fr" ? "Suivie" : "Tracked"}</strong></span>
-      <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Retrait Nice" : "Nice pickup"}</small><strong>{language === "fr" ? "Gratuit" : "Free"}</strong></span>
+      {shippingEnabled && <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Livraison" : "Delivery"}</small><strong>{language === "fr" ? "Suivie" : "Tracked"}</strong></span>}
+      {pickupEnabled && <span><b aria-hidden="true">✓</b><small>{language === "fr" ? "Retrait Nice" : "Nice pickup"}</small><strong>{language === "fr" ? "Gratuit" : "Free"}</strong></span>}
     </div>
     <div className="checkout-mobile-overview-v481" aria-label={language === "fr" ? "Résumé rapide de la commande" : "Quick order summary"}>
       <div>
@@ -657,13 +673,15 @@ export default function CheckoutPage() {
     <div className="checkout-layout checkout-layout-v481">
       <form className="checkout-form checkout-form-v481" onSubmit={submit}>
         <fieldset className="checkout-details-lock-v242" disabled={Boolean(paymentSession)}>
-        {!mustPickup && <div className="pickup-choice-block delivery-mode-block checkout-fulfilment-v481">
+        {(canShip || canPickup) && !mustPickup && <div className="pickup-choice-block delivery-mode-block checkout-fulfilment-v481">
           <p className="checkout-step-kicker">01</p><h2>{language === "fr" ? "Comment souhaitez-vous recevoir votre commande ?" : "How would you like to receive your order?"}</h2>
           <div className="pickup-choice-grid">
-            <label className={`pickup-choice ${orderType === "shipping" ? "active" : ""}`}><input type="radio" name="orderType" value="shipping" checked={orderType === "shipping"} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · livraison suivie." : "Metropolitan France · tracked delivery."}</small></span></label>
-            <label className={`pickup-choice ${orderType === "pickup" ? "active" : ""}`}><input type="radio" name="orderType" value="pickup" checked={orderType === "pickup"} onChange={() => setOrderType("pickup")} /><span><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><small>14 rue Centrale, Nice · {language === "fr" ? "gratuit" : "free"}</small></span></label>
+            {canShip && <label className={`pickup-choice ${orderType === "shipping" ? "active" : ""}`}><input type="radio" name="orderType" value="shipping" checked={orderType === "shipping"} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · livraison suivie." : "Metropolitan France · tracked delivery."}</small></span></label>}
+            {canPickup && <label className={`pickup-choice ${orderType === "pickup" ? "active" : ""}`}><input type="radio" name="orderType" value="pickup" checked={orderType === "pickup"} onChange={() => setOrderType("pickup")} /><span><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><small>14 rue Centrale, Nice · {language === "fr" ? "gratuit" : "free"}</small></span></label>}
           </div>
         </div>}
+        {mustPickup && !canPickup && <p className="setup-warning compact-warning-v227" role="status">{language === "fr" ? "Le retrait boutique est temporairement désactivé pour cet article." : "Boutique pickup is temporarily disabled for this item."}</p>}
+        {fulfilmentUnavailable && <p className="setup-warning compact-warning-v227" role="status">{unavailableMessage}</p>}
 
         <div className="checkout-section-card customer-details-card checkout-customer-v481">
           <p className="checkout-step-kicker">02</p>
@@ -781,12 +799,12 @@ export default function CheckoutPage() {
 
         {!paymentSession ? <>
           {checkoutBlocker && <p id="checkout-blocker-v405" className="checkout-blocker-v405" role="status" aria-live="polite"><span aria-hidden="true">→</span>{checkoutBlocker}</p>}
-          <button className="button primary full checkout-submit checkout-submit-v481" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "checkout-blocker-v405 checkout-disclaimer-v405" : "checkout-disclaimer-v405"}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
+          <button className="button primary full checkout-submit checkout-submit-v481" disabled={submitDisabled || modeSubmitBlocked} aria-describedby={checkoutBlocker ? "checkout-blocker-v405 checkout-disclaimer-v405" : "checkout-disclaimer-v405"}>{loading ? (language === "fr" ? "Préparation du paiement…" : "Preparing payment…") : `${language === "fr" ? "Continuer vers le paiement" : "Continue to payment"} · ${money.format(checkoutTotal)}`}</button>
           <p id="checkout-disclaimer-v405" className="checkout-disclaimer">{language === "fr" ? "Aucun débit à cette étape. Le formulaire Stripe sécurisé s’ouvrira juste ici." : "No charge at this step. The secure Stripe payment form will open here."}</p>
 
           <div className={`mobile-checkout-paybar-v236 ${checkoutBlocker ? "has-blocker-v405" : ""} mobile-checkout-paybar-v481`} aria-label={language === "fr" ? "Paiement" : "Payment"}>
             <div><small>Total</small><strong>{money.format(checkoutTotal)}</strong></div>
-            <button type="submit" className="button primary" disabled={submitDisabled} aria-describedby={checkoutBlocker ? "mobile-checkout-blocker-v405" : undefined}>
+            <button type="submit" className="button primary" disabled={submitDisabled || modeSubmitBlocked} aria-describedby={checkoutBlocker ? "mobile-checkout-blocker-v405" : undefined}>
               {loading
   ? "…"
   : language === "fr"
