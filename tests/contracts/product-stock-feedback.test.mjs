@@ -33,3 +33,18 @@ test("single-stock product cards explain how much inventory is already in the ca
   assert.match(css, /\.product-card-compact \.product-cart-stock-note/);
   assert.match(css, /\.product-card-compact \.product-cart-stock-note\.is-max/);
 });
+
+test("stock badges appear only when sold out or fewer than five items remain", () => {
+  assert.match(card, /showStock && totalStock < 5 && <p/);
+  assert.match(modal, /showStock && currentStock < 5 && <div/);
+  assert.match(card, /totalStock <= 0 \? "sold" : "low"/);
+  assert.match(modal, /currentStock <= 0 \? "sold" : "low"/);
+  assert.doesNotMatch(card, /return language === "fr" \? \`\$\{stock\} en stock\`/);
+  assert.doesNotMatch(modal, /return language === "fr" \? \`\$\{stock\} en stock\`/);
+});
+
+test("cart stock numbers stay hidden on the product card at five or more items", () => {
+  assert.match(card, /currentStock < 5\s*\? \(language === "fr"/);
+  assert.match(card, /Dans votre panier : \$\{quantityInCartForStock\}\`/);
+  assert.match(card, /In your cart: \$\{quantityInCartForStock\}\`/);
+});

@@ -26,8 +26,7 @@ const money = (value: number, language: Language) =>
 
 function stockCopy(stock: number, language: Language) {
   if (stock <= 0) return language === "fr" ? "Rupture de stock" : "Sold out";
-  if (stock <= 5) return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
-  return language === "fr" ? `${stock} en stock` : `${stock} in stock`;
+  return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
 }
 
 export function ProductModal({
@@ -206,7 +205,7 @@ export function ProductModal({
                 <span>{language === "fr" ? "Format" : "Size"}</span><strong>{variantLabel(variant)}</strong>
               </div>}
 
-              {showStock && <div className={`product-stock-detail product-stock-v28 ${currentStock <= 0 ? "sold" : currentStock <= 5 ? "low" : "available"}`}>
+              {showStock && currentStock < 5 && <div className={`product-stock-detail product-stock-v28 ${currentStock <= 0 ? "sold" : "low"}`}>
                 <span className="stock-dot" aria-hidden="true"></span>
                 <strong>{stockCopy(currentStock, language)}</strong>
                 {variant && <small>{packagingLabel(variant.packaging, language)} · {variantLabel(variant)}</small>}
