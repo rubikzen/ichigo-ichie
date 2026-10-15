@@ -37,8 +37,7 @@ const packagingKey = (variant: Variant): PackagingKey => {
 
 function stockCopy(stock: number, language: "fr" | "en") {
   if (stock <= 0) return language === "fr" ? "Rupture de stock" : "Sold out";
-  if (stock <= 5) return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
-  return language === "fr" ? `${stock} en stock` : `${stock} in stock`;
+  return language === "fr" ? `Plus que ${stock} en stock` : `Only ${stock} left`;
 }
 
 function productCardStateKey(product: Product) {
@@ -298,12 +297,16 @@ function ProductCardStateful({ product }: { product: Product }) {
           {singleVariantLabels.length > 0 && <div className="product-card-chips product-card-single-variant-v4804" aria-label={language === "fr" ? "Format du produit" : "Product format"}>
             {singleVariantLabels.map((label) => <span key={label}>{label}</span>)}
           </div>}
-          {showStock && <p className={`product-stock-card ${totalStock <= 0 ? "sold" : totalStock <= 5 ? "low" : "available"}`}><span className="stock-dot" aria-hidden="true"></span>{stockCopy(totalStock, language)}</p>}
+          {showStock && totalStock < 5 && <p className={`product-stock-card ${totalStock <= 0 ? "sold" : "low"}`}><span className="stock-dot" aria-hidden="true"></span>{stockCopy(totalStock, language)}</p>}
           {showStock && !requiresChoice && hasStock && quantityInCartForStock > 0 && (
             <p className={`product-cart-stock-note ${stockLimitReached ? "is-max" : ""}`} aria-live="polite">
-              {language === "fr"
-                ? `Dans votre panier : ${quantityInCartForStock} / ${currentStock}`
-                : `In your cart: ${quantityInCartForStock} / ${currentStock}`}
+              {currentStock < 5
+                ? (language === "fr"
+                    ? `Dans votre panier : ${quantityInCartForStock} / ${currentStock}`
+                    : `In your cart: ${quantityInCartForStock} / ${currentStock}`)
+                : (language === "fr"
+                    ? `Dans votre panier : ${quantityInCartForStock}`
+                    : `In your cart: ${quantityInCartForStock}`)}
             </p>
           )}
         </div>
