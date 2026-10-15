@@ -254,16 +254,21 @@ export async function markStripeOrderPaid(supabase: SupabaseClient, session: Str
     }
   }
 
-  const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
-  const { error: paidUpdateError } = await supabase.from("orders").update({
-    payment_method: "online",
-    payment_status: "paid",
-    paid_at: new Date().toISOString(),
-    stripe_checkout_session_id: session.id,
-    stripe_payment_intent_id: paymentIntentId,
-    payment_expires_at: null,
-  }).eq("id", orderId).neq("payment_status", "refunded").neq("payment_status", "refund_pending");
-  if (paidUpdateError) throw paidUpdateError;
+  // Webhooks can be delivered more than once or concurrently.
+  // Only the first transition to "paid" sets the original payment timestamp.
+  if (current.payment_status !== "paid") {
+    const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
+    const { error: paidUpdateError } = await supabase.from("orders").update({
+      payment_method: "online",
+      payment_status: "paid",
+      paid_at: new Date().toISOString(),
+      stripe_checkout_session_id: session.id,
+      stripe_payment_intent_id: paymentIntentId,
+      payment_expires_at: null,
+    }).eq("id", orderId).neq("payment_status", "paid").neq("payment_status", "refunded").neq("payment_status", "refund_pending");
+    if (paidUpdateError) throw paidUpdateError;
+  }
+  // Keep downstream notifications/invoicing retryable under their own idempotency controls.
   const { error: promoCommitError } = await supabase.rpc("commit_order_promo", { p_order_id: orderId });
   if (promoCommitError) console.error("Promo commit error", promoCommitError);
   // Customer lifecycle: send one confirmation e-mail, then issue the
