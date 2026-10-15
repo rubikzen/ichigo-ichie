@@ -31,11 +31,19 @@ test("Admin exposes and saves both fulfilment switches under shipping settings",
   assert.match(admin, /Les deux modes sont désactivés/);
 });
 
-test("checkout only renders eligible options and blocks when neither is available", () => {
+test("checkout displays both modes, with disabled red Non disponible badges when unavailable", () => {
   assert.match(checkout, /const canShip = shippingEnabled && !mustPickup/);
   assert.match(checkout, /const canPickup = pickupEnabled/);
-  assert.match(checkout, /\{canShip && <label/);
-  assert.match(checkout, /\{canPickup && <label/);
+  assert.match(checkout, /name="orderType" value="shipping"/);
+  assert.match(checkout, /name="orderType" value="pickup"/);
+  assert.match(checkout, /disabled=\{!canShip\}/);
+  assert.match(checkout, /disabled=\{!canPickup\}/);
+  assert.match(checkout, /checked=\{canShip && orderType === "shipping"\}/);
+  assert.match(checkout, /checked=\{canPickup && orderType === "pickup"\}/);
+  assert.match(checkout, /fulfilment-unavailable-v485/);
+  assert.match(checkout, /fulfilment-unavailable-badge-v485/);
+  assert.match(checkout, /Non disponible/);
+  assert.match(checkout, /Unavailable/);
   assert.match(checkout, /const modeSubmitBlocked = Boolean\(unavailableMessage\)/);
   assert.match(checkout, /disabled=\{submitDisabled \|\| modeSubmitBlocked\}/);
   assert.match(checkout, /if \(unavailableMessage\)/);
@@ -59,4 +67,15 @@ test("both order creation and shipping quotes re-read live settings on the serve
   assert.match(orders, /throw new OrderValidationError\(fulfilmentError\)/);
   assert.equal(checkoutFulfilmentError("pickup", {pickupEnabled:false,shippingEnabled:true})?.includes("retrait boutique"), true);
   assert.equal(checkoutFulfilmentError("shipping", {pickupEnabled:true,shippingEnabled:false})?.includes("livraison"), true);
+});
+
+test("disabled mode badges are red in checkout and admin", () => {
+  const css = src("src/app/styles/globals-04.css");
+  assert.match(css, /\.checkout-page-v481 \.pickup-choice\.fulfilment-unavailable-v485/);
+  assert.match(css, /\.fulfilment-unavailable-badge-v485/);
+  assert.match(css, /\.fulfilment-admin-status-v485\.is-unavailable/);
+  assert.match(css, /#ffe1dc/);
+  assert.match(admin, /fulfilment-admin-status-v485/);
+  assert.match(admin, /"Non disponible" : "Disponible"/);
+  assert.match(checkout, /\{mustPickup && !canPickup &&/);
 });
