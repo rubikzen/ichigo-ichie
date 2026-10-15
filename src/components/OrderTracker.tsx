@@ -10,6 +10,7 @@ import { useCart } from "@/components/CartProvider";
 import EmbeddedStripePayment from "@/components/EmbeddedStripePayment";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { trackConversion } from "@/lib/conversion-analytics";
+import { formatParisPickupDateTime } from "@/lib/pickup-time";
 
 type PublicOrder = {
   id: string;
@@ -477,7 +478,7 @@ const canReorder =
     </div>}
 
     {order.order_type === "shipping" ? <div className="tracking-pickup shipping-destination"><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><span>{order.shipping_method_name || (language === "fr" ? "Livraison à domicile" : "Home delivery")}</span><small>{[order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim(), order.shipping_country === "FR" ? "France" : order.shipping_country].filter(Boolean).join(" · ")}</small></div>
-      : <div className="tracking-pickup"><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><span>{order.pickup_time ? new Date(order.pickup_time).toLocaleString(language === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" }) : (language === "fr" ? "Dès que possible" : "As soon as possible")}</span><small>14 rue Centrale, Nice</small></div>}
+      : <div className="tracking-pickup"><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><span>{order.pickup_time ? formatParisPickupDateTime(order.pickup_time, language) : (language === "fr" ? "Dès que possible" : "As soon as possible")}</span><small>14 rue Centrale, Nice</small></div>}
 
     {order.order_type === "shipping" && order.tracking_number && <div className="tracking-parcel-v227"><div><strong>{language === "fr" ? "Suivi du colis" : "Parcel tracking"}</strong><span>{order.tracking_carrier || order.shipping_method_name || "Transporteur"} · {order.tracking_number}</span></div>{order.tracking_url && <a className="button primary small" href={order.tracking_url} target="_blank" rel="noreferrer">{language === "fr" ? "Suivre mon colis ↗" : "Track parcel ↗"}</a>}</div>}
     {(canDownloadInvoice || creditNote) && (

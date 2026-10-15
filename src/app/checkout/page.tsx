@@ -10,6 +10,7 @@ import type { CartItem } from "@/lib/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { trackConversion } from "@/lib/conversion-analytics";
+import { formatParisDateTimeInput, formatParisPickupDateTime, isWithinPickupHours, parseParisDateTimeInput } from "@/lib/pickup-time";
 import {
   cartBundleDiscount,
   ritualBundleModeFromSetting,
@@ -86,10 +87,8 @@ function minimumPaymentMessage(language: "fr" | "en") {
 
 
 function localDateTimeMin() {
-  const date = new Date(Date.now() + 10 * 60 * 1000);
-  date.setMinutes(Math.ceil(date.getMinutes() / 5) * 5, 0, 0);
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+  const rounded = Math.ceil((Date.now() + 10 * 60 * 1000) / (5 * 60 * 1000)) * (5 * 60 * 1000);
+  return formatParisDateTimeInput(new Date(rounded));
 }
 
 function cartPayload(items: CartItem[]) {
@@ -512,6 +511,23 @@ export default function CheckoutPage() {
     setLoading(true); setError(""); setErrorCode(""); setErrorReference(""); setErrorDebug("");
     const form = new FormData(event.currentTarget);
     const pickupValue = String(form.get("pickupTime") || "");
+    let scheduledPickupInstant: Date | null = null;
+    if (orderType === "pickup" && pickupMode === "scheduled") {
+      // datetime-local does not include a timezone: interpret it as Nice time.
+      scheduledPickupInstant = parseParisDateTimeInput(pickupValue);
+      if (
+        !scheduledPickupInstant ||
+        scheduledPickupInstant.getTime() < Date.now() + 10 * 60 * 1000 ||
+        scheduledPickupInstant.getTime() > Date.now() + 7 * 24 * 60 * 60 * 1000 ||
+        !isWithinPickupHours(scheduledPickupInstant, settings.opening_hours)
+      ) {
+        setLoading(false);
+        setError(language === "fr"
+          ? "Sélectionnez un horaire valide pendant l’ouverture de la boutique (heure de Nice)."
+          : "Choose a valid pickup time during store opening hours (Nice time).");
+        return;
+      }
+    }
     const payload = {
       clientReference,
       customer: {
@@ -521,7 +537,7 @@ export default function CheckoutPage() {
         phone: String(form.get("phone") || ""),
       },
       pickupMode,
-      pickupTime: orderType === "pickup" && pickupMode === "scheduled" && pickupValue ? new Date(pickupValue).toISOString() : null,
+      pickupTime: scheduledPickupInstant?.toISOString() ?? null,
       shipping: orderType === "shipping" ? {
         methodId: shippingMethodId,
         address1,
@@ -608,7 +624,7 @@ export default function CheckoutPage() {
     <p>{language === "fr" ? "Numéro de commande" : "Order number"}: <strong>{result.orderNumber}</strong></p>
     {result.orderType === "shipping"
       ? <p className="success-pickup"><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><br />{result.shippingMethodName}</p>
-      : <p className="success-pickup">{result.pickupTime ? `${language === "fr" ? "Retrait" : "Pickup"}: ${new Date(result.pickupTime).toLocaleString(language === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}` : (language === "fr" ? "Retrait : dès que possible" : "Pickup: as soon as possible")}</p>}
+      : <p className="success-pickup">{result.pickupTime ? `${language === "fr" ? "Retrait" : "Pickup"}: ${formatParisPickupDateTime(result.pickupTime, language)}` : (language === "fr" ? "Retrait : dès que possible" : "Pickup: as soon as possible")}</p>}
     {typeof result.total === "number" && <p className="success-total">Total <strong>{money.format(result.total)}</strong></p>}
     {result.demo && <p>Mode aperçu: la commande n’est pas encore envoyée à Supabase.</p>}
     <div className="success-actions">
@@ -736,7 +752,7 @@ export default function CheckoutPage() {
             <label className={`pickup-choice ${pickupMode === "asap" ? "active" : ""}`}><input type="radio" name="pickupMode" value="asap" checked={pickupMode === "asap"} onChange={() => setPickupMode("asap")} /><span><strong>{language === "fr" ? "Dès que possible" : "As soon as possible"}</strong><small>{language === "fr" ? "La boutique prépare la commande dès réception." : "The boutique starts preparing as soon as it is received."}</small></span></label>
             <label className={`pickup-choice ${pickupMode === "scheduled" ? "active" : ""}`}><input type="radio" name="pickupMode" value="scheduled" checked={pickupMode === "scheduled"} onChange={() => setPickupMode("scheduled")} /><span><strong>{language === "fr" ? "Planifier" : "Schedule"}</strong><small>{language === "fr" ? "Choisissez une date et une heure." : "Choose a date and time."}</small></span></label>
           </div>
-          {pickupMode === "scheduled" && <label className="scheduled-time">{language === "fr" ? "Date et heure de retrait" : "Pickup date and time"}<input name="pickupTime" type="datetime-local" min={localDateTimeMin()} required /></label>}
+          {pickupMode === "scheduled" && <label className="scheduled-time">{language === "fr" ? "Date et heure de retrait" : "Pickup date and time"}<input name="pickupTime" type="datetime-local" min={localDateTimeMin()} step={300} required /><small>{language === "fr" ? `Retrait : ${settings.opening_hours || "11h–19h"} · heure de Nice` : `Pickup: ${settings.opening_hours || "11am–7pm"} · Nice time`}</small></label>}
         </div>}
 
         {promoFieldVisible && <div className={`smart-optional-card-v235 ${appliedPromo || promoExpanded ? "open" : ""}`}>
