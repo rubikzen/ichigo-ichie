@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeLegacyProductLabel } from "@/lib/product-label";
 import { createPickupQrPayload } from "@/lib/pickup-qr";
+import { formatParisPickupDateTime } from "@/lib/pickup-time";
 
 type EmailKind = "confirmation" | "shipping" | "refund" | "cancellation" | "pickup_ready" | "pickup_completed";
 
@@ -140,7 +141,7 @@ export async function sendOrderEmail(
     subject = `${brand} · Confirmation ${order.order_number}`;
     const destination = order.order_type === "shipping"
       ? `<p style="line-height:1.6"><strong>Livraison</strong><br>${escapeHtml(order.shipping_method_name || "Livraison à domicile")}<br>${escapeHtml([order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim()].filter(Boolean).join(" · "))}</p>`
-      : `<p style="line-height:1.6"><strong>Retrait boutique</strong><br>${escapeHtml(order.pickup_time ? new Date(order.pickup_time).toLocaleString("fr-FR") : "Dès que possible")}<br>${escapeHtml(settings.store_address || "Nice")}</p>`;
+      : `<p style="line-height:1.6"><strong>Retrait boutique</strong><br>${escapeHtml(order.pickup_time ? formatParisPickupDateTime(order.pickup_time) : "Dès que possible")}<br>${escapeHtml(settings.store_address || "Nice")}</p>`;
     const pickupPreparationNotice = order.order_type === "pickup"
       ? `<div style="background:#f5f2e8;border-radius:16px;padding:18px;margin:18px 0;line-height:1.6">
           <strong>Notre équipe va maintenant préparer votre commande.</strong>
@@ -167,7 +168,7 @@ export async function sendOrderEmail(
     const storeAddress = settings.store_address || "14 rue Centrale, 06300 Nice";
     const openingHours = settings.opening_hours || "Consultez les horaires à jour sur notre site";
     const pickupSlot = order.pickup_time
-      ? new Date(order.pickup_time).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })
+      ? formatParisPickupDateTime(order.pickup_time)
       : "";
     subject = `${brand} · Votre commande ${order.order_number} est prête`;
     html = shell(
@@ -270,7 +271,7 @@ function adminOrderDestination(order: any) {
   if (order.order_type === "shipping") {
     return `<div style="margin-top:16px;padding:16px;background:#f5f2e8;border-radius:14px"><strong>Livraison à domicile</strong><br>${escapeHtml(order.shipping_method_name || "Livraison")}<br>${escapeHtml([order.shipping_address1, order.shipping_address2, `${order.shipping_postal_code || ""} ${order.shipping_city || ""}`.trim()].filter(Boolean).join(" · "))}</div>`;
   }
-  return `<div style="margin-top:16px;padding:16px;background:#f5f2e8;border-radius:14px"><strong>Retrait boutique</strong><br>${escapeHtml(order.pickup_time ? new Date(order.pickup_time).toLocaleString("fr-FR") : "Dès que possible")}</div>`;
+  return `<div style="margin-top:16px;padding:16px;background:#f5f2e8;border-radius:14px"><strong>Retrait boutique</strong><br>${escapeHtml(order.pickup_time ? formatParisPickupDateTime(order.pickup_time) : "Dès que possible")}</div>`;
 }
 
 /**
@@ -410,10 +411,7 @@ export async function sendPickupStaffOrderNotification(
       .filter(Boolean)
       .join(" ") || "Client";
   const pickupSlot = order.pickup_time
-    ? new Date(order.pickup_time).toLocaleString("fr-FR", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+    ? formatParisPickupDateTime(order.pickup_time)
     : "Dès que possible";
   const pickupPayload = createPickupQrPayload(order.id);
   const staffUrl = `${siteOrigin()}/retrait?pickup=${encodeURIComponent(
