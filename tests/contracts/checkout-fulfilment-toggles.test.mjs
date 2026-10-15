@@ -11,6 +11,7 @@ const checkout = src("src/app/checkout/page.tsx");
 const cart = src("src/components/CartPageClient.tsx");
 const orders = src("src/app/api/orders/route.ts");
 const quote = src("src/app/api/shipping/quote/route.ts");
+const retry = src("src/app/api/stripe/retry/route.ts");
 const modeLib = src("src/lib/checkout-fulfilment.ts");
 
 test("both modes are enabled by default and can be switched independently", () => {
@@ -53,6 +54,8 @@ test("both order creation and shipping quotes re-read live settings on the serve
   assert.match(orders, /checkoutFulfilmentError\(orderType, availableModes\)/);
   assert.match(quote, /loadCheckoutFulfilmentModes\(supabase\)/);
   assert.match(quote, /if \(!shippingEnabled\)/);
+  assert.match(retry, /loadCheckoutFulfilmentModes\(supabase\)/);
+  assert.match(retry, /checkoutFulfilmentError\(order\.order_type === "shipping"/);
   assert.match(orders, /throw new OrderValidationError\(fulfilmentError\)/);
   assert.equal(checkoutFulfilmentError("pickup", {pickupEnabled:false,shippingEnabled:true})?.includes("retrait boutique"), true);
   assert.equal(checkoutFulfilmentError("shipping", {pickupEnabled:true,shippingEnabled:false})?.includes("livraison"), true);
