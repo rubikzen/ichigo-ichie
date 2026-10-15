@@ -64,7 +64,7 @@ export async function createOrReuseStripeCheckout(
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id,order_number,public_token,payment_status,payment_method,stripe_checkout_session_id,customer_email,shipping_fee,shipping_method_name,total,stock_reserved,promo_code_id,promo_code,discount_amount,promo_reserved,order_items(id,product_name,quantity,unit_price,choices)")
+    .select("id,order_number,order_type,public_token,payment_status,payment_method,stripe_checkout_session_id,customer_email,shipping_fee,shipping_method_name,total,stock_reserved,promo_code_id,promo_code,discount_amount,promo_reserved,order_items(id,product_name,quantity,unit_price,choices)")
     .eq("id", orderId)
     .single();
   if (error || !order) throw error ?? new Error("Commande introuvable.");
@@ -217,13 +217,42 @@ export async function createOrReuseStripeCheckout(
     throw new Error("Stripe n’a pas retourné de client secret pour le paiement intégré.");
   }
 
-  const { error: updateError } = await supabase.from("orders").update({
+  // Never let a late checkout attempt regress a paid/refunded order or
+  // overwrite a newer session created by a concurrent retry.
+  let attachment = supabase.from("orders").update({
     payment_method: "online",
     payment_status: "pending",
     stripe_checkout_session_id: session.id,
     payment_expires_at: new Date(expiresAt * 1000).toISOString(),
-  }).eq("id", order.id);
-  if (updateError) throw updateError;
+  }).eq("id", order.id).in("payment_status", [...PAYMENT_UNPAID_SOURCE_STATES]);
+
+  attachment = order.stripe_checkout_session_id
+    ? attachment.eq("stripe_checkout_session_id", order.stripe_checkout_session_id)
+    : attachment.is("stripe_checkout_session_id", null);
+  const { data: attachedOrder, error: updateError } = await attachment.select("id").maybeSingle();
+  if (updateError || !attachedOrder) {
+    try { await stripe.checkout.sessions.expire(session.id); }
+    catch (expireError) { console.error("Could not expire unattached Checkout Session", expireError); }
+    throw updateError ?? new Error("La commande a changé pendant le paiement. Actualisez et réessayez.");
+  }
+
+  // An expiry webhook for the superseded session may have released the stock
+  // between the first reservation and the session attachment. Reconfirm stock
+  // AFTER attaching the new session, before handing its client secret out.
+  if (order.order_type === "shipping") {
+    const { error: finalStockError } = await supabase.rpc("reserve_shop_order_stock", { p_order_id: order.id });
+    if (finalStockError) {
+      try { await stripe.checkout.sessions.expire(session.id); }
+      catch (expireError) { console.error("Could not expire checkout without stock", expireError); }
+      const { error: cleanupError } = await supabase.rpc("finalize_shipping_checkout_unpaid", {
+        p_order_id: order.id,
+        p_session_id: session.id,
+        p_new_payment_status: "expired",
+      });
+      if (cleanupError) console.error("Could not finalize checkout without stock", cleanupError);
+      throw finalStockError;
+    }
+  }
 
   return {
     clientSecret: session.client_secret,
