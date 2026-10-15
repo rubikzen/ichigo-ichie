@@ -14066,3 +14066,68 @@
 .withdrawal-admin-actions-v484 button{padding:7px 10px;border:1px solid rgba(41,66,55,.14);border-radius:999px;background:#294237;color:#fff;font-size:10px;font-weight:800;cursor:pointer}.withdrawal-admin-actions-v484 button.ghost{background:#fff;color:#294237}.withdrawal-admin-empty-v484{margin:14px 0 0;color:#748078}
 @media(max-width:640px){.withdrawal-page-v484{width:min(100% - 22px,960px);padding-top:32px}.withdrawal-submit-row-v484,.withdrawal-actions-v484,.withdrawal-admin-v484>header{display:grid}.withdrawal-submit-row-v484 .withdrawal-primary-v484,.withdrawal-actions-v484>*{width:100%}}
 @media print{.site-header-v226,.matcha-explore-nav-v471,.site-footer-v226,.withdrawal-actions-v484,.withdrawal-help-v484{display:none!important}.withdrawal-page-v484{width:100%;padding:0}.withdrawal-success-v484{box-shadow:none}}
+
+
+/* V4.85 — Disabled delivery/pickup choices remain visible but unmistakably unavailable */
+.checkout-page-v481 .pickup-choice.fulfilment-unavailable-v485 {
+  border-color: #e4a39d !important;
+  background: #fff4f2 !important;
+  box-shadow: none !important;
+  color: #8f302c !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+.checkout-page-v481 .pickup-choice.fulfilment-unavailable-v485 strong {
+  color: #923630 !important;
+}
+.checkout-page-v481 .pickup-choice.fulfilment-unavailable-v485 small {
+  color: #9b655e !important;
+}
+.checkout-page-v481 .pickup-choice.fulfilment-unavailable-v485 input:disabled {
+  cursor: not-allowed;
+}
+.checkout-page-v481 .pickup-choice .fulfilment-unavailable-badge-v485 {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 4px 9px;
+  border: 1px solid #e7aca6;
+  border-radius: 999px;
+  background: #ffe1dc;
+  color: #a02f29;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.checkout-page-v481 .pickup-choice .fulfilment-unavailable-badge-v485::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #b83f35;
+}
+.fulfilment-admin-status-v485 {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-left: 8px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.fulfilment-admin-status-v485.is-unavailable {
+  color: #a02f29;
+  background: #ffe1dc;
+  border: 1px solid #e7aca6;
+}
+.fulfilment-admin-status-v485.is-available {
+  color: #29573b;
+  background: #e6f3e9;
+  border: 1px solid #b6d6bf;
+}
