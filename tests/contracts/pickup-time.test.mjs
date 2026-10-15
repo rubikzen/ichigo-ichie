@@ -36,4 +36,5 @@ test("scheduled pickup datetime is interpreted in Nice, not the visitor's timezo
 test("pickup emails always display the hour at the Nice shop", () => {
   assert.match(formatParisPickupDateTime("2026-07-15T12:00:00Z"), /14:00/);
   assert.match(formatParisPickupDateTime("2026-01-15T13:00:00Z"), /14:00/);
+  assert.match(formatParisPickupDateTime("2026-07-15T12:00:00Z", "en"), /14:00/);
 });
