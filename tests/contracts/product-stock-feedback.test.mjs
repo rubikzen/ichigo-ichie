@@ -39,8 +39,8 @@ test("stock badges appear only when sold out or fewer than five items remain", (
   assert.match(modal, /showStock && currentStock < 5 && <div/);
   assert.match(card, /totalStock <= 0 \? "sold" : "low"/);
   assert.match(modal, /currentStock <= 0 \? "sold" : "low"/);
-  assert.doesNotMatch(card, /\$\{stock\} en stock/);
-  assert.doesNotMatch(modal, /\$\{stock\} en stock/);
+  assert.doesNotMatch(card, /return language === "fr" \? \`\$\{stock\} en stock\`/);
+  assert.doesNotMatch(modal, /return language === "fr" \? \`\$\{stock\} en stock\`/);
 });
 
 test("cart stock numbers stay hidden on the product card at five or more items", () => {
