@@ -26,8 +26,8 @@ test("V481 keeps cart total and stock guard as the mobile primary action", () =>
   assert.match(cart, /mobile-cart-checkout-bar-v419[\s\S]*?mobile-cart-checkout-bar-v481/);
   assert.match(cart, /mobile-cart-total-v419 mobile-cart-total-v481/);
   assert.match(cart, /mobile-cart-checkout-v419 mobile-cart-checkout-v481/);
-  assert.match(cart, /aria-disabled=\{hasStockConflict\}/);
-  assert.match(cart, /if \(hasStockConflict\) event\.preventDefault\(\)/);
+  assert.match(cart, /aria-disabled=\{hasStockConflict \|\| checkoutUnavailable\}/);
+  assert.match(cart, /if \(hasStockConflict \|\| checkoutUnavailable\) event\.preventDefault\(\)/);
   assert.match(cart, /href="\/checkout"/);
 });
 
