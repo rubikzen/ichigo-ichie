@@ -37,9 +37,9 @@ begin
     return false;
   end if;
 
-  -- Out-of-order async failure must never regress a previously expired attempt.
+  -- Out-of-order async failure must never regress expiry, but must heal stock on replay.
   if v_order.payment_status = 'expired' and p_new_payment_status = 'failed' then
-    return false;
+    p_new_payment_status := 'expired';
   end if;
 
   -- Fail rather than silently losing a reservation for a deleted or
