@@ -86,8 +86,8 @@ export function isWithinPickupHours(date: Date | string, hours?: string | null):
   return minutes >= parsed.opensMinutes && minutes < parsed.closesMinutes;
 }
 
-export function formatParisPickupDateTime(value: Date | string): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+export function formatParisPickupDateTime(value: Date | string, language: "fr" | "en" = "fr"): string {
+  return new Intl.DateTimeFormat(language === "fr" ? "fr-FR" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: PICKUP_TIME_ZONE,
