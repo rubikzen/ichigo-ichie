@@ -665,21 +665,21 @@ export default function CheckoutPage() {
         <strong>{money.format(checkoutTotal)}</strong>
       </div>
       <span>
-        {orderType === "shipping"
+        {unavailableMessage || (orderType === "shipping"
           ? (language === "fr" ? "Livraison suivie en France" : "Tracked delivery in France")
-          : (language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice")}
+          : (language === "fr" ? "Retrait gratuit à Nice" : "Free pickup in Nice"))}
       </span>
     </div>
     <div className="checkout-layout checkout-layout-v481">
       <form className="checkout-form checkout-form-v481" onSubmit={submit}>
         <fieldset className="checkout-details-lock-v242" disabled={Boolean(paymentSession)}>
-        {(canShip || canPickup) && !mustPickup && <div className="pickup-choice-block delivery-mode-block checkout-fulfilment-v481">
+        <div className="pickup-choice-block delivery-mode-block checkout-fulfilment-v481">
           <p className="checkout-step-kicker">01</p><h2>{language === "fr" ? "Comment souhaitez-vous recevoir votre commande ?" : "How would you like to receive your order?"}</h2>
           <div className="pickup-choice-grid">
-            {canShip && <label className={`pickup-choice ${orderType === "shipping" ? "active" : ""}`}><input type="radio" name="orderType" value="shipping" checked={orderType === "shipping"} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · livraison suivie." : "Metropolitan France · tracked delivery."}</small></span></label>}
-            {canPickup && <label className={`pickup-choice ${orderType === "pickup" ? "active" : ""}`}><input type="radio" name="orderType" value="pickup" checked={orderType === "pickup"} onChange={() => setOrderType("pickup")} /><span><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><small>14 rue Centrale, Nice · {language === "fr" ? "gratuit" : "free"}</small></span></label>}
+            <label className={`pickup-choice ${canShip && orderType === "shipping" ? "active" : ""} ${!canShip ? "fulfilment-unavailable-v485" : ""}`}><input type="radio" name="orderType" value="shipping" checked={canShip && orderType === "shipping"} disabled={!canShip} onChange={() => setOrderType("shipping")} /><span><strong>{language === "fr" ? "Livraison" : "Shipping"}</strong><small>{language === "fr" ? "France métropolitaine · livraison suivie." : "Metropolitan France · tracked delivery."}</small>{!canShip && <em className="fulfilment-unavailable-badge-v485">{language === "fr" ? "Non disponible" : "Unavailable"}</em>}</span></label>
+            <label className={`pickup-choice ${canPickup && orderType === "pickup" ? "active" : ""} ${!canPickup ? "fulfilment-unavailable-v485" : ""}`}><input type="radio" name="orderType" value="pickup" checked={canPickup && orderType === "pickup"} disabled={!canPickup} onChange={() => setOrderType("pickup")} /><span><strong>{language === "fr" ? "Retrait boutique" : "Boutique pickup"}</strong><small>14 rue Centrale, Nice · {language === "fr" ? "gratuit" : "free"}</small>{!canPickup && <em className="fulfilment-unavailable-badge-v485">{language === "fr" ? "Non disponible" : "Unavailable"}</em>}</span></label>
           </div>
-        </div>}
+        </div>
         {mustPickup && !canPickup && <p className="setup-warning compact-warning-v227" role="status">{language === "fr" ? "Le retrait boutique est temporairement désactivé pour cet article." : "Boutique pickup is temporarily disabled for this item."}</p>}
         {fulfilmentUnavailable && <p className="setup-warning compact-warning-v227" role="status">{unavailableMessage}</p>}
 
