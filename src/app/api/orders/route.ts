@@ -11,6 +11,7 @@ import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } f
 import { getTermsVersion } from "@/lib/terms";
 import { getPublicSiteSettings } from "@/lib/settings-server";
 import { isWithinPickupHours } from "@/lib/pickup-time";
+import { checkoutFulfilmentError, loadCheckoutFulfilmentModes } from "@/lib/checkout-fulfilment";
 
 
 function orderErrorReference() {
@@ -180,6 +181,11 @@ export async function POST(request: Request) {
     if (!Array.isArray(items) || !items.length || items.length > 30) throw new OrderValidationError("Panier invalide.");
 
     const orderType = body.orderType === "shipping" ? "shipping" : "pickup";
+    if (supabase) {
+      const availableModes = await loadCheckoutFulfilmentModes(supabase);
+      const fulfilmentError = checkoutFulfilmentError(orderType, availableModes);
+      if (fulfilmentError) throw new OrderValidationError(fulfilmentError);
+    }
     const paymentMethod: "online" = "online";
     if (body.acceptedTerms !== true) throw new OrderValidationError("Vous devez accepter les CGV avant de commander.");
     const firstName = requiredText(body.customer?.firstName, "Prénom", 80);
