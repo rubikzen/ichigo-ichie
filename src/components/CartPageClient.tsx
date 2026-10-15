@@ -313,14 +313,14 @@ export function CartPageClient({ products }: { products: Product[] }) {
             <strong>− {money(ritualDiscount, language)}</strong>
           </div>
         )}
-<div className="cart-summary-line-v216 cart-shipping-preview-v254">
+{shippingEnabled && <div className="cart-summary-line-v216 cart-shipping-preview-v254">
   <span>{language === "fr" ? "Livraison" : "Shipping"}</span>
   <strong>
     {language === "fr"
       ? "Calculée ensuite"
       : "Calculated next"}
   </strong>
-</div>
+</div>}
         <div className="cart-fulfilment-v216">
           {checkoutUnavailable
             ? <p role="status"><b>●</b>{language === "fr" ? " Les commandes sont temporairement indisponibles pour ce panier." : " Ordering is temporarily unavailable for this cart."}</p>
