@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/admin";
+import { loadCheckoutFulfilmentModes, checkoutFulfilmentError } from "@/lib/checkout-fulfilment";
 import { createOrReuseStripeCheckout, MinimumOnlinePaymentError } from "@/lib/stripe";
 import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 
@@ -17,12 +18,16 @@ export async function POST(request: Request) {
     if (!UUID_RE.test(token)) return NextResponse.json({ error: "Commande introuvable." }, { status: 404 });
 
     const { data: order, error } = await supabase.from("orders")
-      .select("id,order_number,total,payment_status,status,payment_method")
+      .select("id,order_number,order_type,total,payment_status,status,payment_method")
       .eq("public_token", token)
       .maybeSingle();
     if (error) throw error;
     if (!order) return NextResponse.json({ error: "Commande introuvable." }, { status: 404 });
     if (order.status === "cancelled" || order.status === "refunded") return NextResponse.json({ error: "Cette commande ne peut plus être payée." }, { status: 409 });
+    const modes = await loadCheckoutFulfilmentModes(supabase);
+    const modeError = checkoutFulfilmentError(order.order_type === "shipping" ? "shipping" : "pickup", modes);
+    if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
+
     if (order.payment_status === "paid") return NextResponse.json({ paid: true, trackingUrl: `/commande/${token}` });
 
     const session = await createOrReuseStripeCheckout(supabase, order.id, new URL(request.url).origin);
