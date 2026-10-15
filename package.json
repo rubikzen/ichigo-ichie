@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "css:prepare": "node scripts/prepare-css-v487.mjs",
+    "predev": "npm run css:prepare",
     "dev": "next dev",
+    "prebuild": "npm run css:prepare",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

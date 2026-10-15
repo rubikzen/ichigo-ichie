@@ -12,3 +12,5 @@ supabase/.temp/
 test-results/
 playwright-report/
 blob-report/
+src/app/styles/globals-04.full.generated.css
+src/app/styles/globals-04.storefront.generated.css
