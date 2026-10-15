@@ -9,6 +9,8 @@ import { assertInvoiceReadyForProducts, ensureInvoiceForOrder } from "@/lib/invo
 import { getCommerceEnvironment } from "@/lib/runtime-environment";
 import { consumeRateLimit, publicApiErrorInfo, readJsonBody, tooManyRequests } from "@/lib/public-api";
 import { getTermsVersion } from "@/lib/terms";
+import { getPublicSiteSettings } from "@/lib/settings-server";
+import { isWithinPickupHours } from "@/lib/pickup-time";
 
 
 function orderErrorReference() {
@@ -130,15 +132,24 @@ function optionalText(value: unknown, max = 160) {
   return String(value ?? "").trim().slice(0, max);
 }
 
-function validatePickup(body: Record<string, unknown>) {
+async function validatePickup(body: Record<string, unknown>) {
   const mode = body.pickupMode === "scheduled" ? "scheduled" : "asap";
   if (mode === "asap") return null;
   if (!body.pickupTime) throw new OrderValidationError("Choisissez une heure de retrait.");
-  const pickupTime = new Date(String(body.pickupTime));
+  const raw = String(body.pickupTime).trim();
+  // Require an explicit offset: Vercel and visitors may use different timezones.
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)) {
+    throw new OrderValidationError("Heure de retrait invalide (fuseau horaire manquant).");
+  }
+  const pickupTime = new Date(raw);
   if (Number.isNaN(pickupTime.getTime())) throw new OrderValidationError("Heure de retrait invalide.");
   const now = Date.now();
   if (pickupTime.getTime() < now + 10 * 60 * 1000) throw new OrderValidationError("Choisissez une heure au moins 10 minutes à l’avance.");
   if (pickupTime.getTime() > now + 7 * 24 * 60 * 60 * 1000) throw new OrderValidationError("Le retrait peut être planifié jusqu’à 7 jours à l’avance.");
+  const settings = await getPublicSiteSettings();
+  if (!isWithinPickupHours(pickupTime, settings.opening_hours)) {
+    throw new OrderValidationError("Choisissez un créneau pendant les heures d’ouverture de la boutique (heure de Nice).");
+  }
   return pickupTime;
 }
 
@@ -177,7 +188,7 @@ export async function POST(request: Request) {
     const phone = requiredText(body.customer?.phone, "Téléphone", 50);
     if (email && !/^\S+@\S+\.\S+$/.test(email)) throw new OrderValidationError("Adresse email invalide.");
     const notes = optionalText(body.notes, 1000) || null;
-    const pickupTime = orderType === "pickup" ? validatePickup(body) : null;
+    const pickupTime = orderType === "pickup" ? await validatePickup(body) : null;
     const shippingAddress = orderType === "shipping" ? validateShippingAddress(body) : null;
 
     const clientReference = requiredText(body.clientReference, "Référence client", 50);
