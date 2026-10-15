@@ -64,7 +64,14 @@ export async function POST(request: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.payment_status === "paid") await markStripeOrderPaid(supabase, session);
       else if (session.metadata?.order_id) {
-        await supabase.from("orders").update({ payment_status: "pending", stripe_checkout_session_id: session.id }).eq("id", session.metadata.order_id);
+        // A delayed "completed" event must not regress a paid, refunded,
+        // failed or superseded Checkout session back to pending.
+        const { error: pendingError } = await supabase.from("orders")
+          .update({ payment_status: "pending" })
+          .eq("id", session.metadata.order_id)
+          .eq("stripe_checkout_session_id", session.id)
+          .in("payment_status", ["unpaid", "pending"]);
+        if (pendingError) throw pendingError;
       }
     } else if (event.type === "checkout.session.async_payment_succeeded") {
       await markStripeOrderPaid(supabase, event.data.object as Stripe.Checkout.Session);
