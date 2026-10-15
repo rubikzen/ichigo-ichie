@@ -293,11 +293,27 @@ export async function markStripeOrderUnpaid(
   const orderId = session.metadata?.order_id;
   if (!orderId) return;
 
-  const { data: order } = await supabase.from("orders").select("payment_status,stripe_checkout_session_id").eq("id", orderId).maybeSingle();
+  const { data: order, error: loadError } = await supabase.from("orders")
+    .select("payment_status,stripe_checkout_session_id,order_type")
+    .eq("id", orderId).maybeSingle();
+  if (loadError) throw loadError;
   if (!order || ["paid", "refunded", "refund_pending", "refund_failed"].includes(order.payment_status)) return;
   // Ignore late events from an older payment attempt. Only the currently
   // attached Checkout Session is allowed to release this order's stock.
   if (order.stripe_checkout_session_id && order.stripe_checkout_session_id !== session.id) return;
+
+  // For delivery orders, payment status, stock restoration, and promo
+  // restoration MUST commit together. An event replay also heals any
+  // historic expired order whose stock is still marked as reserved.
+  if (order.order_type === "shipping") {
+    const { error: finalizeError } = await supabase.rpc("finalize_shipping_checkout_unpaid", {
+      p_order_id: orderId,
+      p_session_id: session.id,
+      p_new_payment_status: status,
+    });
+    if (finalizeError) throw finalizeError;
+    return;
+  }
 
   // The WHERE clauses are intentionally repeated in the update: another
   // webhook may have completed payment after the initial SELECT.
