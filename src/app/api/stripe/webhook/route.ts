@@ -4,6 +4,7 @@ import { createServiceSupabase } from "@/lib/supabase/admin";
 import { getStripeServer, markStripeOrderPaid, markStripeOrderUnpaid } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
 import { issueAndEmailCreditNote } from "@/lib/invoice";
+import { PAYMENT_PENDING_SOURCE_STATES } from "@/lib/stripe-order-transitions";
 
 export const runtime = "nodejs";
 
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
           .update({ payment_status: "pending" })
           .eq("id", session.metadata.order_id)
           .eq("stripe_checkout_session_id", session.id)
-          .in("payment_status", ["unpaid", "pending"]);
+          .in("payment_status", [...PAYMENT_PENDING_SOURCE_STATES]);
         if (pendingError) throw pendingError;
       }
     } else if (event.type === "checkout.session.async_payment_succeeded") {
