@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendMerchantOrderNotification, sendOrderEmail, sendPickupStaffOrderNotification } from "@/lib/order-email";
 import { ensureInvoiceForOrder } from "@/lib/invoice";
+import { PAYMENT_UNPAID_SOURCE_STATES } from "@/lib/stripe-order-transitions";
 
 let stripeClient: Stripe | null | undefined;
 
@@ -305,7 +306,7 @@ export async function markStripeOrderUnpaid(
     payment_status: status,
     stripe_checkout_session_id: session.id,
     payment_expires_at: null,
-  }).eq("id", orderId).in("payment_status", ["unpaid", "pending", "failed", "expired"]);
+  }).eq("id", orderId).in("payment_status", [...PAYMENT_UNPAID_SOURCE_STATES]);
   update = order.stripe_checkout_session_id
     ? update.eq("stripe_checkout_session_id", session.id)
     : update.is("stripe_checkout_session_id", null);
