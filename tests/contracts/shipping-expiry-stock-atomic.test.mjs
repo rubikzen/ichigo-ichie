@@ -41,3 +41,20 @@ test("manual admin recovery also uses the atomic shipping expiry transaction", (
   assert.match(recovery, /p_new_payment_status: "expired"/);
   assert.match(recovery, /latest\.stock_reserved \|\| latest\.promo_reserved/);
 });
+
+test("shipping checkout retries recheck stock after attaching a new session", () => {
+  const attach = stripe.indexOf('const { data: attachedOrder, error: updateError }');
+  const reserve = stripe.indexOf('await supabase.rpc("reserve_shop_order_stock", { p_order_id: order.id })', attach);
+  const returnSecret = stripe.indexOf('clientSecret: session.client_secret', attach);
+  assert.ok(attach > 0 && reserve > attach && returnSecret > reserve);
+  assert.match(stripe, /\.in\("payment_status", \[\.\.\.PAYMENT_UNPAID_SOURCE_STATES\]\)/);
+  assert.match(stripe, /attachment\.eq\("stripe_checkout_session_id", order\.stripe_checkout_session_id\)/);
+  assert.match(stripe, /if \(finalStockError\)/);
+  assert.match(stripe, /await stripe\.checkout\.sessions\.expire\(session\.id\)/);
+});
+
+test("closed or refunded orders cannot reserve additional stock", () => {
+  const guard = stripe.indexOf('if (order.status === "cancelled" || order.status === "refunded"');
+  const reserve = stripe.indexOf('await supabase.rpc("reserve_shop_order_stock", { p_order_id: order.id })');
+  assert.ok(guard !== -1 && reserve > guard);
+});
