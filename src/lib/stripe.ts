@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendMerchantOrderNotification, sendOrderEmail, sendPickupStaffOrderNotification } from "@/lib/order-email";
 import { ensureInvoiceForOrder } from "@/lib/invoice";
+import { PAYMENT_UNPAID_SOURCE_STATES } from "@/lib/stripe-order-transitions";
 
 let stripeClient: Stripe | null | undefined;
 
@@ -293,18 +294,28 @@ export async function markStripeOrderUnpaid(
   if (!orderId) return;
 
   const { data: order } = await supabase.from("orders").select("payment_status,stripe_checkout_session_id").eq("id", orderId).maybeSingle();
-  if (!order || order.payment_status === "paid" || order.payment_status === "refunded") return;
+  if (!order || ["paid", "refunded", "refund_pending", "refund_failed"].includes(order.payment_status)) return;
   // Ignore late events from an older payment attempt. Only the currently
   // attached Checkout Session is allowed to release this order's stock.
   if (order.stripe_checkout_session_id && order.stripe_checkout_session_id !== session.id) return;
 
-  await supabase.from("orders").update({
+  // The WHERE clauses are intentionally repeated in the update: another
+  // webhook may have completed payment after the initial SELECT.
+  let update = supabase.from("orders").update({
     payment_method: "online",
     payment_status: status,
     stripe_checkout_session_id: session.id,
     payment_expires_at: null,
-  }).eq("id", orderId);
-  await supabase.rpc("release_shop_order_stock", { p_order_id: orderId });
+  }).eq("id", orderId).in("payment_status", [...PAYMENT_UNPAID_SOURCE_STATES]);
+  update = order.stripe_checkout_session_id
+    ? update.eq("stripe_checkout_session_id", session.id)
+    : update.is("stripe_checkout_session_id", null);
+  const { data: transitioned, error: updateError } = await update.select("id").maybeSingle();
+  if (updateError) throw updateError;
+  if (!transitioned) return;
+
+  const { error: stockError } = await supabase.rpc("release_shop_order_stock", { p_order_id: orderId });
+  if (stockError) throw stockError;
   const { error: promoReleaseError } = await supabase.rpc("release_order_promo", { p_order_id: orderId });
   if (promoReleaseError) console.error("Promo release error", promoReleaseError);
 }

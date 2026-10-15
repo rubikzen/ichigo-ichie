@@ -4,6 +4,7 @@ import { createServiceSupabase } from "@/lib/supabase/admin";
 import { getStripeServer, markStripeOrderPaid, markStripeOrderUnpaid } from "@/lib/stripe";
 import { sendOrderEmail } from "@/lib/order-email";
 import { issueAndEmailCreditNote } from "@/lib/invoice";
+import { PAYMENT_PENDING_SOURCE_STATES } from "@/lib/stripe-order-transitions";
 
 export const runtime = "nodejs";
 
@@ -12,12 +13,14 @@ async function syncRefund(supabase: NonNullable<ReturnType<typeof createServiceS
   if (!orderId) return;
 
   if (refund.status === "succeeded") {
-    await supabase.from("orders").update({
+    // Preserve the original refund completion timestamp on replayed events.
+    const { error: refundUpdateError } = await supabase.from("orders").update({
       status: "refunded",
       payment_status: "refunded",
       stripe_refund_id: refund.id,
       refunded_at: new Date().toISOString(),
-    }).eq("id", orderId);
+    }).eq("id", orderId).neq("payment_status", "refunded");
+    if (refundUpdateError) throw refundUpdateError;
     try { await issueAndEmailCreditNote(supabase, orderId); }
     catch (invoiceError) { console.error("Credit note error", invoiceError); }
     try { await sendOrderEmail(supabase, orderId, "refund"); }
@@ -26,17 +29,19 @@ async function syncRefund(supabase: NonNullable<ReturnType<typeof createServiceS
   }
 
   if (refund.status === "failed" || refund.status === "canceled") {
-    await supabase.from("orders").update({
+    const { error: refundFailureError } = await supabase.from("orders").update({
       payment_status: "refund_failed",
       stripe_refund_id: refund.id,
-    }).eq("id", orderId);
+    }).eq("id", orderId).neq("payment_status", "refunded");
+    if (refundFailureError) throw refundFailureError;
     return;
   }
 
-  await supabase.from("orders").update({
+  const { error: refundPendingError } = await supabase.from("orders").update({
     payment_status: "refund_pending",
     stripe_refund_id: refund.id,
-  }).eq("id", orderId);
+  }).eq("id", orderId).neq("payment_status", "refunded");
+  if (refundPendingError) throw refundPendingError;
 }
 
 export async function POST(request: Request) {
@@ -64,7 +69,14 @@ export async function POST(request: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.payment_status === "paid") await markStripeOrderPaid(supabase, session);
       else if (session.metadata?.order_id) {
-        await supabase.from("orders").update({ payment_status: "pending", stripe_checkout_session_id: session.id }).eq("id", session.metadata.order_id);
+        // A delayed "completed" event must not regress a paid, refunded,
+        // failed or superseded Checkout session back to pending.
+        const { error: pendingError } = await supabase.from("orders")
+          .update({ payment_status: "pending" })
+          .eq("id", session.metadata.order_id)
+          .eq("stripe_checkout_session_id", session.id)
+          .in("payment_status", [...PAYMENT_PENDING_SOURCE_STATES]);
+        if (pendingError) throw pendingError;
       }
     } else if (event.type === "checkout.session.async_payment_succeeded") {
       await markStripeOrderPaid(supabase, event.data.object as Stripe.Checkout.Session);
