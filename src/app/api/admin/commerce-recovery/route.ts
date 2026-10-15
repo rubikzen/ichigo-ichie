@@ -78,7 +78,7 @@ async function loadOrder(supabase: any, orderId: string) {
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id,order_number,status,payment_status,payment_method,created_at,payment_expires_at,stripe_checkout_session_id,stock_reserved,promo_reserved,promo_code_id,promo_redeemed_at,environment,archived_at",
+      "id,order_number,order_type,status,payment_status,payment_method,created_at,payment_expires_at,stripe_checkout_session_id,stock_reserved,promo_reserved,promo_code_id,promo_redeemed_at,environment,archived_at",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -254,7 +254,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!order.stock_reserved && !order.promo_reserved) {
+    if (!order.stock_reserved && !order.promo_reserved && (order.order_type !== "shipping" || order.payment_status === "expired")) {
       return NextResponse.json({
         ok: true,
         changed: false,
@@ -300,6 +300,36 @@ export async function POST(request: Request) {
           502,
         );
       }
+    }
+
+    // Shipping checkouts must expire and release stock/promo atomically.
+    // The Stripe session has been verified closed above. On replay, the
+    // database RPC can also heal an expired order with a stuck reservation.
+    if (order.order_type === "shipping" && order.payment_method === "online" && order.stripe_checkout_session_id) {
+      const { data: finalized, error: finalizeError } = await supabase.rpc(
+        "finalize_shipping_checkout_unpaid", {
+          p_order_id: order.id,
+          p_session_id: order.stripe_checkout_session_id,
+          p_new_payment_status: "expired",
+        },
+      );
+      if (finalizeError) throw finalizeError;
+      if (!finalized) return jsonError("La session de paiement a changé. Actualisez avant de réessayer.", 409);
+
+      const latest = await loadOrder(supabase, order.id);
+      if (!latest || latest.stock_reserved || latest.promo_reserved) {
+        return jsonError("La réservation doit encore être vérifiée. Réessayez.", 503);
+      }
+
+      if (order.stock_reserved) {
+        try { await processRestockNotificationsForOrder(supabase, order.id); }
+        catch (restockError) { console.error("Commerce recovery restock notification error", restockError); }
+      }
+      return NextResponse.json({
+        ok: true,
+        changed: Boolean(order.stock_reserved || order.promo_reserved || order.payment_status !== "expired"),
+        message: `${order.order_number} : session expirée, stock et promotion libérés ✓`,
+      });
     }
 
     // Mark stale online attempts expired before releasing reservations.
