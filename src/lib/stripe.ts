@@ -64,10 +64,15 @@ export async function createOrReuseStripeCheckout(
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id,order_number,order_type,public_token,payment_status,payment_method,stripe_checkout_session_id,customer_email,shipping_fee,shipping_method_name,total,stock_reserved,promo_code_id,promo_code,discount_amount,promo_reserved,order_items(id,product_name,quantity,unit_price,choices)")
+    .select("id,order_number,order_type,status,public_token,payment_status,payment_method,stripe_checkout_session_id,customer_email,shipping_fee,shipping_method_name,total,stock_reserved,promo_code_id,promo_code,discount_amount,promo_reserved,order_items(id,product_name,quantity,unit_price,choices)")
     .eq("id", orderId)
     .single();
   if (error || !order) throw error ?? new Error("Commande introuvable.");
+
+  if (order.status === "cancelled" || order.status === "refunded" ||
+      ["refunded", "refund_pending", "refund_failed"].includes(order.payment_status)) {
+    throw new Error("Cette commande ne peut plus être payée.");
+  }
 
   assertMinimumOnlinePayment(Number(order.total || 0));
 
