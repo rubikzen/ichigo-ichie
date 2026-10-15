@@ -260,8 +260,8 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
             <h3>Modes de réception au checkout</h3>
             <p className="muted">Activez ou désactivez chaque mode indépendamment. Enregistrez les réglages pour appliquer les changements sur le site.</p>
             <div className="cms-toggle-grid">
-              <label><input type="checkbox" checked={settings.checkout_pickup_enabled !== "false"} onChange={() => toggle("checkout_pickup_enabled")} /> Retrait boutique — 14 rue Centrale, Nice</label>
-              <label><input type="checkbox" checked={settings.checkout_shipping_enabled !== "false"} onChange={() => toggle("checkout_shipping_enabled")} /> Livraison — France métropolitaine</label>
+              <label><input type="checkbox" checked={settings.checkout_pickup_enabled !== "false"} onChange={() => toggle("checkout_pickup_enabled")} /> Retrait boutique — 14 rue Centrale, Nice <span className={`fulfilment-admin-status-v485 ${settings.checkout_pickup_enabled === "false" ? "is-unavailable" : "is-available"}`}>{settings.checkout_pickup_enabled === "false" ? "Non disponible" : "Disponible"}</span></label>
+              <label><input type="checkbox" checked={settings.checkout_shipping_enabled !== "false"} onChange={() => toggle("checkout_shipping_enabled")} /> Livraison — France métropolitaine <span className={`fulfilment-admin-status-v485 ${settings.checkout_shipping_enabled === "false" ? "is-unavailable" : "is-available"}`}>{settings.checkout_shipping_enabled === "false" ? "Non disponible" : "Disponible"}</span></label>
             </div>
             {settings.checkout_pickup_enabled === "false" && settings.checkout_shipping_enabled === "false" && (
               <p role="status" className="setup-warning compact-warning-v227">Les deux modes sont désactivés : les clients ne pourront plus passer de nouvelles commandes.</p>
