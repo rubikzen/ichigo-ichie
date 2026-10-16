@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SeasonalDecor } from "@/components/SeasonalDecor";
 import { MatchaExploreNav } from "@/components/MatchaExploreNav";
 
 export function SiteChrome({
@@ -23,6 +24,7 @@ export function SiteChrome({
 
   return (
     <>
+      <SeasonalDecor />
       <SiteHeader />
       <MatchaExploreNav />
       <main>{children}</main>
