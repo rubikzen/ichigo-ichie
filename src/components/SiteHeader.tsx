@@ -62,6 +62,13 @@ export function SiteHeader() {
 
   return (
     <>
+      {settings.theme_christmas_enabled === "true" && (
+        <div className="seasonal-noel-banner-v501">
+          <span aria-hidden="true">✦</span>
+          <span>{language === "fr" ? "Noël chez Ichigo Ichie · La magie du matcha japonais" : "Christmas at Ichigo Ichie · The magic of Japanese matcha"}</span>
+          <span aria-hidden="true">✦</span>
+        </div>
+      )}
       {settingEnabled(settings.announcement_visible) && (
         <div className="announcement">
           {t("announcement_fr", "announcement_en")}
