@@ -269,7 +269,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
                     <span>{item.quantity}</span>
                     <button type="button" onClick={() => updateQuantity(item, item.quantity + 1)} disabled={maxForThisLine !== null && item.quantity >= maxForThisLine}>+</button>
                   </div>
-                  {stockNotice && <small className={`cart-stock-v216 ${stock <= 0 || lineStockConflict ? "danger" : ""}`} role={stock <= 0 || lineStockConflict ? "alert" : undefined}>
+                  {stockNotice && <small className={`cart-stock-v216 ${(stock !== null && stock <= 0) || lineStockConflict ? "danger" : ""}`} role={(stock !== null && stock <= 0) || lineStockConflict ? "alert" : undefined}>
                     {stockNotice}
                   </small>}
                   <div className="cart-line-actions-v216">
