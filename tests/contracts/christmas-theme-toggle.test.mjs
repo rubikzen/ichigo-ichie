@@ -43,3 +43,12 @@ test("seasonal controls are presentation only, not checkout or pricing", () => {
   assert.ok(!provider.includes("reserve_shop_order_stock"));
   assert.ok(!css.includes(".checkout-form button:disabled"));
 });
+
+test("the holiday hero pill resets all inherited circle geometry", () => {
+  const badge = css.match(/html\[data-seasonal-theme="christmas"\] \.hero::before \{([\s\S]*?)\}/)?.[1];
+  assert.ok(badge, "Christmas hero badge CSS should exist");
+  assert.match(badge, /inset:\s*21px auto auto clamp\(/);
+  assert.match(badge, /width:\s*max-content;/);
+  assert.match(badge, /height:\s*auto;/);
+  assert.match(badge, /max-width:\s*calc\(100% - 40px\);/);
+});
