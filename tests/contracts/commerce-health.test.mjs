@@ -41,7 +41,7 @@ test("promo reserved_count is checked against all reserved orders", () => {
 });
 
 test("inventory alerts use variant stock when variants exist", () => {
-  assert.match(commerceHealth, /LOW_STOCK_THRESHOLD = 3/);
+  assert.match(commerceHealth, /LOW_STOCK_THRESHOLD = 4/);
   assert.match(commerceHealth, /activeVariantCount/);
   assert.match(
     commerceHealth,
