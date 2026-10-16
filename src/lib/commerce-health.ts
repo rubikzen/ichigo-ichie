@@ -51,7 +51,7 @@ export type CommerceHealth = {
 
 const STALE_WITHOUT_EXPIRY_MS = 45 * 60 * 1000;
 const EXPIRY_GRACE_MS = 5 * 60 * 1000;
-const LOW_STOCK_THRESHOLD = 3;
+const LOW_STOCK_THRESHOLD = 4;
 
 function timestamp(value: unknown) {
   const parsed = value ? Date.parse(String(value)) : Number.NaN;
