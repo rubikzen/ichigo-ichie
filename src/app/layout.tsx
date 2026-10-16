@@ -170,7 +170,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   }).replace(/</g, "\\u003c");
 
   return (
-    <html lang="fr" style={themeStyle} data-seasonal-theme={settings.theme_christmas_enabled === "true" ? "christmas" : "default"}>
+    <html lang="fr" style={themeStyle} data-seasonal-theme={settings.theme_christmas_enabled === "true" ? "christmas" : "default"} data-christmas-intensity={settings.theme_christmas_intensity === "soft" || settings.theme_christmas_intensity === "full" ? settings.theme_christmas_intensity : "festive"} data-christmas-snow={settings.theme_christmas_snow_enabled !== "false" ? "on" : "off"} data-christmas-decor={settings.theme_christmas_decor_enabled !== "false" ? "on" : "off"}>
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
         <Providers siteSettings={settings}>
