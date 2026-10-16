@@ -1,0 +1,171 @@
+/* V5.02 • Festive decoration follows the entire public storefront.
+   All controls are inert visually and cannot obstruct checkout interactions. */
+
+/* A repeated miniature festive ornament provides a Christmas cue on scroll. */
+html[data-seasonal-theme="christmas"] body:has(.site-header) main {
+  background-image: radial-gradient(circle at 4% 5%, rgba(191, 146, 83, .052) 0 2px, transparent 2.5px),
+                    radial-gradient(circle at 97% 68%, rgba(158, 59, 69, .044) 0 3px, transparent 3.5px);
+  background-size: 210px 230px, 290px 270px;
+}
+html[data-seasonal-theme="christmas"] .shop-collection-page-v473,
+html[data-seasonal-theme="christmas"] .product-page-v431,
+html[data-seasonal-theme="christmas"] .cart-page-v216,
+html[data-seasonal-theme="christmas"] .checkout-page {
+  background-color: #fffaf3;
+  background-image: radial-gradient(ellipse at 100% 0%, rgba(218, 184, 132, .13), transparent 43%);
+}
+html[data-seasonal-theme="christmas"] :is(.shop-collection-hero-v473, .product-page-story-v431, .cart-page-head-v216, .checkout-heading-v481) {
+  border-bottom-color: rgba(176, 136, 85, .24);
+}
+html[data-seasonal-theme="christmas"] :is(.shop-collection-page-v473, .product-page-v431, .cart-page-v216, .checkout-page) .eyebrow {
+  color: #953b48;
+}
+html[data-seasonal-theme="christmas"] :is(.cart-item-v216, .cart-summary-v216, .checkout-section-card, .product-page-buy-box-v432) {
+  border-color: #e7d6ba;
+  box-shadow: 0 9px 32px rgba(87, 51, 40, .055);
+}
+html[data-seasonal-theme="christmas"] :is(.product-grid, .shop-collection-grid-v473) .product-card {
+  border-color: #e2cfb1;
+}
+html[data-seasonal-theme="christmas"] :is(.shop-collection-hero-v473, .product-page-header-v432) .eyebrow::before {
+  content: "✦";
+  color: #bd8b48;
+  padding-inline-end: 6px;
+}
+html[data-seasonal-theme="christmas"] .site-footer-v226 {
+  background-image: radial-gradient(ellipse at 12% 0%, rgba(190, 141, 85, .10), transparent 58%);
+}
+html[data-seasonal-theme="christmas"] .seasonal-footer-ribbon-v502 {
+  padding: 16px 18px;
+  text-align: center;
+  color: #fff8ed;
+  background: linear-gradient(94deg, #234f3f 0%, #2d684f 49%, #234f3f 100%);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  border-top: 2px solid #b89961;
+  border-bottom: 2px solid #b89961;
+}
+html[data-seasonal-theme="christmas"] .seasonal-footer-ribbon-v502 span {
+  color: #f3d28f;
+  margin: 0 12px;
+}
+html[data-seasonal-theme="christmas"][data-christmas-intensity="full"] .site-header {
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, #205340, #d3ad6a, #9d3742, #d3ad6a, #205340) 1;
+}
+html[data-seasonal-theme="christmas"][data-christmas-intensity="soft"] .seasonal-noel-banner-v501 {
+  background: #27543f;
+}
+
+/* Single fixed layer. All children are decorative and pointer-inert. */
+.seasonal-layer-v502 {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  pointer-events: none !important;
+  user-select: none;
+  z-index: 12;
+  contain: layout style paint;
+}
+.seasonal-layer-v502 * { pointer-events: none !important; }
+.seasonal-snow-v502 { position: absolute; inset: 0; overflow: hidden; }
+.seasonal-flake-v502 {
+  position: absolute;
+  top: -10px;
+  display: block;
+  border-radius: 50%;
+  background: #fffcf2;
+  box-shadow: 0 0 1px 1px rgba(126, 140, 124, .23), 0 0 6px rgba(203, 174, 126, .24);
+  will-change: transform;
+  animation-name: ichigo-snowfall-v502;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes ichigo-snowfall-v502 {
+  from { transform: translate3d(0, -15px, 0); }
+  to { transform: translate3d(24px, 105dvh, 0); }
+}
+html[data-seasonal-theme="christmas"] body:has(.checkout-page) .seasonal-snow-v502 {
+  opacity: .3;
+}
+html[data-seasonal-theme="christmas"] body:has(.cart-page-v216) .seasonal-snow-v502 {
+  opacity: .5;
+}
+.seasonal-tree-v502 {
+  position: absolute;
+  bottom: 16px;
+  left: 18px;
+  width: 90px;
+  padding: 9px;
+  border-radius: 19px;
+  background: rgba(252, 246, 232, .83);
+  border: 1px solid rgba(183, 147, 99, .36);
+  box-shadow: 0 12px 32px rgba(32, 61, 45, .11);
+  backdrop-filter: blur(5px);
+}
+.noel-tree-svg-v502 { display: block; width: 100%; height: auto; }
+.seasonal-layer-full-v502 .seasonal-tree-v502 { width: 105px; }
+.seasonal-santa-v502 {
+  position: absolute;
+  top: 112px;
+  right: 19px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: rgba(253, 248, 235, .84);
+  border: 1px solid #e3cfab;
+  box-shadow: 0 9px 25px rgba(76, 51, 36, .09);
+  font-size: 24px;
+  line-height: 1.15;
+  animation: ichigo-santa-float-v502 5s ease-in-out infinite;
+}
+.seasonal-santa-stars-v502 { color: #c19962; font-size: 11px; }
+@keyframes ichigo-santa-float-v502 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* Admin controls */
+.seasonal-options-v502 { display: flex; flex-direction: column; gap: 11px; margin-top: 15px; }
+.seasonal-option-label-v502 { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
+.seasonal-option-label-v502 select {
+  width: 100%;
+  min-height: 41px;
+  border: 1px solid #e0d2bc;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #254438;
+  background: #fff;
+}
+.seasonal-options-v502 .seasonal-theme-admin-toggle-v501 {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Keep corners free around payment buttons and mobile fixed navigation. */
+html[data-seasonal-theme="christmas"] body:has(.checkout-page) .seasonal-tree-v502,
+html[data-seasonal-theme="christmas"] body:has(.checkout-page) .seasonal-santa-v502,
+html[data-seasonal-theme="christmas"] body:has(.cart-page-v216) .seasonal-tree-v502,
+html[data-seasonal-theme="christmas"] body:has(.cart-page-v216) .seasonal-santa-v502 {
+  display: none;
+}
+@media (max-width: 767px) {
+  .seasonal-flake-v502:nth-child(n+10) { display: none; }
+  .seasonal-santa-v502 { display: none; }
+  .seasonal-tree-v502 { bottom: 79px; left: 8px; width: 49px; padding: 5px; border-radius: 12px; opacity: .82; }
+  .seasonal-layer-full-v502 .seasonal-tree-v502 { width: 52px; }
+  html[data-seasonal-theme="christmas"] body:has(.mobile-bottom-nav-v225) .seasonal-tree-v502 { display: none; }
+  html[data-seasonal-theme="christmas"] .seasonal-footer-ribbon-v502 { font-size: 11px; padding: 12px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seasonal-flake-v502, .seasonal-santa-v502 { animation: none !important; }
+  .seasonal-flake-v502 { opacity: .14 !important; }
+}
+@media print {
+  .seasonal-layer-v502 { display: none !important; }
+}
