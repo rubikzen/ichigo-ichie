@@ -283,7 +283,24 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
               <input type="checkbox" checked={settings.theme_christmas_enabled === "true"} onChange={() => toggle("theme_christmas_enabled")} />
               <span>Activer le thème de Noël</span>
             </label>
-            <small>Statut : {settings.theme_christmas_enabled === "true" ? "Noël activé 🎄" : "Thème classique"} · Cliquez sur Enregistrer pour publier.</small>
+            <div className="seasonal-options-v502">
+              <label className="seasonal-option-label-v502">Intensité de Noël
+                <select value={["soft", "festive", "full"].includes(settings.theme_christmas_intensity) ? settings.theme_christmas_intensity : "festive"} onChange={(e) => set("theme_christmas_intensity", e.target.value)}>
+                  <option value="soft">Doux — couleurs et détails discrets</option>
+                  <option value="festive">Festif — neige légère et sapin</option>
+                  <option value="full">Complet — neige, sapin et Père Noël</option>
+                </select>
+              </label>
+              <label className="seasonal-theme-admin-toggle-v501">
+                <input type="checkbox" checked={settings.theme_christmas_snow_enabled !== "false"} onChange={() => toggle("theme_christmas_snow_enabled")} />
+                <span>Activer la neige animée (Festif et Complet)</span>
+              </label>
+              <label className="seasonal-theme-admin-toggle-v501">
+                <input type="checkbox" checked={settings.theme_christmas_decor_enabled !== "false"} onChange={() => toggle("theme_christmas_decor_enabled")} />
+                <span>Afficher sapin et décorations fixes</span>
+              </label>
+            </div>
+            <small>Statut : {settings.theme_christmas_enabled === "true" ? "Noël activé 🎄" : "Thème classique"} · Cliquez sur Enregistrer pour publier. La neige se désactive automatiquement si le visiteur préfère moins d’animations.</small>
           </div>
           <div className={`seasonal-theme-admin-preview-v501 ${settings.theme_christmas_enabled === "true" ? "is-christmas" : ""}`} aria-label="Aperçu du thème">
             <span>ICHIGO ICHIE</span>
