@@ -7,6 +7,7 @@ import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import { checkoutFulfilmentModes } from "@/lib/checkout-fulfilment";
+import { cartStockNotice } from "@/lib/cart-stock-notice";
 import { SafeImage } from "@/components/SafeImage";
 import type { CartChoice, CartItem, Product, Variant } from "@/lib/types";
 import { composeProductVariantName, normalizeLegacyProductLabel, packagingLabel, variantLabel } from "@/lib/product-label";
@@ -220,6 +221,7 @@ export function CartPageClient({ products }: { products: Product[] }) {
                   ),
                 );
             const lineStockConflict = maxForThisLine !== null && item.quantity > maxForThisLine;
+            const stockNotice = cartStockNotice(stock, lineStockConflict, language);
             const canEdit = Boolean(
               product &&
               !item.bundleGroupId &&
@@ -267,14 +269,8 @@ export function CartPageClient({ products }: { products: Product[] }) {
                     <span>{item.quantity}</span>
                     <button type="button" onClick={() => updateQuantity(item, item.quantity + 1)} disabled={maxForThisLine !== null && item.quantity >= maxForThisLine}>+</button>
                   </div>
-                  {stock !== null && <small className={`cart-stock-v216 ${lineStockConflict ? "danger" : ""}`}>
-                    {lineStockConflict
-                      ? language === "fr"
-                        ? `Quantité totale supérieure au stock (${stock})`
-                        : `Total quantity exceeds stock (${stock})`
-                      : language === "fr"
-                        ? `${stock} en stock`
-                        : `${stock} in stock`}
+                  {stockNotice && <small className={`cart-stock-v216 ${stock <= 0 || lineStockConflict ? "danger" : ""}`} role={stock <= 0 || lineStockConflict ? "alert" : undefined}>
+                    {stockNotice}
                   </small>}
                   <div className="cart-line-actions-v216">
                     {canEdit && <button type="button" onClick={() => setEditingKey(item.key)}>{language === "fr" ? "Modifier" : "Edit"}</button>}
@@ -537,7 +533,7 @@ function CartItemEditor({ item, product, allItems, language, onClose, onSave }: 
         </div>)}
 
         {existingTarget && !stockConflict && <div className="cart-editor-info-v216">{language === "fr" ? "Cette configuration existe déjà : les quantités seront regroupées." : "This configuration is already in your cart: quantities will be merged."}</div>}
-        {stockConflict && <div className="cart-editor-error-v216">{language === "fr" ? `Stock insuffisant pour regrouper les quantités (${maxStock} disponible${maxStock === 1 ? "" : "s"}).` : `Not enough stock to merge quantities (${maxStock} available).`}</div>}
+        {stockConflict && <div className="cart-editor-error-v216">{language === "fr" ? "Stock insuffisant pour regrouper les quantités." : "Not enough stock to merge quantities."}</div>}
       </div>
 
       <div className="cart-editor-footer-v216">
