@@ -486,7 +486,9 @@ export async function POST(request: Request) {
     const reference = orderErrorReference();
     const classified = classifyOrderError(error);
     const shape = errorShape(error);
-    console.error("[ORDER_ERROR]", {
+    // Client validation (400/409/415/etc.) is expected and already returned
+    // to the browser. Reserve error-level logs for actual server failures.
+    if (classified.status >= 500) console.error("[ORDER_ERROR]", {
       reference,
       publicCode: classified.code,
       dbCode: textValue(shape.code) || undefined,

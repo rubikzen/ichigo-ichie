@@ -152,7 +152,7 @@ export async function GET(request: Request) {
               id: "inventory",
               label: "Stock Boutique",
               status: "warning",
-              detail: `${commerceHealth.summary.outOfStock} rupture(s) · ${commerceHealth.summary.lowStock} stock(s) faible(s) (≤ 3).`,
+              detail: `${commerceHealth.summary.outOfStock} rupture(s) · ${commerceHealth.summary.lowStock} stock(s) faible(s) (≤ 4).`,
             }
           : {
               id: "inventory",

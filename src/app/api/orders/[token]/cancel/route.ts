@@ -61,8 +61,8 @@ export async function POST(
   } catch (error) {
     console.error("Customer order cancel error", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Annulation impossible." },
-      { status: 500 },
+      { error: "Impossible d’annuler cette commande pour le moment.", code: "CANCELLATION_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
