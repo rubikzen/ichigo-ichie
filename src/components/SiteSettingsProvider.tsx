@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { siteSettingDefaults, toPublicSiteSettings, type SiteSettings } from "@/lib/settings";
 import { subscribeSiteSettingsUpdate } from "@/lib/settings-events";
+import { christmasOptions } from "@/lib/christmas-theme";
 
 type SettingsContextValue = { settings: SiteSettings; refreshSettings: () => Promise<void> };
 const publicDefaults = toPublicSiteSettings(siteSettingDefaults);
@@ -23,6 +24,10 @@ export function SiteSettingsProvider({ initialSettings, children }: { initialSet
 
   useEffect(() => {
     document.documentElement.dataset.seasonalTheme = settings.theme_christmas_enabled === "true" ? "christmas" : "default";
+    const season = christmasOptions(settings);
+    document.documentElement.dataset.christmasIntensity = season.intensity;
+    document.documentElement.dataset.christmasSnow = settings.theme_christmas_snow_enabled !== "false" ? "on" : "off";
+    document.documentElement.dataset.christmasDecor = settings.theme_christmas_decor_enabled !== "false" ? "on" : "off";
     const root = document.documentElement.style;
     root.setProperty("--ink", settings.theme_ink || "#26362d");
     root.setProperty("--moss", settings.theme_moss || "#486a4b");
