@@ -238,6 +238,9 @@ export const siteSettingDefaults: SiteSettings = {
   seo_description: "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.",
 
   theme_christmas_enabled: "false",
+  theme_christmas_intensity: "festive",
+  theme_christmas_snow_enabled: "true",
+  theme_christmas_decor_enabled: "true",
   theme_ink: "#26362d",
   theme_moss: "#486a4b",
   theme_moss_dark: "#294237",
