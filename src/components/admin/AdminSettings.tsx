@@ -171,7 +171,7 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
 
       {panel("matcha", "Pages matcha", "Navigation, contenus éditoriaux et SEO des pages Usucha, Koicha, Latte et Cérémonie", <MatchaContentAdmin settings={settings} setValue={set} toggleValue={toggle} />)}
 
-      {panel("menu", "La carte", "Présentation uniquement : aucun panier ni commande en ligne", <>{bilingual("menu_eyebrow", "Petit titre")}{bilingual("menu_title", "Titre")}{bilingual("menu_intro", "Introduction", true)}{bilingual("menu_info_note", "Message information", true)}{bilingual("menu_all", "Bouton Toutes catégories")}{bilingual("menu_empty", "Message quand aucun résultat", true)}</>)}
+      {panel("menu", "La carte", "Affichage des boissons et desserts sur le site", <><div className="cms-toggle-row"><label><input type="checkbox" checked={settings.menu_visible !== "false"} onChange={() => toggle("menu_visible")} /> Afficher la carte des boissons <span className={`fulfilment-admin-status-v485 ${settings.menu_visible === "false" ? "is-unavailable" : "is-available"}`}>{settings.menu_visible === "false" ? "Masquée" : "Visible"}</span></label></div><p className="muted">Si désactivée, la carte et ses liens disparaissent du site public. La Boutique, le panier et les commandes restent disponibles. Enregistrez pour publier.</p>{bilingual("menu_eyebrow", "Petit titre")}{bilingual("menu_title", "Titre")}{bilingual("menu_intro", "Introduction", true)}{bilingual("menu_info_note", "Message information", true)}{bilingual("menu_all", "Bouton Toutes catégories")}{bilingual("menu_empty", "Message quand aucun résultat", true)}</>)}
 
       {panel("shop", "Boutique", "Titres, introduction, catégories et tri", <>
       <div className="cms-toggle-row">

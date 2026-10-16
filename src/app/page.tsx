@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getCachedCatalog } from "@/lib/catalog-server";
 import { compactMenuProductForHome, compactShopProductForHome } from "@/lib/home-catalog";
 import { HomePageContent } from "@/components/HomePageContent";
+import { getPublicSiteSettings } from "@/lib/settings-server";
+import { settingEnabled } from "@/lib/settings";
 import "./styles/home-mobile-v496.css";
 
 export const revalidate = 30;
@@ -18,8 +20,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
+  const settings = await getPublicSiteSettings();
   const [menu, shop] = await Promise.all([
-    getCachedCatalog("menu"),
+    settingEnabled(settings.menu_visible) ? getCachedCatalog("menu") : Promise.resolve({ categories: [], products: [] }),
     getCachedCatalog("shop"),
   ]);
   const compactShopProducts = shop.products.map(compactShopProductForHome);

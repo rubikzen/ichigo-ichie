@@ -9,6 +9,7 @@ import { ProductCard } from "./ProductCard";
 import { MenuInfoCard } from "./MenuInfoCard";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
+import { settingEnabled } from "@/lib/settings";
 import { subscribeCatalogUpdate } from "@/lib/catalog-events";
 import { MATCHA_FINDER_TAGS, matchaFinderLabel, productMatchesFinderTag, productMatchaFinderTags, type MatchaFinderTag } from "@/lib/product-merchandising";
 import { categoryCollectionPath } from "@/lib/shop-collection-seo";
@@ -228,7 +229,9 @@ export function UnifiedCatalogSections({
   shopProducts: Product[];
 }) {
   const { language } = useLanguage();
+  const { settings } = useSiteSettings();
   const router = useRouter();
+  const menuVisible = settingEnabled(settings.menu_visible);
 
   useEffect(
     () => subscribeCatalogUpdate(() => router.refresh()),
@@ -253,7 +256,7 @@ export function UnifiedCatalogSections({
     <>
       <CatalogBlock id="boutique" kind="shop" categories={shopCategories} products={shopProducts} />
 
-      <section className="boutique-menu-bridge-v449" aria-labelledby="tasting-title-v449">
+      {menuVisible && <section className="boutique-menu-bridge-v449" aria-labelledby="tasting-title-v449">
         <div>
           <p className="eyebrow">{tasting.eyebrow}</p>
           <h2 id="tasting-title-v449">{tasting.title}</h2>
@@ -263,9 +266,9 @@ export function UnifiedCatalogSections({
           {tasting.cta}
           <span aria-hidden="true">↓</span>
         </a>
-      </section>
+      </section>}
 
-      <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />
+      {menuVisible && <CatalogBlock id="menu" kind="menu" categories={menuCategories} products={menuProducts} />}
     </>
   );
 }
