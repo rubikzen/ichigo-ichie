@@ -1,0 +1,215 @@
+/* Ichigo Ichie V5.01 — reversible Christmas theme, controlled in Admin.
+   Default storefront and standalone staff/admin apps remain unchanged. */
+
+html[data-seasonal-theme="christmas"] body:has(.site-header) {
+  --moss: #963842;
+  --moss-dark: #205340;
+  --ink: #294037;
+  --paper: #fffaf4;
+  --soft: #f7efe5;
+  --line: #e8dbca;
+  --muted: #766b62;
+  --shadow: 0 22px 60px rgba(58, 46, 29, .12);
+  background: var(--paper);
+}
+
+html[data-seasonal-theme="christmas"] .seasonal-noel-banner-v501 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  min-height: 37px;
+  padding: 7px 16px;
+  background: linear-gradient(100deg, #752d36 0%, #993b46 53%, #6e2a34 100%);
+  border-bottom: 2px solid #caa86e;
+  color: #fff8e8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-align: center;
+}
+
+html[data-seasonal-theme="christmas"] .seasonal-noel-banner-v501 > span:first-child,
+html[data-seasonal-theme="christmas"] .seasonal-noel-banner-v501 > span:last-child {
+  color: #f6d49c;
+  font-size: 15px;
+}
+
+html[data-seasonal-theme="christmas"] .announcement {
+  background: #205340;
+  color: #fff9ed;
+}
+html[data-seasonal-theme="christmas"] .site-header {
+  background: rgba(255, 250, 244, .96);
+  border-bottom: 1px solid #e0cfb8;
+  box-shadow: 0 2px 18px rgba(58, 46, 29, .035);
+}
+html[data-seasonal-theme="christmas"] .site-header .brand strong {
+  color: #782c36;
+}
+html[data-seasonal-theme="christmas"] .hero {
+  position: relative;
+  background: radial-gradient(ellipse at 88% 19%, rgba(198, 169, 102, .18), transparent 48%),
+    linear-gradient(135deg, #fff8ef 0%, #f8f2e8 55%, #eff3e8 100%);
+}
+html[data-seasonal-theme="christmas"] .hero::before {
+  content: "✦  NOËL CHEZ ICHIGO ICHIE  ✦";
+  position: absolute;
+  top: 21px;
+  left: clamp(20px, 6vw, 95px);
+  z-index: 3;
+  display: block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(166, 120, 73, .35);
+  background: #fff8eb;
+  color: #973c44;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  pointer-events: none;
+}
+html[data-seasonal-theme="christmas"] .hero .eyebrow,
+html[data-seasonal-theme="christmas"] .section-heading .eyebrow {
+  color: #993944;
+}
+html[data-seasonal-theme="christmas"] .hero-orb {
+  background: radial-gradient(circle at 35% 28%, #f4e8cc 0%, #e6d2b5 55%, #d7c0a5 100%);
+  box-shadow: 0 0 0 13px rgba(224, 191, 134, .11);
+}
+html[data-seasonal-theme="christmas"] .hero-visual::after {
+  content: "✦";
+  position: absolute;
+  right: 5%;
+  top: 5%;
+  z-index: 3;
+  color: #ba8a49;
+  font-size: clamp(38px, 6vw, 76px);
+  line-height: 1;
+  text-shadow: 0 4px 18px rgba(128, 85, 34, .18);
+  pointer-events: none;
+}
+html[data-seasonal-theme="christmas"] .floating-note {
+  background: rgba(255, 251, 243, .94);
+  border-color: #e5d0a9;
+  color: #763e3d;
+}
+html[data-seasonal-theme="christmas"] .button.primary {
+  background: #205340;
+  border-color: #205340;
+  color: #fff;
+}
+html[data-seasonal-theme="christmas"] .button.primary:hover:not(:disabled) {
+  background: #2a654e;
+  box-shadow: 0 8px 24px rgba(32, 83, 64, .16);
+}
+html[data-seasonal-theme="christmas"] .product-card {
+  border-color: #eadbc5;
+  box-shadow: 0 13px 36px rgba(84, 56, 38, .075);
+}
+html[data-seasonal-theme="christmas"] .product-card:hover {
+  box-shadow: 0 18px 50px rgba(84, 56, 38, .13);
+}
+html[data-seasonal-theme="christmas"] .story-section {
+  background: linear-gradient(135deg, #f7efe4, #ecf0e4);
+}
+html[data-seasonal-theme="christmas"] .site-footer {
+  background: #f8f1e7;
+  border-top: 3px solid #c6a36c;
+}
+
+/* Admin preview: standalone Admin itself is not recolored by the theme. */
+.seasonal-theme-admin-v501 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(190px, .7fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 18px;
+  margin-bottom: 24px;
+  border: 1px solid #e6dcc9;
+  border-radius: 18px;
+  background: #fffcf6;
+}
+.seasonal-theme-admin-copy-v501 strong {
+  color: #30483a;
+  font-size: 16px;
+}
+.seasonal-theme-admin-copy-v501 p {
+  margin: 8px 0 14px;
+  color: #716b63;
+  font-size: 13px;
+}
+.seasonal-theme-admin-toggle-v501 {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e5d4c0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.seasonal-theme-admin-toggle-v501 input {
+  accent-color: #a53642;
+  width: 17px;
+  height: 17px;
+}
+.seasonal-theme-admin-copy-v501 > small {
+  display: block;
+  margin-top: 10px;
+  color: #766d62;
+}
+.seasonal-theme-admin-preview-v501 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 165px;
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f0f2e6, #f7f3ec);
+  color: #294738;
+  text-align: center;
+}
+.seasonal-theme-admin-preview-v501.is-christmas {
+  background: radial-gradient(circle at 85% 12%, #e9d59f, transparent 60%),
+    linear-gradient(145deg, #205340, #174534);
+  color: #fff7e7;
+  border: 2px solid #d4ae76;
+}
+.seasonal-theme-admin-preview-v501 span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+.seasonal-theme-admin-preview-v501 strong {
+  font: 500 25px/1.12 Georgia, serif;
+  color: inherit;
+}
+.seasonal-theme-admin-preview-v501 small {
+  opacity: .85;
+  color: inherit;
+}
+
+@media (max-width: 650px) {
+  .seasonal-theme-admin-v501 {
+    grid-template-columns: 1fr;
+  }
+  html[data-seasonal-theme="christmas"] .seasonal-noel-banner-v501 {
+    gap: 8px;
+    padding-inline: 10px;
+    font-size: 10px;
+  }
+  html[data-seasonal-theme="christmas"] .hero::before {
+    top: 11px;
+    left: 18px;
+    font-size: 9px;
+    padding: 5px 10px;
+  }
+  html[data-seasonal-theme="christmas"] .hero-visual::after {
+    right: 1%;
+    top: 0;
+    font-size: 40px;
+  }
+}
