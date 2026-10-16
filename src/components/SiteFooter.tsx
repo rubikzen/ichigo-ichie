@@ -16,6 +16,7 @@ export function SiteFooter() {
   const phoneHref = settings.phone ? `tel:${settings.phone.replace(/\s+/g, "")}` : "";
 
   return <footer className="site-footer-v226 site-footer-v227">
+    {settings.theme_christmas_enabled === "true" && <div className="seasonal-footer-ribbon-v502" aria-label={language === "fr" ? "Message de Noël" : "Christmas message"}><span aria-hidden="true">✦</span> {language === "fr" ? "Un Noël chaleureux, un matcha à partager" : "A cozy Christmas, a matcha to share"} <span aria-hidden="true">✦</span></div>}
     <div className="footer-main-v226 footer-main-v227">
       <div className="footer-brand-v226">
         <Link href="/#top" className="footer-brandline-v226">
