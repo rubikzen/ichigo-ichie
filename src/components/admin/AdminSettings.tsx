@@ -274,7 +274,24 @@ export function SettingsAdmin({ settings, setSettings, supabase, reload, active,
 
       {panel("legal", "Informations légales", "Modifiez librement les 4 pages affichées dans le footer", <><div className="setup-warning compact-warning-v227"><strong>Contenu entièrement modifiable</strong><span>Les quatre liens du footer utilisent automatiquement les titres et contenus enregistrés ici. Les textes par défaut sont uniquement des exemples de travail : remplacez-les par les informations validées de votre société avant la mise en ligne.</span></div><div className="legal-editor-grid-v231">{legalPageEditor("legal_notice", "Mentions légales", "/mentions-legales")}{legalPageEditor("terms", "Conditions générales de vente (CGV)", "/cgv")}{legalPageEditor("privacy", "Politique de confidentialité", "/confidentialite")}{legalPageEditor("shipping_returns", "Livraison & retours", "/livraison-retours")}</div></>)}
 
-      {panel("theme", "Couleurs & style", "Personnalisez l’identité visuelle sans CSS", <><div className="theme-color-grid">{[["theme_ink","Texte"],["theme_moss","Vert secondaire"],["theme_moss_dark","Vert principal"],["theme_paper","Fond"],["theme_soft","Fond doux"]].map(([key,label]) => <label key={key}>{label}<div className="color-input-row"><input type="color" value={settings[key] || "#ffffff"} onChange={(e) => set(key,e.target.value)} /><input value={settings[key] || ""} onChange={(e) => set(key,e.target.value)} /></div></label>)}</div><label>Arrondi général · {settings.theme_radius || "26"} px<input type="range" min="8" max="44" value={settings.theme_radius || "26"} onChange={(e) => set("theme_radius",e.target.value)} /></label><div className="cms-theme-preview" style={{ background: settings.theme_soft, color: settings.theme_ink, borderRadius: `${settings.theme_radius || 26}px` }}><span style={{ background: settings.theme_moss_dark }}>Bouton</span><strong>Aperçu Ichigo Ichie</strong><small>Les couleurs sont appliquées au site après enregistrement.</small></div></>)}
+      {panel("theme", "Couleurs & style", "Personnalisez l’identité visuelle sans CSS", <>
+        <div className="seasonal-theme-admin-v501">
+          <div className="seasonal-theme-admin-copy-v501">
+            <strong>Thème saisonnier · Noël</strong>
+            <p>Activez une ambiance de Noël sur le site : vert sapin, rouge chaleureux, détails dorés et décorations discrètes. Revenez au style habituel en un clic, sans toucher aux produits, tarifs ni commandes.</p>
+            <label className="seasonal-theme-admin-toggle-v501">
+              <input type="checkbox" checked={settings.theme_christmas_enabled === "true"} onChange={() => toggle("theme_christmas_enabled")} />
+              <span>Activer le thème de Noël</span>
+            </label>
+            <small>Statut : {settings.theme_christmas_enabled === "true" ? "Noël activé 🎄" : "Thème classique"} · Cliquez sur Enregistrer pour publier.</small>
+          </div>
+          <div className={`seasonal-theme-admin-preview-v501 ${settings.theme_christmas_enabled === "true" ? "is-christmas" : ""}`} aria-label="Aperçu du thème">
+            <span>ICHIGO ICHIE</span>
+            <strong>{settings.theme_christmas_enabled === "true" ? "✦ Noël au Japon ✦" : "一 期 一 会"}</strong>
+            <small>{settings.theme_christmas_enabled === "true" ? "Un Noël tout en matcha" : "La maison japonaise de Nice"}</small>
+          </div>
+        </div>
+        <div className="theme-color-grid">{[["theme_ink","Texte"],["theme_moss","Vert secondaire"],["theme_moss_dark","Vert principal"],["theme_paper","Fond"],["theme_soft","Fond doux"]].map(([key,label]) => <label key={key}>{label}<div className="color-input-row"><input type="color" value={settings[key] || "#ffffff"} onChange={(e) => set(key,e.target.value)} /><input value={settings[key] || ""} onChange={(e) => set(key,e.target.value)} /></div></label>)}</div><label>Arrondi général · {settings.theme_radius || "26"} px<input type="range" min="8" max="44" value={settings.theme_radius || "26"} onChange={(e) => set("theme_radius",e.target.value)} /></label><div className="cms-theme-preview" style={{ background: settings.theme_soft, color: settings.theme_ink, borderRadius: `${settings.theme_radius || 26}px` }}><span style={{ background: settings.theme_moss_dark }}>Bouton</span><strong>Aperçu Ichigo Ichie</strong><small>Les couleurs sont appliquées au site après enregistrement.</small></div></>)}
 
       {panel("seo", "SEO", "Titre et description affichés par les moteurs de recherche", <>{text("seo_title", "Titre SEO")}{area("seo_description", "Description SEO", 3)}</>)}
 
