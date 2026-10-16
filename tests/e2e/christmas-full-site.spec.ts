@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("Christmas overlay is viewport-fixed and never intercepts storefront clicks", async ({ page }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "load" });
   await expect(page.locator(".site-header")).toBeVisible();
 
   const result = await page.evaluate(() => {
@@ -15,14 +15,16 @@ test("Christmas overlay is viewport-fixed and never intercepts storefront clicks
     const computed = getComputedStyle(overlay);
     const flake = getComputedStyle(overlay.querySelector(".seasonal-flake-v502")!);
     const rect = overlay.getBoundingClientRect();
-    overlay.remove();
-    return {
+    // ComputedStyle is live: capture properties *before* removing the node.
+    const result = {
       position: computed.position,
       pointerEvents: computed.pointerEvents,
       width: rect.width,
       viewportWidth: document.documentElement.clientWidth,
       snowAnimation: flake.animationName,
     };
+    overlay.remove();
+    return result;
   });
 
   expect(result.position).toBe("fixed");
