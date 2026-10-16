@@ -55,10 +55,14 @@ html[data-seasonal-theme="christmas"] .hero {
 html[data-seasonal-theme="christmas"] .hero::before {
   content: "✦  NOËL CHEZ ICHIGO ICHIE  ✦";
   position: absolute;
-  top: 21px;
-  left: clamp(20px, 6vw, 95px);
+  /* Reset the large circle sizing/position from .hero-v218::before.
+     Without these overrides the seasonal label obscures hero copy. */
+  inset: 21px auto auto clamp(20px, 6vw, 95px);
+  width: max-content;
+  max-width: calc(100% - 40px);
+  height: auto;
   z-index: 3;
-  display: block;
+  display: inline-block;
   padding: 6px 14px;
   border-radius: 999px;
   border: 1px solid rgba(166, 120, 73, .35);
