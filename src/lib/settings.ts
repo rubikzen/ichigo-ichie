@@ -72,6 +72,7 @@ export const siteSettingDefaults: SiteSettings = {
   store_address: "14 rue Centrale · Vieux Nice",
   store_maps_url: "",
 
+  menu_visible: "true",
   menu_eyebrow_fr: "ICHIGO ICHIE",
   menu_eyebrow_en: "ICHIGO ICHIE",
   menu_title_fr: "La carte",

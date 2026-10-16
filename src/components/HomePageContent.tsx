@@ -28,6 +28,7 @@ export function HomePageContent({
 }) {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
+  const menuVisible = settingEnabled(settings.menu_visible);
   const t = (fr: string, en: string) =>
     settings[language === "fr" ? fr : en] || settings[fr] || "";
   const shopProductsById = new Map(shopProducts.map((product) => [product.id, product]));
@@ -93,9 +94,9 @@ export function HomePageContent({
                 <Link className="button primary" href="/#boutique">
                   {t("home_secondary_cta_fr", "home_secondary_cta_en") || mobile.cta}
                 </Link>
-                <Link className="button ghost mobile-menu-cta-v260" href="/#menu">
+                {menuVisible && <Link className="button ghost mobile-menu-cta-v260" href="/#menu">
                   {mobile.menuCta}
-                </Link>
+                </Link>}
               </div>
 
               <div className="mobile-hero-assurance-v260" aria-label={mobile.trustTitle}>
@@ -303,7 +304,7 @@ export function HomePageContent({
                 <Link className="house-text-link-v226" href="/matcha-nice">
                   {language === "fr" ? "Matcha à Nice →" : "Matcha in Nice →"}
                 </Link>
-                {t("story_link_fr", "story_link_en") && (
+                {menuVisible && t("story_link_fr", "story_link_en") && (
                   <Link className="house-text-link-v226" href="/#menu">
                     {t("story_link_fr", "story_link_en")}
                   </Link>

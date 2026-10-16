@@ -6,6 +6,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
+import { settingEnabled } from "@/lib/settings";
 
 type SectionId = "menu" | "boutique" | "maison" | "";
 
@@ -84,6 +85,7 @@ export function MobileBottomNav() {
   const { count } = useCart();
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
+  const menuVisible = settingEnabled(settings.menu_visible);
   const [active, setActive] = useState<SectionId>("");
   const [dockHiddenByScroll, setDockHiddenByScroll] = useState(false);
   const hashSection = useSyncExternalStore<SectionId>(subscribeHashSection, readHashSection, readServerHashSection);
@@ -180,13 +182,15 @@ export function MobileBottomNav() {
     };
   }, [onHome]);
 
-  const visibleActive: SectionId = pathSection || (onHome ? active || hashSection : "");
+  const visibleActive: SectionId = !menuVisible && (pathSection === "menu" || (onHome && (active === "menu" || hashSection === "menu")))
+    ? "boutique"
+    : pathSection || (onHome ? active || hashSection : "");
 
   if (hidden) return null;
 
   return (
     <nav
-      className={`mobile-bottom-nav-v225 mobile-bottom-nav-v236 mobile-bottom-nav-v4792${dockHiddenByScroll ? " is-scroll-hidden-v4792" : ""}`}
+      className={`mobile-bottom-nav-v225 mobile-bottom-nav-v236 mobile-bottom-nav-v4792${!menuVisible ? " mobile-nav-no-menu-v503" : ""}${dockHiddenByScroll ? " is-scroll-hidden-v4792" : ""}`}
       aria-label={language === "fr" ? "Navigation mobile" : "Mobile navigation"}
       data-scroll-hidden-v4792={dockHiddenByScroll ? "true" : "false"}
     >
@@ -194,10 +198,10 @@ export function MobileBottomNav() {
         <IconShop />
         <span>{t("nav_shop_fr", "nav_shop_en", language === "fr" ? "Boutique" : "Shop")}</span>
       </Link>
-      <Link href="/#menu" className={visibleActive === "menu" ? "active" : ""} aria-current={visibleActive === "menu" ? "location" : undefined}>
+      {menuVisible && <Link href="/#menu" className={visibleActive === "menu" ? "active" : ""} aria-current={visibleActive === "menu" ? "location" : undefined}>
         <IconMenu />
         <span>{language === "fr" ? "Carte" : "Menu"}</span>
-      </Link>
+      </Link>}
       <Link href="/#maison" className={visibleActive === "maison" ? "active" : ""} aria-current={visibleActive === "maison" ? "location" : undefined}>
         <IconHouse />
         <span>{language === "fr" ? "Maison" : "About"}</span>

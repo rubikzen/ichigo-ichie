@@ -1,0 +1,6 @@
+/* V5.03: The Carte menu is optional; keep the mobile dock balanced. */
+@media (max-width: 760px) {
+  .mobile-bottom-nav-v236.mobile-nav-no-menu-v503 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}

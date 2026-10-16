@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useLanguage } from "./LanguageProvider";
 import { useSiteSettings } from "./SiteSettingsProvider";
 import { SafeImage } from "./SafeImage";
+import { settingEnabled } from "@/lib/settings";
 
 export function SiteFooter() {
   const { language } = useLanguage();
   const { settings } = useSiteSettings();
+  const menuVisible = settingEnabled(settings.menu_visible);
   const t = (fr: string, en: string) => settings[language === "fr" ? fr : en] || settings[fr] || "";
   const mapsHref = settings.store_maps_url || (settings.store_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.store_address)}` : "");
   const instagramHref = settings.instagram
@@ -30,7 +32,7 @@ export function SiteFooter() {
 
       <div className="footer-column-v226">
         <strong>{t("footer_nav_title_fr", "footer_nav_title_en")}</strong>
-        <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
+        {menuVisible && <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>}
         <Link href="/#boutique">{t("nav_shop_fr", "nav_shop_en")}</Link>
         <Link href="/guides">{language === "fr" ? "Guides du matcha" : "Matcha guides"}</Link>
         <Link href="/#maison">{t("nav_house_fr", "nav_house_en")}</Link>

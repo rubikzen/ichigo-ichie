@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { SiteChrome } from "@/components/SiteChrome";
 import { getCachedSiteSettings, getPublicSiteSettings } from "@/lib/settings-server";
+import { settingEnabled } from "@/lib/settings";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://www.ichigoichiematcha.fr").replace(/\/$/, "");
@@ -134,7 +135,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     name: brand,
     alternateName: "Ichigo Ichie Nice",
     url: siteUrl(),
-    menu: menuUrl,
+    ...(settingEnabled(settings.menu_visible) ? { menu: menuUrl } : {}),
     description,
     image: absoluteUrl(settings.home_hero_image_url, "/brand-mark.svg"),
     logo: absoluteUrl(settings.brand_logo_url, "/brand-mark.svg"),

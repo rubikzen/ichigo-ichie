@@ -49,6 +49,7 @@ export function SiteHeader() {
   const { count } = useCart();
   const { language, setLanguage } = useLanguage();
   const { settings } = useSiteSettings();
+  const menuVisible = settingEnabled(settings.menu_visible);
   const [scrolled, setScrolled] = useState(false);
   const t = (fr: string, en: string) =>
     settings[language === "fr" ? fr : en] || settings[fr] || "";
@@ -104,7 +105,7 @@ export function SiteHeader() {
           aria-label="Navigation principale"
         >
           <Link href="/#boutique">{t("nav_shop_fr", "nav_shop_en")}</Link>
-          <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>
+          {menuVisible && <Link href="/#menu">{t("nav_menu_fr", "nav_menu_en")}</Link>}
           <Link href="/guides">{language === "fr" ? "Guides" : "Guides"}</Link>
           <Link href="/#maison">{t("nav_house_fr", "nav_house_en")}</Link>
           <Link href="/#contact">{t("nav_contact_fr", "nav_contact_en")}</Link>
