@@ -182,9 +182,7 @@ export function MobileBottomNav() {
     };
   }, [onHome]);
 
-  const visibleActive: SectionId = !menuVisible && (pathSection === "menu" || (onHome && (active === "menu" || hashSection === "menu")))
-    ? "boutique"
-    : pathSection || (onHome ? active || hashSection : "");
+  const visibleActive: SectionId = pathSection || (onHome ? active || hashSection : "");
 
   if (hidden) return null;
 
