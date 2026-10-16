@@ -237,6 +237,7 @@ export const siteSettingDefaults: SiteSettings = {
   seo_title: "Ichigo Ichie — Maison de Matcha à Nice",
   seo_description: "Maison japonaise de matcha à Nice : carte sur place, matcha japonais et accessoires disponibles dans notre boutique en ligne.",
 
+  theme_christmas_enabled: "false",
   theme_ink: "#26362d",
   theme_moss: "#486a4b",
   theme_moss_dark: "#294237",
