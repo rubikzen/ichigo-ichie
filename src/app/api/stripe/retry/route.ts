@@ -40,7 +40,6 @@ export async function POST(request: Request) {
       total: Number(order.total || 0),
     });
   } catch (error) {
-    console.error(error);
     if (error instanceof MinimumOnlinePaymentError) {
       return NextResponse.json(
         { error: "Le montant minimum pour un paiement en ligne est de 1,00 €.", code: error.code },
@@ -54,6 +53,11 @@ export async function POST(request: Request) {
         { status: publicError.status, headers: { "Cache-Control": "no-store" } },
       );
     }
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Impossible de relancer le paiement." }, { status: 500 });
+    // Hide Stripe/Supabase implementation errors from the public endpoint.
+    console.error("Stripe payment retry service error", error);
+    return NextResponse.json(
+      { error: "Impossible de relancer le paiement pour le moment.", code: "PAYMENT_RETRY_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }
