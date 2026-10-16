@@ -22,6 +22,7 @@ export function SiteSettingsProvider({ initialSettings, children }: { initialSet
   }
 
   useEffect(() => {
+    document.documentElement.dataset.seasonalTheme = settings.theme_christmas_enabled === "true" ? "christmas" : "default";
     const root = document.documentElement.style;
     root.setProperty("--ink", settings.theme_ink || "#26362d");
     root.setProperty("--moss", settings.theme_moss || "#486a4b");
