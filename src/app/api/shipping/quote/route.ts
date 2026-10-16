@@ -37,10 +37,24 @@ export async function POST(request: Request) {
       methods,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error(error);
     const publicError = publicApiErrorInfo(error);
-    const status = publicError?.status ?? (error instanceof OrderValidationError ? error.status : 500);
-    const code = publicError?.code;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Impossible de calculer la livraison.", ...(code ? { code } : {}) }, { status });
+    if (publicError) {
+      return NextResponse.json(
+        { error: publicError.message, code: publicError.code },
+        { status: publicError.status, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    if (error instanceof OrderValidationError) {
+      return NextResponse.json(
+        { error: error.message, code: "SHIPPING_VALIDATION" },
+        { status: error.status, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    // Internal service/DB errors must not be sent verbatim to customers.
+    console.error("Shipping quote service error", error);
+    return NextResponse.json(
+      { error: "Impossible de calculer la livraison pour le moment.", code: "SHIPPING_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }
