@@ -211,6 +211,18 @@ export async function POST(request: Request) {
     if (existingError) throw existingError;
     if (existingOrder) {
       if (paymentMethod === "online" && existingOrder.payment_status !== "paid") {
+        // Idempotency reuses the *stored* order, not the submitted orderType.
+        // Re-check its actual fulfilment mode so a client cannot bypass an
+        // Admin-disabled mode by sending an enabled type with an old reference.
+        const persistedMode = existingOrder.order_type === "shipping" ? "shipping" : "pickup";
+        const availableModes = await loadCheckoutFulfilmentModes(supabase);
+        const existingModeError = checkoutFulfilmentError(persistedMode, availableModes);
+        if (existingModeError) throw new OrderValidationError(existingModeError);
+        if (persistedMode !== orderType) {
+          const mismatch = new OrderValidationError("Le mode de réception de cette commande a changé. Actualisez le checkout avant de réessayer.");
+          mismatch.status = 409;
+          throw mismatch;
+        }
         const session = await createOrReuseStripeCheckout(supabase, existingOrder.id, new URL(request.url).origin);
         return NextResponse.json({
           orderNumber: existingOrder.order_number,
